@@ -4,6 +4,9 @@ import RegisterPage from './features/auth/RegisterPage'
 import ForgotPasswordPage from './features/auth/ForgotPasswordPage'
 import DashboardPage from './features/dashboard/DashboardPage'
 import InventoryPage from './features/inventory/InventoryPage'
+import ReceptionPage from './features/reception/ReceptionPage'
+import DispatchPage from './features/dispatch/DispatchPage'
+import AlertsPage from './features/alerts/AlertsPage'
 import ProtectedRoute from './router/ProtectedRoute'
 
 function App() {
@@ -27,6 +30,30 @@ function App() {
           element={
             <ProtectedRoute>
               <InventoryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/reception"
+          element={
+            <ProtectedRoute>
+              <ReceptionPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/dispatch"
+          element={
+            <ProtectedRoute>
+              <DispatchPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/alerts"
+          element={
+            <ProtectedRoute>
+              <AlertsPage />
             </ProtectedRoute>
           }
         />
