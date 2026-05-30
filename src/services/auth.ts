@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { api } from './api'
-import type { LoginPayload, LoginResponse } from '../types/auth'
+import type { LoginPayload, LoginResponse } from '../interfaces/auth'
 
 const getFriendlyAuthError = (status?: number, data?: unknown) => {
   const payload = data as

@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import AuthLayout from '../../components/layout/AuthLayout'
 import PhysioInput from '../../components/ui/PhysioInput'
 import PhysioButton from '../../components/ui/PhysioButton'
@@ -14,18 +15,19 @@ type LoginFormValues = {
   password: string
 }
 
-const loginSchema = z.object({
-  identifier: z
-    .string()
-    .min(3, 'Ingresa tu usuario o correo')
-    .max(254, 'Ingresa un usuario o correo válido'),
-  password: z.string().min(8, 'Mínimo 8 caracteres'),
-})
-
 function LoginPage() {
   const navigate = useNavigate()
   const login = useAuthStore((state) => state.login)
   const [formError, setFormError] = useState<string | null>(null)
+  const { t } = useTranslation()
+
+  const loginSchema = z.object({
+    identifier: z
+      .string()
+      .min(3, t('auth.login.errors.identifierMin'))
+      .max(254, t('auth.login.errors.identifierMax')),
+    password: z.string().min(8, t('auth.login.errors.passwordMin')),
+  })
 
   const {
     register,
@@ -48,15 +50,15 @@ function LoginPage() {
       const message =
         error instanceof Error
           ? error.message
-          : 'No se pudo iniciar sesión'
+          : t('auth.login.errors.fallback')
       setFormError(message)
     }
   }
 
   return (
     <AuthLayout
-      title="Bienvenido de nuevo"
-      subtitle="Accede con tu usuario o correo y contraseña para continuar."
+      title={t('auth.login.title')}
+      subtitle={t('auth.login.subtitle')}
     >
       <form
         onSubmit={handleSubmit(onSubmit)}
@@ -64,17 +66,17 @@ function LoginPage() {
         noValidate
       >
         <PhysioInput
-          label="Usuario o correo"
+          label={t('auth.login.identifierLabel')}
           type="text"
-          placeholder="usuario o nombre@empresa.com"
+          placeholder={t('auth.login.identifierPlaceholder')}
           icon={<Mail className="h-4 w-4" />}
           error={errors.identifier?.message}
           {...register('identifier')}
         />
         <PhysioInput
-          label="Contraseña"
+          label={t('auth.login.passwordLabel')}
           type="password"
-          placeholder="Ingresa tu contraseña"
+          placeholder={t('auth.login.passwordPlaceholder')}
           icon={<Lock className="h-4 w-4" />}
           error={errors.password?.message}
           {...register('password')}
@@ -84,7 +86,7 @@ function LoginPage() {
             to="/forgot-password"
             className="text-[color:var(--color-accent)] hover:underline"
           >
-            Olvidé mi contraseña
+            {t('auth.login.forgot')}
           </Link>
         </div>
         {formError ? (
@@ -101,10 +103,10 @@ function LoginPage() {
           fullWidth
           loading={isSubmitting}
         >
-          Iniciar sesión
+          {t('auth.login.submit')}
         </PhysioButton>
         <div className="text-center text-sm text-[color:var(--color-text-muted)]">
-          El acceso es gestionado por un administrador.
+          {t('auth.login.managedAccess')}
         </div>
       </form>
     </AuthLayout>
