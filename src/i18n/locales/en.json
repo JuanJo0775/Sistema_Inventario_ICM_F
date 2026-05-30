@@ -1,0 +1,275 @@
+{
+  "auth": {
+    "brand": {
+      "name": "Import Corporal Medical",
+      "tagline": "Trusted clinical inventory"
+    },
+    "panel": {
+      "title": "Clinical precision",
+      "subtitle": "Secure, precise control of supplies with ordered access."
+    },
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Sign in with your username or email and password to continue.",
+      "identifierLabel": "Username or email",
+      "identifierPlaceholder": "username or name@company.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "forgot": "Forgot my password",
+      "submit": "Sign in",
+      "managedAccess": "Access is managed by an administrator.",
+      "errors": {
+        "identifierMin": "Enter your username or email",
+        "identifierMax": "Enter a valid username or email",
+        "passwordMin": "Minimum 8 characters",
+        "fallback": "Sign in failed"
+      }
+    },
+    "register": {
+      "title": "Register",
+      "subtitle": "This module will be available in the next stage.",
+      "note": "For now, use your existing credentials to sign in.",
+      "back": "Back to login"
+    },
+    "forgot": {
+      "title": "Recover access",
+      "subtitle": "This flow will be available in the next phase.",
+      "note": "For now, contact the administrator to reset your access.",
+      "back": "Back to login"
+    }
+  },
+  "common": {
+    "languageSwitcher": {
+      "label": "Language"
+    },
+    "main": {
+      "ariaLabel": "Main content"
+    },
+    "loading": "Loading...",
+    "empty": "No results",
+    "actions": {
+      "refresh": "Refresh",
+      "clear": "Clear"
+    }
+  },
+  "inventory": {
+    "title": "Inventory",
+    "subtitle": "Real-time overview",
+    "results": "{{count}} products",
+    "safetyNotice": "Electrical safety: review handling protocols before working with electrotherapy equipment.",
+    "stats": {
+      "ariaLabel": "Inventory summary",
+      "products": "{{count}} products",
+      "units": "{{count}} units",
+      "reorder": "{{count}} below reorder",
+      "critical": "{{count}} critical"
+    },
+    "sections": {
+      "products": "Products",
+      "detail": "Stock sheet"
+    },
+    "actions": {
+      "viewDetails": "View sheet"
+    },
+    "flags": {
+      "requiresSerial": "Requires serial no.",
+      "coldChain": "Cold chain"
+    },
+    "filters": {
+      "ariaLabel": "Inventory filters",
+      "searchLabel": "Search",
+      "searchPlaceholder": "Search by name, SKU, or barcode...",
+      "categoryLabel": "Category",
+      "subcategoryLabel": "Subcategory",
+      "categoryAll": "All categories",
+      "subcategoryAll": "All subcategories"
+    },
+    "table": {
+      "ariaLabel": "Inventory list",
+      "sku": "SKU",
+      "product": "Product",
+      "category": "Category",
+      "subcategory": "Subcategory",
+      "stock": "Stock",
+      "reorderPoint": "Reorder point",
+      "status": "Status",
+      "actions": "Actions",
+      "empty": "-"
+    },
+    "detail": {
+      "ariaLabel": "Stock detail by location",
+      "totalStock": "Total stock",
+      "reorderPoint": "Reorder point",
+      "locations": "Locations",
+      "noLocations": "No location stock registered",
+      "empty": "Select a product to view its location stock."
+    },
+    "stock": {
+      "ok": "OK",
+      "low": "Low",
+      "none": "Out of stock",
+      "reorder": "Reorder",
+      "critical": "Critical",
+      "unknown": "No data"
+    },
+    "errors": {
+      "categories": "Could not load categories",
+      "subcategories": "Could not load subcategories",
+      "products": "Could not load inventory"
+    }
+  },
+  "dashboard": {
+    "errors": {
+      "load": "Could not load the dashboard overview"
+    },
+    "roles": {
+      "auxiliar_despacho": {
+        "upper": "DISPATCH ASSISTANT",
+        "label": "Dispatch assistant"
+      },
+      "administrador": {
+        "upper": "ADMINISTRATOR",
+        "label": "Administrator"
+      },
+      "almacenista": {
+        "upper": "STOCKKEEPER",
+        "label": "Stockkeeper"
+      },
+      "usuario": {
+        "upper": "USER",
+        "label": "User"
+      }
+    },
+    "user": {
+      "fallbackName": "User"
+    },
+    "nav": {
+      "quickAccess": "Quick access",
+      "mainMenu": "Main menu",
+      "general": "General",
+      "operations": "Operations",
+      "analytics": "Analytics",
+      "administration": "Administration",
+      "dashboard": "Dashboard",
+      "inventory": "Inventory",
+      "reception": "Receiving",
+      "dispatch": "Dispatch",
+      "returns": "Returns",
+      "settings": "Settings",
+      "reports": "Reports",
+      "alerts": "Alerts",
+      "audit": "Audit",
+      "users": "Users",
+      "catalog": "Catalog",
+      "logout": "Sign out"
+    },
+    "sidebar": {
+      "brandName": "Import Corporal Medical",
+      "version": "v3.0 · 2026"
+    },
+    "main": {
+      "ariaLabel": "Main content"
+    },
+    "topbar": {
+      "title": "Dashboard",
+      "mockDate": "Thu May 07 2026",
+      "dateLine": "{{date}} - {{role}}",
+      "customizeKpis": "Customize KPIs",
+      "alertsButton": "{{count}} alerts"
+    },
+    "alerts": {
+      "activeCount": "{{count}} active alerts",
+      "reorder": "{{count}} below reorder",
+      "expiring": "{{count}} expiring in {{days}} days",
+      "returns": "{{count}} pending return",
+      "viewAll": "View all"
+    },
+    "kpiPanel": {
+      "ariaLabel": "Select dashboard KPIs",
+      "title": "Available KPIs",
+      "close": "Close",
+      "help": "Select which metrics you want to see on your dashboard. Changes apply immediately.",
+      "legend": "KPI list"
+    },
+    "metrics": {
+      "selected": "Selected metrics"
+    },
+    "sections": {
+      "recentMovements": "Recent movements",
+      "viewHistory": "View history",
+      "indicators": "Indicators",
+      "indicatorsAndActions": "Indicators and quick actions",
+      "quickActions": "Quick actions"
+    },
+    "movements": {
+      "in": "Inbound",
+      "out": "Outbound",
+      "transfer": "Transfer",
+      "return": "Return",
+      "entryLabel": "Inbound - {{item}}",
+      "outMajorLabel": "Major outbound - {{item}}",
+      "outMinorLabel": "Minor outbound - {{item}}",
+      "transferLabel": "Transfer - {{item}}",
+      "returnPendingLabel": "Pending return - {{item}}"
+    },
+    "units": {
+      "short": "{{count}} units"
+    },
+    "status": {
+      "pending": "Pending"
+    },
+    "kpis": {
+      "stock": "Total stock",
+      "despachos": "Dispatches today",
+      "reorden": "Below reorder",
+      "facturas": "Invoices issued",
+      "rotacion": "Inventory turnover",
+      "servicio": "Service level",
+      "exactitud": "Inventory accuracy",
+      "vencimientos": "Upcoming expirations",
+      "devoluciones": "Active returns"
+    },
+    "metricCards": {
+      "stock": {
+        "eyebrow": "Total stock",
+        "sub": "{{count}} units in inventory - updated now"
+      },
+      "despachos": {
+        "eyebrow": "Dispatches today",
+        "sub": "100% validated"
+      },
+      "reorden": {
+        "eyebrow": "Below reorder",
+        "sub": "urgent restock"
+      },
+      "facturas": {
+        "eyebrow": "Invoices issued",
+        "sub": "{{range}}"
+      }
+    },
+    "kpiBars": {
+      "rotacion": {
+        "name": "Turnover"
+      },
+      "servicio": {
+        "name": "Service level"
+      },
+      "exactitud": {
+        "name": "Accuracy"
+      },
+      "vencimientos": {
+        "name": "Upcoming expirations",
+        "delta": "approx. {{days}} days"
+      },
+      "devoluciones": {
+        "name": "Active returns",
+        "delta": "pending review"
+      }
+    },
+    "quickActions": {
+      "newEntry": "New intake",
+      "newDispatch": "New dispatch",
+      "registerReturn": "Log return"
+    }
+  }
+}

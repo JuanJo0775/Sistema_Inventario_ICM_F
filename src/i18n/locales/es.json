@@ -1,0 +1,275 @@
+{
+  "auth": {
+    "brand": {
+      "name": "Import Corporal Medical",
+      "tagline": "Inventario clínico de confianza"
+    },
+    "panel": {
+      "title": "Precisión clínica",
+      "subtitle": "Control clínico y preciso de insumos, con acceso seguro y ordenado."
+    },
+    "login": {
+      "title": "Bienvenido de nuevo",
+      "subtitle": "Accede con tu usuario o correo y contraseña para continuar.",
+      "identifierLabel": "Usuario o correo",
+      "identifierPlaceholder": "usuario o nombre@empresa.com",
+      "passwordLabel": "Contraseña",
+      "passwordPlaceholder": "Ingresa tu contraseña",
+      "forgot": "Olvidé mi contraseña",
+      "submit": "Iniciar sesión",
+      "managedAccess": "El acceso es gestionado por un administrador.",
+      "errors": {
+        "identifierMin": "Ingresa tu usuario o correo",
+        "identifierMax": "Ingresa un usuario o correo válido",
+        "passwordMin": "Mínimo 8 caracteres",
+        "fallback": "No se pudo iniciar sesión"
+      }
+    },
+    "register": {
+      "title": "Registro",
+      "subtitle": "Este módulo estará disponible en la siguiente etapa.",
+      "note": "Por ahora, usa tus credenciales existentes para acceder.",
+      "back": "Volver al login"
+    },
+    "forgot": {
+      "title": "Recuperar acceso",
+      "subtitle": "Este flujo estará disponible en la siguiente fase.",
+      "note": "Por ahora contacta al administrador para restablecer tu acceso.",
+      "back": "Volver al login"
+    }
+  },
+  "common": {
+    "languageSwitcher": {
+      "label": "Idioma"
+    },
+    "main": {
+      "ariaLabel": "Contenido principal"
+    },
+    "loading": "Cargando...",
+    "empty": "Sin resultados",
+    "actions": {
+      "refresh": "Actualizar",
+      "clear": "Limpiar"
+    }
+  },
+  "inventory": {
+    "title": "Inventario",
+    "subtitle": "Consulta en tiempo real",
+    "results": "{{count}} productos",
+    "safetyNotice": "Seguridad electrica: consulte los protocolos de manejo antes de manipular equipos de electroterapia.",
+    "stats": {
+      "ariaLabel": "Resumen del inventario",
+      "products": "{{count}} productos",
+      "units": "{{count}} unidades",
+      "reorder": "{{count}} bajo reorden",
+      "critical": "{{count}} criticos"
+    },
+    "sections": {
+      "products": "Productos",
+      "detail": "Ficha de stock"
+    },
+    "actions": {
+      "viewDetails": "Ver ficha"
+    },
+    "flags": {
+      "requiresSerial": "Requiere N. de serie",
+      "coldChain": "Cadena de frio"
+    },
+    "filters": {
+      "ariaLabel": "Filtros de inventario",
+      "searchLabel": "Busqueda",
+      "searchPlaceholder": "Buscar por nombre, SKU o barcode...",
+      "categoryLabel": "Categoria",
+      "subcategoryLabel": "Subcategoria",
+      "categoryAll": "Todas las categorias",
+      "subcategoryAll": "Todas las subcategorias"
+    },
+    "table": {
+      "ariaLabel": "Listado de inventario",
+      "sku": "SKU",
+      "product": "Producto",
+      "category": "Categoria",
+      "subcategory": "Subcategoria",
+      "stock": "Stock",
+      "reorderPoint": "Punto reorden",
+      "status": "Estado",
+      "actions": "Acciones",
+      "empty": "-"
+    },
+    "detail": {
+      "ariaLabel": "Detalle de stock por ubicacion",
+      "totalStock": "Stock total",
+      "reorderPoint": "Punto reorden",
+      "locations": "Ubicaciones",
+      "noLocations": "Sin stock registrado por ubicacion",
+      "empty": "Selecciona un producto para ver su stock por ubicacion."
+    },
+    "stock": {
+      "ok": "OK",
+      "low": "Bajo",
+      "none": "Sin stock",
+      "reorder": "Reorden",
+      "critical": "Critico",
+      "unknown": "Sin datos"
+    },
+    "errors": {
+      "categories": "No se pudieron cargar las categorias",
+      "subcategories": "No se pudieron cargar las subcategorias",
+      "products": "No se pudo cargar el inventario"
+    }
+  },
+  "dashboard": {
+    "errors": {
+      "load": "No se pudo cargar el resumen del dashboard"
+    },
+    "roles": {
+      "auxiliar_despacho": {
+        "upper": "AUXILIAR DESPACHO",
+        "label": "Auxiliar despacho"
+      },
+      "administrador": {
+        "upper": "ADMINISTRADOR",
+        "label": "Administrador"
+      },
+      "almacenista": {
+        "upper": "ALMACENISTA",
+        "label": "Almacenista"
+      },
+      "usuario": {
+        "upper": "USUARIO",
+        "label": "Usuario"
+      }
+    },
+    "user": {
+      "fallbackName": "Usuario"
+    },
+    "nav": {
+      "quickAccess": "Accesos rapidos",
+      "mainMenu": "Menu principal",
+      "general": "General",
+      "operations": "Operaciones",
+      "analytics": "Analitica",
+      "administration": "Administracion",
+      "dashboard": "Dashboard",
+      "inventory": "Inventario",
+      "reception": "Recepcion",
+      "dispatch": "Despacho",
+      "returns": "Devoluciones",
+      "settings": "Ajustes",
+      "reports": "Reportes",
+      "alerts": "Alertas",
+      "audit": "Auditoria",
+      "users": "Usuarios",
+      "catalog": "Catalogo",
+      "logout": "Cerrar sesion"
+    },
+    "sidebar": {
+      "brandName": "Import Corporal Medical",
+      "version": "v3.0 · 2026"
+    },
+    "main": {
+      "ariaLabel": "Contenido principal"
+    },
+    "topbar": {
+      "title": "Dashboard",
+      "mockDate": "Jue 07 mayo 2026",
+      "dateLine": "{{date}} - {{role}}",
+      "customizeKpis": "Personalizar KPIs",
+      "alertsButton": "{{count}} alertas"
+    },
+    "alerts": {
+      "activeCount": "{{count}} alertas activas",
+      "reorder": "{{count}} bajo reorden",
+      "expiring": "{{count}} vence en {{days}} dias",
+      "returns": "{{count}} devolucion pendiente",
+      "viewAll": "Ver todas"
+    },
+    "kpiPanel": {
+      "ariaLabel": "Seleccionar KPIs del dashboard",
+      "title": "KPIs disponibles",
+      "close": "Cerrar",
+      "help": "Selecciona que metricas quieres ver en tu dashboard. Los cambios se aplican de inmediato.",
+      "legend": "Lista de KPIs"
+    },
+    "metrics": {
+      "selected": "Metricas seleccionadas"
+    },
+    "sections": {
+      "recentMovements": "Movimientos recientes",
+      "viewHistory": "Ver historial",
+      "indicators": "Indicadores",
+      "indicatorsAndActions": "Indicadores y acciones rapidas",
+      "quickActions": "Acciones rapidas"
+    },
+    "movements": {
+      "in": "Entrada",
+      "out": "Salida",
+      "transfer": "Traslado",
+      "return": "Devolucion",
+      "entryLabel": "Entrada - {{item}}",
+      "outMajorLabel": "Salida Mayor - {{item}}",
+      "outMinorLabel": "Salida Menor - {{item}}",
+      "transferLabel": "Traslado - {{item}}",
+      "returnPendingLabel": "Devolucion pendiente - {{item}}"
+    },
+    "units": {
+      "short": "{{count}} uds"
+    },
+    "status": {
+      "pending": "Pendiente"
+    },
+    "kpis": {
+      "stock": "Stock total",
+      "despachos": "Despachos del dia",
+      "reorden": "Bajo reorden",
+      "facturas": "Facturas emitidas",
+      "rotacion": "Rotacion de inventario",
+      "servicio": "Nivel de servicio",
+      "exactitud": "Exactitud inventario",
+      "vencimientos": "Vencimientos proximos",
+      "devoluciones": "Devoluciones activas"
+    },
+    "metricCards": {
+      "stock": {
+        "eyebrow": "Stock total",
+        "sub": "{{count}} unidades en inventario - actualizado ahora"
+      },
+      "despachos": {
+        "eyebrow": "Despachos hoy",
+        "sub": "100% validados"
+      },
+      "reorden": {
+        "eyebrow": "Bajo reorden",
+        "sub": "reposicion urgente"
+      },
+      "facturas": {
+        "eyebrow": "Facturas emitidas",
+        "sub": "{{range}}"
+      }
+    },
+    "kpiBars": {
+      "rotacion": {
+        "name": "Rotacion"
+      },
+      "servicio": {
+        "name": "Nivel de servicio"
+      },
+      "exactitud": {
+        "name": "Exactitud"
+      },
+      "vencimientos": {
+        "name": "Vencimientos proximos",
+        "delta": "prox. {{days}} dias"
+      },
+      "devoluciones": {
+        "name": "Devoluciones activas",
+        "delta": "pendiente revision"
+      }
+    },
+    "quickActions": {
+      "newEntry": "Nueva entrada",
+      "newDispatch": "Nuevo despacho",
+      "registerReturn": "Registrar devolucion"
+    }
+  }
+}
