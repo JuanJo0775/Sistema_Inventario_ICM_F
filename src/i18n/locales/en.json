@@ -223,11 +223,12 @@
       "despachos": "Dispatches today",
       "reorden": "Below reorder",
       "facturas": "Invoices issued",
-      "rotacion": "Inventory turnover",
-      "servicio": "Service level",
-      "exactitud": "Inventory accuracy",
-      "vencimientos": "Upcoming expirations",
-      "devoluciones": "Active returns"
+      "utilizacion": "Warehouse utilization",
+      "danados": "Damaged products index",
+      "otif": "Dispatch compliance (OTIF)",
+      "descarte": "Discard rate",
+      "devoluciones": "Return rate",
+      "cadena_frio": "Cold chain compliance"
     },
     "metricCards": {
       "stock": {
@@ -248,28 +249,405 @@
       }
     },
     "kpiBars": {
-      "rotacion": {
-        "name": "Turnover"
+      "utilizacion": {
+        "name": "Warehouse utilization"
       },
-      "servicio": {
-        "name": "Service level"
+      "danados": {
+        "name": "Damaged products"
       },
-      "exactitud": {
-        "name": "Accuracy"
+      "otif": {
+        "name": "OTIF compliance"
       },
-      "vencimientos": {
-        "name": "Upcoming expirations",
-        "delta": "approx. {{days}} days"
+      "descarte": {
+        "name": "Discard rate"
       },
       "devoluciones": {
-        "name": "Active returns",
-        "delta": "pending review"
+        "name": "Return rate"
+      },
+      "cadena_frio": {
+        "name": "Cold chain"
+      }
+    },
+    "visualSummary": {
+      "ariaLabel": "Visual KPI summary",
+      "mainKpi": "Main KPI",
+      "chartsAriaLabel": "KPI charts",
+      "reportReady": "Monthly report ready",
+      "mockNote": "Mocked KPI history for frontend testing.",
+      "downloadReport": "Download report"
+    },
+    "chartLabels": {
+      "onTime": "On time",
+      "inFull": "In full",
+      "temperature": "Temperature"
+    },
+    "periods": {
+      "Ene": "Jan",
+      "Feb": "Feb",
+      "Mar": "Mar",
+      "Abr": "Apr",
+      "May": "May",
+      "Lun": "Mon",
+      "Mie": "Wed",
+      "Jue": "Thu",
+      "Vie": "Fri"
+    },
+    "visualKpis": {
+      "rotacion": {
+        "title": "Inventory turnover",
+        "shortTitle": "Turnover",
+        "unit": "times/year",
+        "target": "Target 4 - 8",
+        "statusLabel": "Acceptable level",
+        "insight": "Healthy balance between availability and product movement.",
+        "formula": "COGS / Average inventory",
+        "breakdown": {
+          "Electroterapia": "Electrotherapy",
+          "Vendajes": "Bandages",
+          "Geles": "Gels"
+        }
+      },
+      "danados": {
+        "title": "Damaged products index",
+        "shortTitle": "Damaged",
+        "unit": "%",
+        "target": "< 1%",
+        "statusLabel": "Acceptable",
+        "insight": "Review handling and warehouse conditions.",
+        "formula": "(Damaged units / Total units) x 100",
+        "breakdown": {
+          "Vencimiento": "Expiration",
+          "Manipulación": "Handling",
+          "Transporte": "Transport",
+          "Almacén": "Warehouse"
+        }
+      },
+      "utilizacion": {
+        "title": "Warehouse utilization",
+        "shortTitle": "Warehouse",
+        "unit": "%",
+        "target": "60% - 85%",
+        "statusLabel": "Optimal level",
+        "insight": "There is enough operating room to move safely.",
+        "formula": "(Occupied positions / Total capacity) x 100",
+        "breakdown": {
+          "Rack A": "Rack A",
+          "Rack B": "Rack B",
+          "Cuarto frío": "Cold room"
+        }
+      },
+      "otif": {
+        "title": "OTIF dispatch compliance",
+        "shortTitle": "OTIF",
+        "unit": "%",
+        "target": ">= 95%",
+        "statusLabel": "Acceptable",
+        "insight": "The current bottleneck is complete deliveries.",
+        "formula": "(Orders on time and in full / Total orders) x 100",
+        "breakdown": {
+          "A tiempo": "On time",
+          "Completo": "In full"
+        }
+      },
+      "descarte": {
+        "title": "Defective goods discard rate",
+        "shortTitle": "Discard",
+        "unit": "%",
+        "target": "< 0.5%",
+        "statusLabel": "Acceptable",
+        "insight": "Normal import level, with attention on the foreign supplier.",
+        "formula": "(Discarded units / Total inventory) x 100",
+        "breakdown": {
+          "Proveedor": "Supplier",
+          "Transporte": "Transport",
+          "Almacén": "Warehouse",
+          "INVIMA": "INVIMA"
+        }
+      },
+      "devoluciones": {
+        "title": "Customer return rate",
+        "shortTitle": "Returns",
+        "unit": "%",
+        "target": "< 2%",
+        "statusLabel": "Excellent",
+        "insight": "Reliable product quality and dispatch process.",
+        "formula": "(Returned units / Dispatched units) x 100",
+        "breakdown": {
+          "Defecto": "Defect",
+          "Cantidad": "Quantity",
+          "Transporte": "Transport",
+          "Expectativa": "Expectation"
+        }
+      },
+      "cadena_frio": {
+        "title": "Cold chain compliance",
+        "shortTitle": "Cold chain",
+        "unit": "%",
+        "target": ">= 99.5%",
+        "statusLabel": "Attention",
+        "insight": "Two short thermal excursions require technical review.",
+        "formula": "(Time within range / Monitored time) x 100",
+        "breakdown": {
+          "Dentro de rango": "Within range",
+          "Excursiones": "Excursions"
+        }
       }
     },
     "quickActions": {
       "newEntry": "New intake",
       "newDispatch": "New dispatch",
       "registerReturn": "Log return"
+    }
+  },
+  "reception": {
+    "title": "Receiving",
+    "subtitle": "Merchandise intake log",
+    "stats": {
+      "ariaLabel": "Receiving summary",
+      "pending": "Pending intake",
+      "discrepancies": "With discrepancy",
+      "serialRequired": "Require serial",
+      "coldChain": "Cold chain"
+    },
+    "scan": {
+      "label": "Scan barcode / PO",
+      "placeholder": "Scan or type the code...",
+      "action": "Search"
+    },
+    "search": {
+      "label": "Search purchase order",
+      "placeholder": "Name, SKU, invoice, supplier..."
+    },
+    "orders": {
+      "ariaLabel": "Expected orders",
+      "title": "Expected orders",
+      "columns": {
+        "order": "PO / Invoice",
+        "product": "Product",
+        "expected": "Received / Expected",
+        "status": "Status",
+        "action": "Action"
+      },
+      "select": "Select"
+    },
+    "status": {
+      "pending": "Pending",
+      "partial": "Partial",
+      "ready": "Ready",
+      "received": "Received",
+      "blocked": "Blocked"
+    },
+    "flags": {
+      "serial": "Requires serial",
+      "coldChain": "Cold chain"
+    },
+    "form": {
+      "ariaLabel": "Receiving form",
+      "emptyTitle": "No selection",
+      "emptyDescription": "Select an order from the table to register intake.",
+      "description": "SKU: {{sku}} · Invoice: {{invoice}}",
+      "receivedQuantity": "Received quantity",
+      "location": "Destination location",
+      "locationPlaceholder": "Select a location...",
+      "lot": "Lot",
+      "expirationDate": "Expiration date",
+      "serialNumbers": "Serial numbers",
+      "serialPlaceholder": "One serial number per line...",
+      "discrepancyDetected": "⚠ Discrepancy detected",
+      "noDiscrepancy": "✓ No discrepancy",
+      "expectedHelp": "Invoiced quantity: {{count}} units",
+      "expectedEmpty": "Select an order to see the expected quantity.",
+      "discrepancyNote": "Discrepancy note (required)",
+      "confirm": "Confirm intake",
+      "saving": "Saving..."
+    },
+    "movements": {
+      "ariaLabel": "Recent intake movements",
+      "title": "Recent intakes",
+      "units": "{{count}} units"
+    },
+    "errors": {
+      "load": "Could not load receiving information",
+      "save": "Could not register the intake. Please try again.",
+      "noOrder": "Select an order to continue",
+      "alreadyReceived": "This order was already received in this session",
+      "quantity": "Enter a valid quantity greater than 0",
+      "location": "Select a destination location",
+      "serials": "You must enter exactly {{count}} serial number(s)",
+      "discrepancyNote": "You must add a note explaining the discrepancy",
+      "scanNotFound": "No order found with that code"
+    },
+    "success": {
+      "confirmed": "Intake registered successfully for SKU {{sku}}"
+    }
+  },
+  "dispatch": {
+    "title": "Dispatch",
+    "subtitle": "Merchandise outbound log and validation",
+    "flow": {
+      "ariaLabel": "Dispatch progress",
+      "title": "Dispatch flow",
+      "steps": {
+        "type": "Type",
+        "client": "Client",
+        "validation": "Cross-check",
+        "confirm": "Confirm"
+      }
+    },
+    "types": {
+      "wholesale": {
+        "title": "Wholesale",
+        "description": "Customer data required"
+      },
+      "retail": {
+        "title": "Retail",
+        "description": "Customer optional"
+      },
+      "damage": {
+        "title": "Damage",
+        "description": "Write-off with note"
+      },
+      "expiry": {
+        "title": "Expiry",
+        "description": "Write-off due to expiry"
+      }
+    },
+    "stats": {
+      "ariaLabel": "Dispatch summary",
+      "pending": "Pending dispatches",
+      "discrepancies": "With discrepancy",
+      "serialRequired": "Require serial",
+      "coldChain": "Cold chain"
+    },
+    "scan": {
+      "label": "Scan expected SKU / Barcode",
+      "placeholder": "Scan the product barcode...",
+      "action": "Validate"
+    },
+    "search": {
+      "label": "Search invoice / customer",
+    "scan": {
+      "label": "Scan / manual code",
+      "placeholder": "Scan or type the SKU / barcode...",
+      "helper": "If the scanner fails, type the SKU or barcode manually and validate anyway."
+    },
+      "placeholder": "Invoice number or customer name..."
+    },
+    "orders": {
+      "ariaLabel": "Picking orders",
+      "title": "Picking List (Invoices)",
+      "columns": {
+        "invoice": "Invoice",
+        "customer": "Customer",
+        "product": "Product",
+        "expected": "Quantity",
+        "status": "Status",
+        "action": "Action"
+      },
+      "select": "Prepare"
+    },
+    "status": {
+      "pending": "Pending",
+      "preparing": "Preparing",
+      "ready": "Ready",
+      "dispatched": "Dispatched",
+      "blocked": "Blocked"
+    },
+    "form": {
+      "ariaLabel": "Dispatch form",
+      "emptyTitle": "No selection",
+      "emptyDescription": "Select a picking order from the table to start preparation.",
+      "description": "Expected SKU: {{sku}} · Invoice: {{invoice}}",
+      "quantity": "Quantity to dispatch",
+      "location": "Origin location",
+      "locationPlaceholder": "Select origin...",
+      "lot": "Origin lot",
+      "lotPlaceholder": "Select lot...",
+      "serialNumber": "Serial number",
+      "serialPlaceholder": "Enter device serial number...",
+      "customerData": "Customer information",
+      "customerName": "Customer / Corporate Name",
+      "customerDoc": "NIT / ID",
+      "customerOptionalPlaceholder": "Optional for this outbound flow",
+      "customerOptionalIdPlaceholder": "Optional if not applicable",
+      "customerRequiredHelp": "Required for wholesale dispatches. Privacy Act 1581 notice is active.",
+      "customerOptionalHelp": "Customer data is optional for this outbound flow.",
+      "note": "Operational notes",
+      "privacyNotice": "I accept personal health data treatment under Law 1581",
+      "coldChain": "I confirm cold chain compliance for this dispatch",
+      "electricalSafety": "I confirm electrical safety protocol has been reviewed",
+      "confirm": "Confirm dispatch",
+      "confirmAndGenerate": "Confirm and generate invoice",
+      "saving": "Dispatching...",
+      "invoiceGenerated": "Invoice generated: {{invoice}}",
+      "downloadInvoice": "Download Invoice PDF",
+      "close": "Close"
+    },
+    "movements": {
+      "ariaLabel": "Recent dispatch movements",
+      "title": "Recent dispatches",
+      "units": "{{count}} units"
+    },
+    "errors": {
+      "load": "Could not load dispatch information",
+      "save": "Could not register the outbound. Please try again.",
+      "noOrder": "Select an order to continue",
+      "alreadyDispatched": "This order was already dispatched in this session",
+      "scanRequired": "Scan the SKU or barcode before continuing",
+      "quantity": "Enter a valid quantity greater than 0",
+      "location": "Select an origin location",
+      "lot": "Select an origin lot",
+      "serials": "You must enter the serial number for electrotherapy equipment",
+      "customerData": "Complete the customer name and document",
+      "privacyNotice": "You must accept personal data treatment (Law 1581) to continue",
+      "coldChain": "You must confirm cold chain compliance to continue",
+      "electricalSafety": "You must confirm electrical safety to continue",
+      "scanMismatch": "Cross validation error! Scanned code ({{scanned}}) does not match expected SKU ({{expected}})",
+      "scanSuccess": "✓ Cross validation successful. SKU matches."
+    },
+    "success": {
+      "confirmed": "Outbound registered successfully for SKU {{sku}}"
+    }
+  },
+  "alerts": {
+    "title": "Operational Alerts",
+    "subtitle": "Clinical safety and replenishment control center",
+    "stats": {
+      "ariaLabel": "Operational alerts summary",
+      "critical": "Criticals",
+      "warning": "Warnings",
+      "resolved": "Resolved"
+    },
+    "filters": {
+      "ariaLabel": "Alerts filters",
+      "typeLabel": "Alert type",
+      "typeAll": "All alerts",
+      "LOW_STOCK": "Stock below minimum",
+      "EXPIRATION_30": "Expiration in 30 days",
+      "EXPIRATION_60": "Expiration in 60 days",
+      "COLD_CHAIN_MISSING": "Cold chain anomaly",
+      "STOCK_MISMATCH": "Stock vs ledger desync"
+    },
+    "table": {
+      "ariaLabel": "Operational alerts list",
+      "columns": {
+        "type": "Type",
+        "product": "Product",
+        "message": "Detail / Message",
+        "created": "Report date",
+        "status": "Status",
+        "action": "Action"
+      },
+      "resolve": "Resolve",
+      "resolved": "Resolved"
+    },
+    "errors": {
+      "load": "Could not load alerts information",
+      "resolve": "Could not resolve the alert. Please try again.",
+      "unauthorized": "You do not have privileges to resolve this alert. Only Stockkeepers and Administrators can resolve operational alerts."
+    },
+    "success": {
+      "resolved": "Alert resolved successfully"
     }
   }
 }
