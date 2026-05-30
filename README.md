@@ -1,7 +1,7 @@
 # Sistema Inventario ICM - Frontend
 
 ## Objetivo
-Frontend para el sistema de inventario ICM. Contiene autenticacion, dashboard, inventario y las bases para recepcion, despacho y alertas. El enfoque actual es UI funcional con datos de prueba en el frontend y conexion a API cuando se habilite.
+Frontend para el sistema de inventario ICM. Contiene autenticacion, dashboard, inventario y las bases para recepcion, despacho y alertas. El enfoque actual es UI funcional con conexion al backend para persistir los cambios; los mocks quedan como apoyo de desarrollo.
 
 ## Stack
 - React + Vite + TypeScript
@@ -48,12 +48,13 @@ src/
 - Textos listos para extender a otros modulos
 
 ## Mocks
-Se usan para datos de prueba en frontend.
-- Activar con .env:
+Se usan solo para pruebas aisladas en frontend.
+- Activar con `.env` si necesitas trabajar sin backend:
 ```
 VITE_USE_MOCKS=true
 ```
-- Datos en src/mocks
+- Por defecto el proyecto usa la API real del backend.
+- Datos en `src/mocks`
 
 ## Servicios API
 Base URL configurada por entorno:
