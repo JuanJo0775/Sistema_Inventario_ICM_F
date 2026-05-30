@@ -1,0 +1,72 @@
+import type { DashboardOverview } from '../interfaces/dashboard'
+
+export const mockDashboardOverview: DashboardOverview = {
+  metrics: {
+    stockTotal: 3072,
+    dispatchesToday: 14,
+    reorderCount: 2,
+    invoicesIssued: 14,
+    invoiceRange: 'ICM-0041 - 0054',
+  },
+  alerts: {
+    active: 4,
+    reorder: 2,
+    expiring: 1,
+    expiringDays: 18,
+    returns: 1,
+  },
+  kpiBars: [
+    { key: 'rotacion', value: 80 },
+    { key: 'servicio', value: 90 },
+    { key: 'exactitud', value: 97 },
+    { key: 'vencimientos', value: 2, delta: '18d' },
+    { key: 'devoluciones', value: 1, delta: '1 pending' },
+  ],
+  movements: [
+    {
+      id: 'mov-001',
+      type: 'in',
+      title: 'Entrada - Agujas Puncion Seca 0.25mm',
+      sku: 'CAN-APS-001',
+      quantity: 50,
+      user: 'Luis M.',
+      time: '08:32',
+    },
+    {
+      id: 'mov-002',
+      type: 'out',
+      title: 'Salida Mayor - TENS Bifasico Pro',
+      sku: 'CAN-TENS-003',
+      quantity: 3,
+      user: 'Luis M. · ICM-0052',
+      time: '09:14',
+    },
+    {
+      id: 'mov-003',
+      type: 'transfer',
+      title: 'Traslado - Gel Conductor 250ml',
+      sku: 'CAN-GEL-005',
+      quantity: 20,
+      user: 'Ana P.',
+      time: '10:05',
+    },
+    {
+      id: 'mov-004',
+      type: 'out',
+      title: 'Salida Menor - Pelota Gel Ovalada',
+      sku: 'CAN-PGO-002',
+      quantity: 2,
+      user: 'ICM-0053',
+      time: '11:47',
+    },
+    {
+      id: 'mov-005',
+      type: 'return',
+      title: 'Devolucion pendiente - Ultrasonido 3MHz',
+      sku: 'CAN-US-007',
+      quantity: 1,
+      user: 'SN: US-2024-0091',
+      status: 'pending',
+    },
+  ],
+}
