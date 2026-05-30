@@ -73,7 +73,7 @@
     },
     "flags": {
       "requiresSerial": "Requiere N. de serie",
-      "coldChain": "Cadena de frio"
+      "coldChain": "Cadena de frío"
     },
     "filters": {
       "ariaLabel": "Filtros de inventario",
@@ -180,37 +180,37 @@
     "alerts": {
       "activeCount": "{{count}} alertas activas",
       "reorder": "{{count}} bajo reorden",
-      "expiring": "{{count}} vence en {{days}} dias",
-      "returns": "{{count}} devolucion pendiente",
+      "expiring": "{{count}} vence en {{days}} días",
+      "returns": "{{count}} devolución pendiente",
       "viewAll": "Ver todas"
     },
     "kpiPanel": {
       "ariaLabel": "Seleccionar KPIs del dashboard",
       "title": "KPIs disponibles",
       "close": "Cerrar",
-      "help": "Selecciona que metricas quieres ver en tu dashboard. Los cambios se aplican de inmediato.",
+      "help": "Selecciona qué métricas quieres ver en tu dashboard. Los cambios se aplican de inmediato.",
       "legend": "Lista de KPIs"
     },
     "metrics": {
-      "selected": "Metricas seleccionadas"
+      "selected": "Métricas seleccionadas"
     },
     "sections": {
       "recentMovements": "Movimientos recientes",
       "viewHistory": "Ver historial",
       "indicators": "Indicadores",
-      "indicatorsAndActions": "Indicadores y acciones rapidas",
-      "quickActions": "Acciones rapidas"
+      "indicatorsAndActions": "Indicadores y acciones rápidas",
+      "quickActions": "Acciones rápidas"
     },
     "movements": {
       "in": "Entrada",
       "out": "Salida",
       "transfer": "Traslado",
-      "return": "Devolucion",
+      "return": "Devolución",
       "entryLabel": "Entrada - {{item}}",
       "outMajorLabel": "Salida Mayor - {{item}}",
       "outMinorLabel": "Salida Menor - {{item}}",
       "transferLabel": "Traslado - {{item}}",
-      "returnPendingLabel": "Devolucion pendiente - {{item}}"
+      "returnPendingLabel": "Devolución pendiente - {{item}}"
     },
     "units": {
       "short": "{{count}} uds"
@@ -220,14 +220,15 @@
     },
     "kpis": {
       "stock": "Stock total",
-      "despachos": "Despachos del dia",
+      "despachos": "Despachos del día",
       "reorden": "Bajo reorden",
       "facturas": "Facturas emitidas",
-      "rotacion": "Rotacion de inventario",
-      "servicio": "Nivel de servicio",
-      "exactitud": "Exactitud inventario",
-      "vencimientos": "Vencimientos proximos",
-      "devoluciones": "Devoluciones activas"
+      "utilizacion": "Utilización de almacén",
+      "danados": "Índice de productos dañados",
+      "otif": "Cumplimiento en despacho (OTIF)",
+      "descarte": "Tasa de descarte",
+      "devoluciones": "Tasa de devoluciones",
+      "cadena_frio": "Cumplimiento cadena de frío"
     },
     "metricCards": {
       "stock": {
@@ -248,28 +249,405 @@
       }
     },
     "kpiBars": {
-      "rotacion": {
-        "name": "Rotacion"
+      "utilizacion": {
+        "name": "Utilización de almacén"
       },
-      "servicio": {
-        "name": "Nivel de servicio"
+      "danados": {
+        "name": "Productos dañados"
       },
-      "exactitud": {
-        "name": "Exactitud"
+      "otif": {
+        "name": "Cumplimiento OTIF"
       },
-      "vencimientos": {
-        "name": "Vencimientos proximos",
-        "delta": "prox. {{days}} dias"
+      "descarte": {
+        "name": "Tasa de descarte"
       },
       "devoluciones": {
-        "name": "Devoluciones activas",
-        "delta": "pendiente revision"
+        "name": "Tasa de devoluciones"
+      },
+      "cadena_frio": {
+        "name": "Cadena de frío"
+      }
+    },
+    "visualSummary": {
+      "ariaLabel": "Resumen visual de KPIs",
+      "mainKpi": "KPI principal",
+      "chartsAriaLabel": "Gráficas por KPI",
+      "reportReady": "Reporte mensual listo",
+      "mockNote": "Histórico KPI mockeado para pruebas frontend.",
+      "downloadReport": "Descargar reporte"
+    },
+    "chartLabels": {
+      "onTime": "A tiempo",
+      "inFull": "Completo",
+      "temperature": "Temperatura"
+    },
+    "periods": {
+      "Ene": "Ene",
+      "Feb": "Feb",
+      "Mar": "Mar",
+      "Abr": "Abr",
+      "May": "May",
+      "Lun": "Lun",
+      "Mie": "Mié",
+      "Jue": "Jue",
+      "Vie": "Vie"
+    },
+    "visualKpis": {
+      "rotacion": {
+        "title": "Rotación de inventario",
+        "shortTitle": "Rotación",
+        "unit": "veces/año",
+        "target": "Meta 4 - 8",
+        "statusLabel": "Nivel aceptable",
+        "insight": "Balance saludable entre disponibilidad y movimiento de mercancía.",
+        "formula": "CMV / Inventario promedio",
+        "breakdown": {
+          "Electroterapia": "Electroterapia",
+          "Vendajes": "Vendajes",
+          "Geles": "Geles"
+        }
+      },
+      "danados": {
+        "title": "Índice de productos dañados",
+        "shortTitle": "Dañados",
+        "unit": "%",
+        "target": "< 1%",
+        "statusLabel": "Aceptable",
+        "insight": "Conviene revisar manipulación y condiciones de almacén.",
+        "formula": "(Unidades dañadas / Total unidades) x 100",
+        "breakdown": {
+          "Vencimiento": "Vencimiento",
+          "Manipulación": "Manipulación",
+          "Transporte": "Transporte",
+          "Almacén": "Almacén"
+        }
+      },
+      "utilizacion": {
+        "title": "Utilización de almacén",
+        "shortTitle": "Almacén",
+        "unit": "%",
+        "target": "60% - 85%",
+        "statusLabel": "Nivel óptimo",
+        "insight": "Hay margen operativo para maniobrar con seguridad.",
+        "formula": "(Posiciones ocupadas / Capacidad total) x 100",
+        "breakdown": {
+          "Rack A": "Rack A",
+          "Rack B": "Rack B",
+          "Cuarto frío": "Cuarto frío"
+        }
+      },
+      "otif": {
+        "title": "Cumplimiento en despacho OTIF",
+        "shortTitle": "OTIF",
+        "unit": "%",
+        "target": ">= 95%",
+        "statusLabel": "Aceptable",
+        "insight": "El cuello de botella actual está en entregas completas.",
+        "formula": "(Pedidos a tiempo y completos / Total pedidos) x 100",
+        "breakdown": {
+          "A tiempo": "A tiempo",
+          "Completo": "Completo"
+        }
+      },
+      "descarte": {
+        "title": "Tasa de descarte defectuoso",
+        "shortTitle": "Descarte",
+        "unit": "%",
+        "target": "< 0,5%",
+        "statusLabel": "Aceptable",
+        "insight": "Nivel normal para importación, con foco en proveedor extranjero.",
+        "formula": "(Unidades descartadas / Total inventario) x 100",
+        "breakdown": {
+          "Proveedor": "Proveedor",
+          "Transporte": "Transporte",
+          "Almacén": "Almacén",
+          "INVIMA": "INVIMA"
+        }
+      },
+      "devoluciones": {
+        "title": "Tasa de devoluciones de clientes",
+        "shortTitle": "Devoluciones",
+        "unit": "%",
+        "target": "< 2%",
+        "statusLabel": "Excelente",
+        "insight": "Calidad de producto y despacho confiables.",
+        "formula": "(Unidades devueltas / Unidades despachadas) x 100",
+        "breakdown": {
+          "Defecto": "Defecto",
+          "Cantidad": "Cantidad",
+          "Transporte": "Transporte",
+          "Expectativa": "Expectativa"
+        }
+      },
+      "cadena_frio": {
+        "title": "Cumplimiento de cadena de frío",
+        "shortTitle": "Cadena frío",
+        "unit": "%",
+        "target": ">= 99,5%",
+        "statusLabel": "Atención",
+        "insight": "Dos excursiones térmicas cortas requieren revisión técnica.",
+        "formula": "(Tiempo dentro de rango / Tiempo monitoreado) x 100",
+        "breakdown": {
+          "Dentro de rango": "Dentro de rango",
+          "Excursiones": "Excursiones"
+        }
       }
     },
     "quickActions": {
       "newEntry": "Nueva entrada",
       "newDispatch": "Nuevo despacho",
-      "registerReturn": "Registrar devolucion"
+      "registerReturn": "Registrar devolución"
+    }
+  },
+  "reception": {
+    "title": "Recepción",
+    "subtitle": "Registro de entradas de mercancía",
+    "stats": {
+      "ariaLabel": "Resumen de recepción",
+      "pending": "Pendientes por recibir",
+      "discrepancies": "Con discrepancia",
+      "serialRequired": "Requieren serie",
+      "coldChain": "Cadena de frío"
+    },
+    "scan": {
+      "label": "Escanear barcode / OC",
+      "placeholder": "Escanea o escribe el código...",
+      "action": "Buscar"
+    },
+    "search": {
+      "label": "Buscar orden de compra",
+      "placeholder": "Nombre, SKU, factura, proveedor..."
+    },
+    "orders": {
+      "ariaLabel": "Órdenes esperadas",
+      "title": "Órdenes esperadas",
+      "columns": {
+        "order": "OC / Factura",
+        "product": "Producto",
+        "expected": "Recibido / Esperado",
+        "status": "Estado",
+        "action": "Acción"
+      },
+      "select": "Seleccionar"
+    },
+    "status": {
+      "pending": "Pendiente",
+      "partial": "Parcial",
+      "ready": "Listo",
+      "received": "Recibido",
+      "blocked": "Bloqueado"
+    },
+    "flags": {
+      "serial": "Requiere serie",
+      "coldChain": "Cadena frío"
+    },
+    "form": {
+      "ariaLabel": "Formulario de recepción",
+      "emptyTitle": "Sin selección",
+      "emptyDescription": "Selecciona una orden de la tabla para registrar la recepción.",
+      "description": "SKU: {{sku}} · Factura: {{invoice}}",
+      "receivedQuantity": "Cantidad recibida",
+      "location": "Ubicación destino",
+      "locationPlaceholder": "Selecciona una ubicación...",
+      "lot": "Lote",
+      "expirationDate": "Fecha de vencimiento",
+      "serialNumbers": "Números de serie",
+      "serialPlaceholder": "Un número de serie por línea...",
+      "discrepancyDetected": "⚠ Discrepancia detectada",
+      "noDiscrepancy": "✓ Sin discrepancia",
+      "expectedHelp": "Cantidad facturada: {{count}} unidades",
+      "expectedEmpty": "Selecciona una orden para ver la cantidad esperada.",
+      "discrepancyNote": "Nota de discrepancia (obligatoria)",
+      "confirm": "Confirmar entrada",
+      "saving": "Guardando..."
+    },
+    "movements": {
+      "ariaLabel": "Movimientos de entrada recientes",
+      "title": "Entradas recientes",
+      "units": "{{count}} uds"
+    },
+    "errors": {
+      "load": "No se pudo cargar la información de recepción",
+      "save": "No se pudo registrar la entrada. Intenta de nuevo.",
+      "noOrder": "Selecciona una orden para continuar",
+      "alreadyReceived": "Esta orden ya fue recibida en esta sesión",
+      "quantity": "Ingresa una cantidad válida mayor a 0",
+      "location": "Selecciona una ubicación destino",
+      "serials": "Debes ingresar exactamente {{count}} número(s) de serie",
+      "discrepancyNote": "Debes agregar una nota explicando la discrepancia",
+      "scanNotFound": "No se encontró ninguna orden con ese código"
+    },
+    "success": {
+      "confirmed": "Entrada registrada correctamente para SKU {{sku}}"
+    }
+  },
+  "dispatch": {
+    "title": "Despacho",
+    "subtitle": "Registro y validación de salidas de mercancía",
+    "flow": {
+      "ariaLabel": "Progreso del despacho",
+      "title": "Flujo de despacho",
+      "steps": {
+        "type": "Tipo",
+        "client": "Cliente",
+        "validation": "Validación cruzada",
+        "confirm": "Confirmar"
+      }
+    },
+    "types": {
+      "wholesale": {
+        "title": "Venta mayor",
+        "description": "Requiere datos del cliente"
+      },
+      "retail": {
+        "title": "Venta menor",
+        "description": "Cliente opcional"
+      },
+      "damage": {
+        "title": "Daño",
+        "description": "Baja con nota"
+      },
+      "expiry": {
+        "title": "Vencimiento",
+        "description": "Baja por caducidad"
+      }
+    },
+    "stats": {
+      "ariaLabel": "Resumen de despachos",
+      "pending": "Despachos pendientes",
+      "discrepancies": "Con discrepancia",
+      "serialRequired": "Requieren serie",
+      "coldChain": "Cadena de frío"
+    },
+    "scan": {
+      "label": "Escanear SKU / Barcode esperado",
+      "placeholder": "Escanea el código de barras del producto...",
+      "action": "Validar"
+    },
+    "search": {
+      "label": "Buscar orden / factura",
+    "scan": {
+      "label": "Escaneo / código manual",
+      "placeholder": "Escanea o escribe el SKU / código de barras...",
+      "helper": "Si el lector falla, escribe el SKU o el código de barras manualmente y valida igual."
+    },
+      "placeholder": "Número de factura o cliente..."
+    },
+    "orders": {
+      "ariaLabel": "Órdenes de picking",
+      "title": "Lista de Picking (Facturas)",
+      "columns": {
+        "invoice": "Factura",
+        "customer": "Cliente",
+        "product": "Producto",
+        "expected": "Cantidad",
+        "status": "Estado",
+        "action": "Acción"
+      },
+      "select": "Preparar"
+    },
+    "status": {
+      "pending": "Pendiente",
+      "preparing": "En preparación",
+      "ready": "Listo",
+      "dispatched": "Despachado",
+      "blocked": "Bloqueado"
+    },
+    "form": {
+      "ariaLabel": "Formulario de despacho",
+      "emptyTitle": "Sin selección",
+      "emptyDescription": "Selecciona una orden de picking para iniciar la preparación.",
+      "description": "SKU esperado: {{sku}} · Factura: {{invoice}}",
+      "quantity": "Cantidad a despachar",
+      "location": "Ubicación de origen",
+      "locationPlaceholder": "Selecciona origen...",
+      "lot": "Lote de origen",
+      "lotPlaceholder": "Selecciona lote...",
+      "serialNumber": "Número de serie",
+      "serialPlaceholder": "Número de serie del equipo...",
+      "customerData": "Datos del cliente",
+      "customerName": "Nombre / Razón Social",
+      "customerDoc": "NIT / Cédula",
+      "customerOptionalPlaceholder": "Opcional para esta salida",
+      "customerOptionalIdPlaceholder": "Opcional si no aplica",
+      "customerRequiredHelp": "Datos requeridos para venta mayor. Ley 1581 activa.",
+      "customerOptionalHelp": "Cliente opcional para esta salida.",
+      "note": "Notas operativas",
+      "privacyNotice": "Acepto el tratamiento de datos personales de salud según Ley 1581",
+      "coldChain": "Confirmo cumplimiento de cadena de frío para este despacho",
+      "electricalSafety": "Confirmo protocolo de seguridad eléctrica revisado",
+      "confirm": "Confirmar despacho",
+      "confirmAndGenerate": "Confirmar y generar factura",
+      "saving": "Despachando...",
+      "invoiceGenerated": "Factura generada: {{invoice}}",
+      "downloadInvoice": "Descargar PDF Factura",
+      "close": "Cerrar"
+    },
+    "movements": {
+      "ariaLabel": "Despachos recientes",
+      "title": "Despachos recientes",
+      "units": "{{count}} uds"
+    },
+    "errors": {
+      "load": "No se pudo cargar la información de despachos",
+      "save": "No se pudo registrar la salida. Intenta de nuevo.",
+      "noOrder": "Selecciona una orden para continuar",
+      "alreadyDispatched": "Esta orden ya fue despachada en esta sesión",
+      "scanRequired": "Escanea el SKU o barcode antes de continuar",
+      "quantity": "Ingresa una cantidad válida mayor a 0",
+      "location": "Selecciona una ubicación de origen",
+      "lot": "Selecciona un lote de origen",
+      "serials": "Debes ingresar el número de serie para equipos de electroterapia",
+      "customerData": "Completa el nombre y documento del cliente",
+      "privacyNotice": "Debes aceptar el tratamiento de datos personales (Ley 1581) para continuar",
+      "coldChain": "Debes confirmar la cadena de frío para continuar",
+      "electricalSafety": "Debes confirmar la seguridad eléctrica para continuar",
+      "scanMismatch": "¡Error de validación cruzada! El código escaneado ({{scanned}}) no coincide con el SKU esperado ({{expected}})",
+      "scanSuccess": "✓ Validación cruzada exitosa. El SKU coincide."
+    },
+    "success": {
+      "confirmed": "Salida registrada correctamente para SKU {{sku}}"
+    }
+  },
+  "alerts": {
+    "title": "Alertas Operativas",
+    "subtitle": "Centro de control de seguridad clínica y reabastecimiento",
+    "stats": {
+      "ariaLabel": "Resumen de alertas operativas",
+      "critical": "Críticas",
+      "warning": "Advertencias",
+      "resolved": "Resueltas"
+    },
+    "filters": {
+      "ariaLabel": "Filtros de alertas",
+      "typeLabel": "Tipo de alerta",
+      "typeAll": "Todas las alertas",
+      "LOW_STOCK": "Stock bajo mínimo",
+      "EXPIRATION_30": "Vencimiento en 30 días",
+      "EXPIRATION_60": "Vencimiento en 60 días",
+      "COLD_CHAIN_MISSING": "Cadena de frío irregular",
+      "STOCK_MISMATCH": "Desincronización stock vs ledger"
+    },
+    "table": {
+      "ariaLabel": "Listado de alertas operativas",
+      "columns": {
+        "type": "Tipo",
+        "product": "Producto",
+        "message": "Detalle / Mensaje",
+        "created": "Fecha de reporte",
+        "status": "Estado",
+        "action": "Acción"
+      },
+      "resolve": "Resolver",
+      "resolved": "Resuelta"
+    },
+    "errors": {
+      "load": "No se pudo cargar la información de alertas",
+      "resolve": "No se pudo resolver la alerta. Intenta de nuevo.",
+      "unauthorized": "No tienes privilegios para resolver esta alerta. Solo Almacenistas y Administradores pueden resolver alertas operativas."
+    },
+    "success": {
+      "resolved": "Alerta resuelta correctamente"
     }
   }
 }

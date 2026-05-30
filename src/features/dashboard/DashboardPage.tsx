@@ -1,50 +1,272 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import {
+  AlertTriangle,
+  Bell,
+  CheckCircle2,
+  ClipboardList,
+  Download,
+  PackageCheck,
+  RefreshCw,
+  SlidersHorizontal,
+  Thermometer,
+  Truck,
+  Warehouse,
+} from 'lucide-react'
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  RadialBar,
+  RadialBarChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import AppShell from '../../components/layout/AppShell'
+import { Badge } from '../../components/ui/badge'
+import { Button } from '../../components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../../components/ui/card'
 import useAuthStore from '../../store/useAuthStore'
 import type {
   DashboardKpiKey,
+  DashboardKpiStatus,
   DashboardMovementItem,
   DashboardOverview,
+  DashboardVisualKpi,
 } from '../../interfaces/dashboard'
 import { fetchDashboardOverview } from '../../services/dashboard'
+import type { TFunction } from 'i18next'
 
 type KpiKey = DashboardKpiKey
 
-type MetricCard = {
-  key: KpiKey
-  className: string
-  eyebrow: string
-  value: string
-  sub: string
-  subClass?: string
-  valueClass?: string
-}
-
-type KpiBar = {
-  key: KpiKey
-  name: string
-  fillClass: string
-  value: string
-  delta?: string
-  valueClass?: string
-}
-
 const initialKpis: Record<KpiKey, boolean> = {
-  stock: true,
-  despachos: true,
-  reorden: true,
-  facturas: true,
   rotacion: true,
-  servicio: true,
-  exactitud: true,
-  vencimientos: false,
-  devoluciones: false,
+  danados: true,
+  utilizacion: true,
+  otif: true,
+  descarte: true,
+  devoluciones: true,
+  cadena_frio: true,
+}
+
+const chartColors: Record<KpiKey, string> = {
+  rotacion: '#1a6b72',
+  danados: '#c97820',
+  utilizacion: '#2a9da6',
+  otif: '#2d8b6f',
+  descarte: '#b33a2a',
+  devoluciones: '#e07b39',
+  cadena_frio: '#3867a6',
+}
+
+const statusVariant: Record<DashboardKpiStatus, 'success' | 'warning' | 'destructive' | 'secondary'> = {
+  excellent: 'success',
+  good: 'success',
+  acceptable: 'secondary',
+  warning: 'warning',
+  critical: 'destructive',
+}
+
+const kpiIcons: Record<KpiKey, typeof PackageCheck> = {
+  rotacion: RefreshCw,
+  danados: AlertTriangle,
+  utilizacion: Warehouse,
+  otif: Truck,
+  descarte: ClipboardList,
+  devoluciones: PackageCheck,
+  cadena_frio: Thermometer,
+}
+
+const formatKpiValue = (value: number, unit: string, precision: number, locale = 'es-CO') => {
+  const formatted = Number.isFinite(value)
+    ? new Intl.NumberFormat(locale, {
+        maximumFractionDigits: precision,
+        minimumFractionDigits: precision,
+      }).format(value)
+    : '0'
+  return unit === '%' ? `${formatted}%` : `${formatted} ${unit}`
+}
+
+const kpiText = (
+  t: TFunction,
+  kpi: DashboardVisualKpi,
+  field: 'title' | 'shortTitle' | 'unit' | 'target' | 'statusLabel' | 'insight' | 'formula',
+) => t(`dashboard.visualKpis.${kpi.key}.${field}`, { defaultValue: kpi[field] })
+
+const periodText = (t: TFunction, period: string) =>
+  t(`dashboard.periods.${period}`, { defaultValue: period })
+
+const movementClass = (type: DashboardMovementItem['type']) => {
+  switch (type) {
+    case 'transfer':
+      return 'move'
+    case 'return':
+      return 'ret'
+    case 'out':
+      return 'out'
+    default:
+      return 'in'
+  }
+}
+
+function KpiChart({ kpi }: { kpi: DashboardVisualKpi }) {
+  const { i18n, t } = useTranslation()
+  const color = chartColors[kpi.key]
+  const shortTitle = kpiText(t, kpi, 'shortTitle')
+  const locale = i18n.language === 'en' ? 'en-US' : 'es-CO'
+
+  if (kpi.chartType === 'radial') {
+    return (
+      <ResponsiveContainer width="100%" height={170}>
+        <RadialBarChart
+          data={[{ name: shortTitle, value: kpi.value, fill: color }]}
+          innerRadius="68%"
+          outerRadius="96%"
+          startAngle={90}
+          endAngle={-270}
+        >
+          <RadialBar background dataKey="value" cornerRadius={10} />
+          <Tooltip
+            formatter={(value) => [
+              formatKpiValue(Number(value), '%', kpi.precision, locale),
+              shortTitle,
+            ]}
+          />
+        </RadialBarChart>
+      </ResponsiveContainer>
+    )
+  }
+
+  if (kpi.chartType === 'bar') {
+    const barData = (kpi.breakdown ?? kpi.history).map((item) => ({
+      label:
+        'name' in item
+          ? t(`dashboard.visualKpis.${kpi.key}.breakdown.${item.name}`, {
+              defaultValue: item.name,
+            })
+          : periodText(t, item.period),
+      value: item.value,
+    }))
+
+    return (
+      <ResponsiveContainer width="100%" height={170}>
+        <BarChart data={barData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(15,30,32,0.08)" />
+          <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+          <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+          <Tooltip />
+          <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+            {barData.map((item, index) => (
+              <Cell key={`${item.label}-${index}`} fill={index === 0 ? color : '#8bb7b8'} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    )
+  }
+
+  if (kpi.chartType === 'stacked') {
+    return (
+      <ResponsiveContainer width="100%" height={170}>
+        <BarChart
+          data={kpi.history.map((item) => ({ ...item, period: periodText(t, item.period) }))}
+          margin={{ top: 8, right: 8, left: -18, bottom: 0 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(15,30,32,0.08)" />
+          <XAxis dataKey="period" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+          <YAxis domain={[80, 100]} tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+          <ReferenceLine y={95} stroke="#2d8b6f" strokeDasharray="4 4" />
+          <Tooltip />
+          <Bar
+            dataKey="value"
+            name={t('dashboard.chartLabels.onTime')}
+            fill={color}
+            radius={[5, 5, 0, 0]}
+          />
+          <Bar
+            dataKey="secondary"
+            name={t('dashboard.chartLabels.inFull')}
+            fill="#e07b39"
+            radius={[5, 5, 0, 0]}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    )
+  }
+
+  if (kpi.chartType === 'temperature') {
+    return (
+      <ResponsiveContainer width="100%" height={170}>
+        <LineChart
+          data={kpi.history.map((item) => ({ ...item, period: periodText(t, item.period) }))}
+          margin={{ top: 8, right: 8, left: -18, bottom: 0 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(15,30,32,0.08)" />
+          <XAxis dataKey="period" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+          <YAxis domain={[0, 10]} tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+          <ReferenceLine y={2} stroke="#2d8b6f" strokeDasharray="4 4" />
+          <ReferenceLine y={8} stroke="#b33a2a" strokeDasharray="4 4" />
+          <Tooltip
+            formatter={(value) => [
+              `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(Number(value))} °C`,
+              t('dashboard.chartLabels.temperature'),
+            ]}
+          />
+          <Line type="monotone" dataKey="value" stroke={color} strokeWidth={3} dot={{ r: 3 }} />
+        </LineChart>
+      </ResponsiveContainer>
+    )
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={170}>
+      <AreaChart
+        data={kpi.history.map((item) => ({ ...item, period: periodText(t, item.period) }))}
+        margin={{ top: 8, right: 8, left: -18, bottom: 0 }}
+      >
+        <defs>
+          <linearGradient id={`gradient-${kpi.key}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={color} stopOpacity={0.3} />
+            <stop offset="95%" stopColor={color} stopOpacity={0.02} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(15,30,32,0.08)" />
+        <XAxis dataKey="period" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+        <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+        {kpi.history[0]?.target ? (
+          <ReferenceLine y={kpi.history[0].target} stroke="#2d8b6f" strokeDasharray="4 4" />
+        ) : null}
+        <Tooltip />
+        <Area
+          type="monotone"
+          dataKey="value"
+          stroke={color}
+          strokeWidth={3}
+          fill={`url(#gradient-${kpi.key})`}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  )
 }
 
 function DashboardPage() {
   const user = useAuthStore((state) => state.user)
-  const { t } = useTranslation()
+  const { i18n, t } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'es-CO'
   const [kpiPanelOpen, setKpiPanelOpen] = useState(false)
   const [kpis, setKpis] = useState(initialKpis)
   const [overview, setOverview] = useState<DashboardOverview | null>(null)
@@ -86,146 +308,17 @@ function DashboardPage() {
     }
   }, [t, user?.role])
 
-  const kpiLabels = useMemo(
-    () => ({
-      stock: t('dashboard.kpis.stock'),
-      despachos: t('dashboard.kpis.despachos'),
-      reorden: t('dashboard.kpis.reorden'),
-      facturas: t('dashboard.kpis.facturas'),
-      rotacion: t('dashboard.kpis.rotacion'),
-      servicio: t('dashboard.kpis.servicio'),
-      exactitud: t('dashboard.kpis.exactitud'),
-      vencimientos: t('dashboard.kpis.vencimientos'),
-      devoluciones: t('dashboard.kpis.devoluciones'),
-    }),
-    [t],
+  const visualKpis = useMemo(
+    () => overview?.visualKpis.filter((kpi) => kpis[kpi.key]) ?? [],
+    [kpis, overview?.visualKpis],
   )
 
-  const metricCards = useMemo<MetricCard[]>(() => {
-    if (!overview) {
-      return []
-    }
-
-    return [
-      {
-        key: 'stock',
-        className: 'metric-cell metric-cell--hero',
-        eyebrow: t('dashboard.metricCards.stock.eyebrow'),
-        value: overview.metrics.stockTotal.toLocaleString('es-CO'),
-        sub: t('dashboard.metricCards.stock.sub', {
-          count: overview.metrics.stockTotal,
-        }),
-      },
-      {
-        key: 'despachos',
-        className: 'metric-cell metric-cell--light',
-        eyebrow: t('dashboard.metricCards.despachos.eyebrow'),
-        value: overview.metrics.dispatchesToday.toString(),
-        sub: t('dashboard.metricCards.despachos.sub'),
-        subClass: 'metric-cell__sub metric-cell__sub--ok',
-      },
-      {
-        key: 'reorden',
-        className: 'metric-cell metric-cell--light',
-        eyebrow: t('dashboard.metricCards.reorden.eyebrow'),
-        value: overview.metrics.reorderCount.toString(),
-        valueClass: 'metric-cell__val metric-cell__val--err',
-        sub: t('dashboard.metricCards.reorden.sub'),
-        subClass: 'metric-cell__sub metric-cell__sub--err',
-      },
-      {
-        key: 'facturas',
-        className: 'metric-cell metric-cell--light',
-        eyebrow: t('dashboard.metricCards.facturas.eyebrow'),
-        value: overview.metrics.invoicesIssued.toString(),
-        sub: t('dashboard.metricCards.facturas.sub', {
-          range: overview.metrics.invoiceRange,
-        }),
-        subClass: 'metric-cell__sub metric-cell__sub--mono',
-      },
-    ]
-  }, [overview, t])
-
-  const kpiBars = useMemo<KpiBar[]>(() => {
-    if (!overview) {
-      return []
-    }
-
-    const fillClassMap: Record<KpiKey, string> = {
-      stock: 'kpi-fill kpi-fill--rotacion',
-      despachos: 'kpi-fill kpi-fill--servicio',
-      reorden: 'kpi-fill kpi-fill--rotacion',
-      facturas: 'kpi-fill kpi-fill--servicio',
-      rotacion: 'kpi-fill kpi-fill--rotacion',
-      servicio: 'kpi-fill kpi-fill--servicio',
-      exactitud: 'kpi-fill kpi-fill--exactitud',
-      vencimientos: 'kpi-fill kpi-fill--vencimientos',
-      devoluciones: 'kpi-fill kpi-fill--devoluciones',
-    }
-
-    const labelMap: Record<KpiKey, string> = {
-      stock: t('dashboard.kpiBars.rotacion.name'),
-      despachos: t('dashboard.kpiBars.servicio.name'),
-      reorden: t('dashboard.kpiBars.rotacion.name'),
-      facturas: t('dashboard.kpiBars.servicio.name'),
-      rotacion: t('dashboard.kpiBars.rotacion.name'),
-      servicio: t('dashboard.kpiBars.servicio.name'),
-      exactitud: t('dashboard.kpiBars.exactitud.name'),
-      vencimientos: t('dashboard.kpiBars.vencimientos.name'),
-      devoluciones: t('dashboard.kpiBars.devoluciones.name'),
-    }
-
-    return overview.kpiBars.map((bar) => {
-      if (bar.key === 'vencimientos') {
-        return {
-          key: bar.key,
-          name: t('dashboard.kpiBars.vencimientos.name'),
-          fillClass: fillClassMap[bar.key],
-          value: bar.value.toString(),
-          delta: t('dashboard.kpiBars.vencimientos.delta', {
-            days: overview.alerts.expiringDays,
-          }),
-          valueClass: 'kpi-item__val kpi-item__val--warn',
-        }
-      }
-
-      if (bar.key === 'devoluciones') {
-        return {
-          key: bar.key,
-          name: t('dashboard.kpiBars.devoluciones.name'),
-          fillClass: fillClassMap[bar.key],
-          value: bar.value.toString(),
-          delta: t('dashboard.kpiBars.devoluciones.delta'),
-        }
-      }
-
-      return {
-        key: bar.key,
-        name: labelMap[bar.key],
-        fillClass: fillClassMap[bar.key],
-        value: `${bar.value}%`,
-      }
-    })
-  }, [overview, t])
-
+  const focusKpi = visualKpis[0]
   const movements = overview?.movements ?? []
   const alertSummary = overview?.alerts
 
   const toggleKpi = (key: KpiKey) => {
     setKpis((prev) => ({ ...prev, [key]: !prev[key] }))
-  }
-
-  const movementClass = (type: DashboardMovementItem['type']) => {
-    switch (type) {
-      case 'transfer':
-        return 'move'
-      case 'return':
-        return 'ret'
-      case 'out':
-        return 'out'
-      default:
-        return 'in'
-    }
   }
 
   return (
@@ -237,39 +330,28 @@ function DashboardPage() {
       })}
       actions={
         <>
-          <button
-            className="btn btn--ghost btn--sm"
+          <Button
+            variant="ghost"
+            size="sm"
             type="button"
             onClick={() => setKpiPanelOpen((prev) => !prev)}
             aria-controls="kpi-panel"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
+            <SlidersHorizontal />
             {t('dashboard.topbar.customizeKpis')}
-          </button>
-          <button className="btn btn--ghost btn--sm" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 01-3.46 0" />
-            </svg>
+          </Button>
+          <Button variant="ghost" size="sm" type="button">
+            <Bell />
             {t('dashboard.topbar.alertsButton', { count: alertSummary?.active ?? 0 })}
-          </button>
+          </Button>
         </>
       }
     >
-      <div className="page-body">
+      <div className="page-body dashboard-visual">
         <div className="alert-bar alert-bar--warn" role="alert">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-            <line x1="12" y1="9" x2="12" y2="13" />
-            <line x1="12" y1="17" x2="12.01" y2="17" />
-          </svg>
+          <AlertTriangle />
           <span>
-            <strong>
-              {t('dashboard.alerts.activeCount', { count: alertSummary?.active ?? 0 })}
-            </strong>
+            <strong>{t('dashboard.alerts.activeCount', { count: alertSummary?.active ?? 0 })}</strong>
             <span className="alert-bar__sep">|</span>{' '}
             {t('dashboard.alerts.reorder', { count: alertSummary?.reorder ?? 0 })}
             <span className="alert-bar__sep">|</span>{' '}
@@ -281,9 +363,9 @@ function DashboardPage() {
             {t('dashboard.alerts.returns', { count: alertSummary?.returns ?? 0 })}
           </span>
           <span className="alert-bar__spacer" />
-          <button className="btn btn--ghost btn--sm" type="button">
+          <Button variant="ghost" size="sm" type="button">
             {t('dashboard.alerts.viewAll')}
-          </button>
+          </Button>
         </div>
         {overviewError ? (
           <div className="alert-bar alert-bar--warn" role="alert">
@@ -298,60 +380,96 @@ function DashboardPage() {
           aria-live="polite"
         >
           <div className="s-head">
-            <span className="s-head__label">
-              {t('dashboard.kpiPanel.title')}
-            </span>
+            <span className="s-head__label">{t('dashboard.kpiPanel.title')}</span>
             <div className="s-head__rule" />
-            <button
-              className="btn btn--ghost btn--sm s-head__action"
-              type="button"
-              onClick={() => setKpiPanelOpen(false)}
-            >
+            <Button variant="ghost" size="sm" type="button" onClick={() => setKpiPanelOpen(false)}>
               {t('dashboard.kpiPanel.close')}
-            </button>
+            </Button>
           </div>
           <p className="kpi-help">{t('dashboard.kpiPanel.help')}</p>
           <fieldset className="kpi-selector__grid">
             <legend className="sr-only">{t('dashboard.kpiPanel.legend')}</legend>
-            {(Object.keys(kpis) as KpiKey[]).map((key) => (
-              <button
-                key={key}
-                className={`kpi-toggle${kpis[key] ? ' on' : ''}`}
-                type="button"
-                onClick={() => toggleKpi(key)}
-              >
-                <span className="kpi-toggle__check" />
-                <span className="kpi-toggle__name">{kpiLabels[key]}</span>
-              </button>
-            ))}
+            {(Object.keys(kpis) as KpiKey[]).map((key) => {
+              const kpi = overview?.visualKpis.find((item) => item.key === key)
+              return (
+                <button
+                  key={key}
+                  className={`kpi-toggle${kpis[key] ? ' on' : ''}`}
+                  type="button"
+                  onClick={() => toggleKpi(key)}
+                >
+                  <span className="kpi-toggle__check" />
+                  <span className="kpi-toggle__name">
+                    {kpi ? kpiText(t, kpi, 'shortTitle') : key}
+                  </span>
+                </button>
+              )
+            })}
           </fieldset>
         </section>
 
-        <section className="metric-strip" aria-label={t('dashboard.metrics.selected')}>
-          {metricCards.map((card) =>
-            kpis[card.key] ? (
-              <div key={card.key} className={card.className}>
-                <p className="metric-cell__eyebrow">{card.eyebrow}</p>
-                <p className={card.valueClass || 'metric-cell__val'}>{card.value}</p>
-                <p className={card.subClass || 'metric-cell__sub'}>{card.sub}</p>
-              </div>
-            ) : null,
-          )}
+        <section className="kpi-score-grid" aria-label={t('dashboard.visualSummary.ariaLabel')}>
+          {visualKpis.map((kpi) => {
+            const Icon = kpiIcons[kpi.key]
+            const unit = kpiText(t, kpi, 'unit')
+            return (
+              <Card key={kpi.key} className="kpi-score-card rounded-lg">
+                <CardHeader className="kpi-score-card__head">
+                  <div className="kpi-score-card__icon" style={{ color: chartColors[kpi.key] }}>
+                    <Icon />
+                  </div>
+                  <Badge variant={statusVariant[kpi.status]}>{kpiText(t, kpi, 'statusLabel')}</Badge>
+                </CardHeader>
+                <CardContent className="kpi-score-card__body">
+                  <p className="kpi-score-card__label">{kpiText(t, kpi, 'shortTitle')}</p>
+                  <p className="kpi-score-card__value">
+                    {formatKpiValue(kpi.value, unit, kpi.precision, locale)}
+                  </p>
+                  <p className="kpi-score-card__target">{kpiText(t, kpi, 'target')}</p>
+                </CardContent>
+              </Card>
+            )
+          })}
         </section>
 
-        <div className="split split--3-1">
-          <section aria-label={t('dashboard.sections.recentMovements')}>
+        <div className="dashboard-grid">
+          {focusKpi ? (
+            <section className="dashboard-grid__main" aria-label={t('dashboard.visualSummary.mainKpi')}>
+              <Card className="kpi-detail-card rounded-lg">
+                <CardHeader className="kpi-detail-card__header">
+                  <div>
+                    <CardTitle className="kpi-detail-card__title">{kpiText(t, focusKpi, 'title')}</CardTitle>
+                    <CardDescription>{kpiText(t, focusKpi, 'formula')}</CardDescription>
+                  </div>
+                  <Badge variant={statusVariant[focusKpi.status]}>
+                    {kpiText(t, focusKpi, 'statusLabel')}
+                  </Badge>
+                </CardHeader>
+                <CardContent>
+                  <div className="kpi-detail-card__value-row">
+                    <span>
+                      {formatKpiValue(
+                        focusKpi.value,
+                        kpiText(t, focusKpi, 'unit'),
+                        focusKpi.precision,
+                        locale,
+                      )}
+                    </span>
+                    <small>{kpiText(t, focusKpi, 'insight')}</small>
+                  </div>
+                  <KpiChart kpi={focusKpi} />
+                </CardContent>
+              </Card>
+            </section>
+          ) : null}
+
+          <aside className="dashboard-grid__side" aria-label={t('dashboard.sections.recentMovements')}>
             <div className="s-head">
-              <span className="s-head__label">
-                {t('dashboard.sections.recentMovements')}
-              </span>
+              <span className="s-head__label">{t('dashboard.sections.recentMovements')}</span>
               <div className="s-head__rule" />
-              <button className="btn btn--ghost btn--sm s-head__action" type="button">
-                {t('dashboard.sections.viewHistory')}
-              </button>
             </div>
             <ol className="mov-list">
-              {movements.map((movement) => (
+              {movements.slice(0, 4).map((movement) => (
                 <li key={movement.id} className="mov-item">
                   <span
                     className={`mov-pip mov-pip--${movementClass(movement.type)}`}
@@ -362,11 +480,8 @@ function DashboardPage() {
                     <div className="mov-meta">
                       <span className="sku">{movement.sku}</span>
                       <span>{t('dashboard.units.short', { count: movement.quantity })}</span>
-                      <span>{movement.user}</span>
                       {movement.status === 'pending' ? (
-                        <span className="pill pill--warn pill--tiny">
-                          {t('dashboard.status.pending')}
-                        </span>
+                        <span className="pill pill--warn pill--tiny">{t('dashboard.status.pending')}</span>
                       ) : null}
                     </div>
                   </div>
@@ -374,61 +489,42 @@ function DashboardPage() {
                 </li>
               ))}
             </ol>
-          </section>
-
-          <aside aria-label={t('dashboard.sections.indicatorsAndActions')}>
-            <div className="s-head">
-              <span className="s-head__label">{t('dashboard.sections.indicators')}</span>
-              <div className="s-head__rule" />
+            <div className="kpi-export-box">
+              <CheckCircle2 />
+              <div>
+                <strong>{t('dashboard.visualSummary.reportReady')}</strong>
+                <span>{t('dashboard.visualSummary.mockNote')}</span>
+              </div>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                type="button"
+                aria-label={t('dashboard.visualSummary.downloadReport')}
+              >
+                <Download />
+              </Button>
             </div>
-            <ul className="kpi-list">
-              {kpiBars.map((bar) =>
-                kpis[bar.key] ? (
-                  <li key={bar.key} className="kpi-item">
-                    <div className="kpi-item__left">
-                      <p className="kpi-item__name">{bar.name}</p>
-                      <div className="kpi-item__bar">
-                        <div className={bar.fillClass} />
-                      </div>
-                    </div>
-                    <div className="kpi-item__right">
-                      <p className={bar.valueClass || 'kpi-item__val'}>{bar.value}</p>
-                      {bar.delta ? <p className="kpi-item__delta">{bar.delta}</p> : null}
-                    </div>
-                  </li>
-                ) : null,
-              )}
-            </ul>
-
-            <div className="c-divider" />
-
-            <div className="s-head s-head--compact">
-              <span className="s-head__label">{t('dashboard.sections.quickActions')}</span>
-              <div className="s-head__rule" />
-            </div>
-            <nav className="quick-actions" aria-label={t('dashboard.sections.quickActions')}>
-              <button className="quick-action quick-action--primary" type="button">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path d="M12 2v20M2 12h20" />
-                </svg>
-                {t('dashboard.quickActions.newEntry')}
-              </button>
-              <button className="quick-action" type="button">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
-                {t('dashboard.quickActions.newDispatch')}
-              </button>
-              <button className="quick-action" type="button">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path d="M9 14L4 9l5-5" />
-                  <path d="M4 9h11a6 6 0 010 12h-1" />
-                </svg>
-                {t('dashboard.quickActions.registerReturn')}
-              </button>
-            </nav>
           </aside>
         </div>
+
+        <section className="kpi-chart-grid" aria-label={t('dashboard.visualSummary.chartsAriaLabel')}>
+          {visualKpis.slice(1).map((kpi) => (
+            <Card key={kpi.key} className="kpi-chart-card rounded-lg">
+              <CardHeader className="kpi-chart-card__header">
+                <div>
+                  <CardTitle className="kpi-chart-card__title">{kpiText(t, kpi, 'title')}</CardTitle>
+                  <CardDescription>{kpiText(t, kpi, 'insight')}</CardDescription>
+                </div>
+                <span className="kpi-chart-card__value">
+                  {formatKpiValue(kpi.value, kpiText(t, kpi, 'unit'), kpi.precision, locale)}
+                </span>
+              </CardHeader>
+              <CardContent>
+                <KpiChart kpi={kpi} />
+              </CardContent>
+            </Card>
+          ))}
+        </section>
       </div>
     </AppShell>
   )
