@@ -6,6 +6,8 @@ import DashboardPage from './features/dashboard/DashboardPage'
 import InventoryPage from './features/inventory/InventoryPage'
 import ReceptionPage from './features/reception/ReceptionPage'
 import DispatchPage from './features/dispatch/DispatchPage'
+import ReturnsPage from './features/returns/ReturnsPage'
+import AdjustmentsPage from './features/adjustments/AdjustmentsPage'
 import AlertsPage from './features/alerts/AlertsPage'
 import ProtectedRoute from './router/ProtectedRoute'
 
@@ -46,6 +48,22 @@ function App() {
           element={
             <ProtectedRoute>
               <DispatchPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/returns"
+          element={
+            <ProtectedRoute>
+              <ReturnsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/adjustments"
+          element={
+            <ProtectedRoute>
+              <AdjustmentsPage />
             </ProtectedRoute>
           }
         />

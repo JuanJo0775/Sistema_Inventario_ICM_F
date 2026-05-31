@@ -26,6 +26,7 @@ type AppShellChromeProps = Readonly<{
   isInventory: boolean
   isReception: boolean
   isDispatch: boolean
+  isReturns: boolean
   isAlerts: boolean
   handleLanguageChange: (next: 'es' | 'en') => void
   handleLogout: () => void
@@ -39,6 +40,7 @@ type ShellRailProps = Readonly<{
   isInventory: boolean
   isReception: boolean
   isDispatch: boolean
+  isReturns: boolean
   isAlerts: boolean
 }>
 
@@ -53,6 +55,7 @@ type ShellSidebarProps = Readonly<{
   isInventory: boolean
   isReception: boolean
   isDispatch: boolean
+  isReturns: boolean
   handleLogout: () => void
 }>
 
@@ -121,6 +124,7 @@ function ShellRail({
   isInventory,
   isReception,
   isDispatch,
+  isReturns,
   isAlerts,
 }: ShellRailProps) {
   return (
@@ -151,12 +155,14 @@ function ShellRail({
         </svg>
       </Link>
       <div className="rail__sep"></div>
-      <button className="rail__btn" title={t('dashboard.nav.returns')} type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M9 14L4 9l5-5" />
-          <path d="M4 9h11a6 6 0 010 12h-1" />
-        </svg>
-      </button>
+      {canManageInventory ? (
+        <Link className={`rail__btn${isReturns ? ' active' : ''}`} title={t('dashboard.nav.returns')} to="/app/returns">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M9 14L4 9l5-5" />
+            <path d="M4 9h11a6 6 0 010 12h-1" />
+          </svg>
+        </Link>
+      ) : null}
       {canManageAdmin ? (
         <button className="rail__btn" title={t('dashboard.nav.settings')} type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -197,6 +203,7 @@ function ShellSidebar({
   isInventory,
   isReception,
   isDispatch,
+  isReturns,
   handleLogout,
 }: ShellSidebarProps) {
   return (
@@ -253,6 +260,24 @@ function ShellSidebar({
             </svg>
             {t('dashboard.nav.dispatch')}
           </Link>
+          {canManageInventory ? (
+            <Link className={`nav__link${isReturns ? ' active' : ''}`} to="/app/returns">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M9 14L4 9l5-5" />
+                <path d="M4 9h11a6 6 0 010 12h-1" />
+              </svg>
+              {t('dashboard.nav.returns')}
+            </Link>
+          ) : null}
+          {canManageInventory ? (
+            <Link className={`nav__link${location.pathname.startsWith('/app/adjustments') ? ' active' : ''}`} to="/app/adjustments">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M3 3h18v4H3z" />
+                <path d="M3 11h18v10H3z" />
+              </svg>
+              {t('dashboard.nav.adjustments')}
+            </Link>
+          ) : null}
         </div>
 
         {canManageAdmin ? (
@@ -345,6 +370,7 @@ function AppShellChrome({
   isInventory,
   isReception,
   isDispatch,
+  isReturns,
   isAlerts,
   handleLanguageChange,
   handleLogout,
@@ -359,6 +385,7 @@ function AppShellChrome({
         isInventory={isInventory}
         isReception={isReception}
         isDispatch={isDispatch}
+        isReturns={isReturns}
         isAlerts={isAlerts}
       />
 
@@ -373,6 +400,7 @@ function AppShellChrome({
         isInventory={isInventory}
         isReception={isReception}
         isDispatch={isDispatch}
+        isReturns={isReturns}
         handleLogout={handleLogout}
       />
 
@@ -422,6 +450,8 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
 
   const isDispatch = location.pathname.startsWith('/app/dispatch')
 
+  const isReturns = location.pathname.startsWith('/app/returns')
+
   const isAlerts = location.pathname.startsWith('/app/alerts')
 
   const handleLanguageChange = (next: 'es' | 'en') => {
@@ -451,6 +481,7 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
       isInventory={isInventory}
       isReception={isReception}
       isDispatch={isDispatch}
+      isReturns={isReturns}
       isAlerts={isAlerts}
       handleLanguageChange={handleLanguageChange}
       handleLogout={handleLogout}

@@ -155,6 +155,7 @@
       "reception": "Recepcion",
       "dispatch": "Despacho",
       "returns": "Devoluciones",
+      "adjustments": "Ajustes",
       "settings": "Ajustes",
       "reports": "Reportes",
       "alerts": "Alertas",
@@ -607,6 +608,120 @@
     },
     "success": {
       "confirmed": "Salida registrada correctamente para SKU {{sku}}"
+    }
+  },
+  "returns": {
+    "title": "Devoluciones",
+    "subtitle": "Registro y seguimiento de devoluciones de productos",
+    "alerts": {
+      "policyPrefix": "Restricción BR-05:",
+      "policy": "solo Electroterapia y Electrónicos admiten devolución. Mesas y Manoterapia se bloquean automáticamente.",
+      "backendMode": "El backend registra la devolución y actualiza stock de inmediato. La aprobación en dos etapas (RF-008) estará disponible cuando el API exponga esos endpoints."
+    },
+    "stats": {
+      "ariaLabel": "Resumen de devoluciones",
+      "pending": "Pendientes",
+      "blocked": "Bloqueadas",
+      "history": "Historial",
+      "serialRequired": "Requieren serie"
+    },
+    "validation": {
+      "allowed": "{{sku}} · {{product}} — devolución permitida",
+      "blocked": "{{product}} — {{reason}}"
+    },
+    "blockExample": {
+      "eyebrow": "Ejemplo de bloqueo BR-05",
+      "message": "Mesa Hidraulica Basica — No admite devolucion."
+    },
+    "form": {
+      "ariaLabel": "Formulario de devolución",
+      "title": "Registrar devolución",
+      "description": "SKU: {{sku}} · Categoría: {{category}}",
+      "emptyTitle": "Sin producto seleccionado",
+      "emptyDescription": "Selecciona un producto para ver la validación BR-05.",
+      "product": "Producto",
+      "productPlaceholder": "Selecciona un producto...",
+      "location": "Ubicación",
+      "locationPlaceholder": "Selecciona ubicación...",
+      "quantity": "Cantidad",
+      "serialNumber": "Número de serie",
+      "serialPlaceholder": "Ingresa el número de serie...",
+      "serialOptionalPlaceholder": "Opcional para este producto",
+      "state": "Estado al recibir",
+      "reason": "Motivo declarado",
+      "reasonPlaceholder": "Falla al encender, empaque abierto, accesorio faltante...",
+      "note": "Observaciones",
+      "notePlaceholder": "Notas internas o evidencia visual...",
+      "relatedMovement": "Movimiento relacionado",
+      "relatedMovementPlaceholder": "ID de movimiento o pedido relacionado",
+      "reset": "Cancelar",
+      "submit": "Registrar devolución",
+      "saving": "Registrando..."
+    },
+    "pending": {
+      "ariaLabel": "Devoluciones pendientes",
+      "title": "Pendientes",
+      "empty": "No hay devoluciones pendientes en este momento.",
+      "approve": "Aprobar",
+      "reject": "Rechazar",
+      "details": {
+        "reason": "Motivo",
+        "state": "Estado",
+        "serial": "Serie",
+        "operator": "Registrado por",
+        "location": "Ubicación"
+      }
+    },
+    "history": {
+      "ariaLabel": "Historial de devoluciones",
+      "title": "Historial",
+      "empty": "Todavía no hay devoluciones registradas."
+    },
+    "status": {
+      "pending": "Pendiente",
+      "recorded": "Registrada",
+      "reincorporated": "Reincorporada",
+      "rejected": "Rechazada",
+      "blocked": "Bloqueada"
+    },
+    "errors": {
+      "load": "No se pudo cargar la información de devoluciones",
+      "save": "No se pudo registrar la devolución. Intenta de nuevo.",
+      "noProduct": "Selecciona un producto para continuar",
+      "blocked": "Ese producto no admite devoluciones según BR-05",
+      "quantity": "Ingresa una cantidad válida mayor a 0",
+      "location": "Selecciona una ubicación",
+      "serial": "Debes ingresar el número de serie",
+      "reason": "Ingresa el motivo declarado por el cliente"
+    },
+    "success": {
+      "saved": "Devolución registrada correctamente para SKU {{sku}}",
+      "approved": "Devolución reincorporada para SKU {{sku}}",
+      "rejected": "Devolución rechazada para SKU {{sku}}"
+    }
+  },
+  "adjustments": {
+    "title": "Ajustes de inventario",
+    "form": {
+      "title": "Nuevo ajuste",
+      "description": "Producto y conteo físico para registrar un ajuste.",
+      "systemStock": "Stock en sistema",
+      "product": "Producto",
+      "productPlaceholder": "Selecciona un producto...",
+      "location": "Ubicación",
+      "locationPlaceholder": "Selecciona ubicación...",
+      "justificationPlaceholder": "Explique por qué se requiere el ajuste...",
+      "newQuantity": "Stock real (conteo físico)",
+      "justification": "Justificación",
+      "justificationLabel": "Obligatoria — BR-07 *",
+      "cancel": "Cancelar",
+      "submit": "Registrar ajuste"
+    },
+    "history": {
+      "title": "Historial de ajustes"
+    },
+    "messages": {
+      "success": "Ajuste registrado correctamente"
     }
   },
   "alerts": {

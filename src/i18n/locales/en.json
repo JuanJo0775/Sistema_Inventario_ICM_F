@@ -155,6 +155,7 @@
       "reception": "Receiving",
       "dispatch": "Dispatch",
       "returns": "Returns",
+      "adjustments": "Adjustments",
       "settings": "Settings",
       "reports": "Reports",
       "alerts": "Alerts",
@@ -607,6 +608,120 @@
     },
     "success": {
       "confirmed": "Outbound registered successfully for SKU {{sku}}"
+    }
+  },
+  "returns": {
+    "title": "Returns",
+    "subtitle": "Return registration and tracking",
+    "alerts": {
+      "policyPrefix": "BR-05 restriction:",
+      "policy": "only Electrotherapy and Electronics allow returns. Tables and Manotherapy are blocked automatically.",
+      "backendMode": "The backend registers the return and updates stock immediately. Two-stage approval (RF-008) will be available once those API endpoints are exposed."
+    },
+    "stats": {
+      "ariaLabel": "Returns summary",
+      "pending": "Pending",
+      "blocked": "Blocked",
+      "history": "History",
+      "serialRequired": "Require serial"
+    },
+    "validation": {
+      "allowed": "{{sku}} · {{product}} — return allowed",
+      "blocked": "{{product}} — {{reason}}"
+    },
+    "blockExample": {
+      "eyebrow": "BR-05 block example",
+      "message": "Basic Hydraulic Table — Does not allow returns."
+    },
+    "form": {
+      "ariaLabel": "Return form",
+      "title": "Register return",
+      "description": "SKU: {{sku}} · Category: {{category}}",
+      "emptyTitle": "No product selected",
+      "emptyDescription": "Select a product to see the BR-05 validation.",
+      "product": "Product",
+      "productPlaceholder": "Select a product...",
+      "location": "Location",
+      "locationPlaceholder": "Select location...",
+      "quantity": "Quantity",
+      "serialNumber": "Serial number",
+      "serialPlaceholder": "Enter the serial number...",
+      "serialOptionalPlaceholder": "Optional for this product",
+      "state": "Condition on receipt",
+      "reason": "Declared reason",
+      "reasonPlaceholder": "Failure to power on, open package, missing accessory...",
+      "note": "Notes",
+      "notePlaceholder": "Internal notes or visual evidence...",
+      "relatedMovement": "Related movement",
+      "relatedMovementPlaceholder": "Related movement or order ID",
+      "reset": "Cancel",
+      "submit": "Register return",
+      "saving": "Registering..."
+    },
+    "pending": {
+      "ariaLabel": "Pending returns",
+      "title": "Pending",
+      "empty": "There are no pending returns at the moment.",
+      "approve": "Approve",
+      "reject": "Reject",
+      "details": {
+        "reason": "Reason",
+        "state": "State",
+        "serial": "Serial",
+        "operator": "Registered by",
+        "location": "Location"
+      }
+    },
+    "history": {
+      "ariaLabel": "Returns history",
+      "title": "History",
+      "empty": "There are no registered returns yet."
+    },
+    "status": {
+      "pending": "Pending",
+      "recorded": "Recorded",
+      "reincorporated": "Reincorporated",
+      "rejected": "Rejected",
+      "blocked": "Blocked"
+    },
+    "errors": {
+      "load": "Could not load return information",
+      "save": "Could not register the return. Please try again.",
+      "noProduct": "Select a product to continue",
+      "blocked": "That product does not allow returns under BR-05",
+      "quantity": "Enter a valid quantity greater than 0",
+      "location": "Select a location",
+      "serial": "You must enter the serial number",
+      "reason": "Enter the reason declared by the customer"
+    },
+    "success": {
+      "saved": "Return registered successfully for SKU {{sku}}",
+      "approved": "Return reincorporated for SKU {{sku}}",
+      "rejected": "Return rejected for SKU {{sku}}"
+    }
+  },
+  "adjustments": {
+    "title": "Adjustments",
+    "form": {
+      "title": "New adjustment",
+      "description": "Product and physical count to register an adjustment.",
+      "systemStock": "System stock",
+      "product": "Product",
+      "productPlaceholder": "Select a product...",
+      "location": "Location",
+      "locationPlaceholder": "Select location...",
+      "justificationPlaceholder": "Explain why the adjustment is required...",
+      "newQuantity": "New stock (physical)",
+      "justification": "Justification",
+      "justificationLabel": "Mandatory — BR-07 *",
+      "cancel": "Cancel",
+      "submit": "Register adjustment"
+    },
+    "history": {
+      "title": "Adjustments history"
+    },
+    "messages": {
+      "success": "Adjustment registered successfully"
     }
   },
   "alerts": {
