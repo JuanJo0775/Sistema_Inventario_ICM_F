@@ -3,6 +3,7 @@ export interface InventoryCategory {
   name: string
   slug?: string
   requires_serial_number?: boolean
+  is_returnable?: boolean
 }
 
 export interface InventorySubcategory {
