@@ -376,7 +376,7 @@ import {
                     if (event.key === 'Enter') handleVerifyScan()
                   }}
                 />
-                <Button type="button" onClick={handleVerifyScan} variant={validationSuccess ? 'success' : 'default'}>
+                <Button type="button" onClick={handleVerifyScan} variant="default" className={validationSuccess ? 'bg-green-600 hover:bg-green-700 text-white' : undefined}>
                   {t('dispatch.scan.action')}
                 </Button>
               </div>

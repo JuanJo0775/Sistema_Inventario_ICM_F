@@ -13,8 +13,7 @@ export default function CatalogBrandsPage() {
   }, [fetchBrands])
 
   const filteredBrands = brands.filter((brand) =>
-    brand.name.toLowerCase().includes(search.toLowerCase()) ||
-    brand.description?.toLowerCase().includes(search.toLowerCase())
+    brand.name.toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -73,9 +72,6 @@ export default function CatalogBrandsPage() {
                 </div>
                 <div className="entity-card__info">
                   <h3 className="entity-card__name">{brand.name}</h3>
-                  <p className="entity-card__desc">
-                    {brand.description || '-'}
-                  </p>
                 </div>
                 <div className="entity-card__meta">
                   {brand.is_active ? (

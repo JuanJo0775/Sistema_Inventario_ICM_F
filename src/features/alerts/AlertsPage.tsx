@@ -10,7 +10,7 @@ import {
 import AppShell from '../../components/layout/AppShell'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
-import { Card, CardContent } from '../../components/ui/card'
+import { Card } from '../../components/ui/card'
 import { Select } from '../../components/ui/select'
 import {
   Table,
