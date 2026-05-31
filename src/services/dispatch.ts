@@ -111,8 +111,15 @@ export const fetchDispatchOverview = async (): Promise<DispatchOverview> => {
       recentMovements,
     }
   } catch (err) {
-    console.error('Error fetching dispatch overview from backend:', err)
-    throw err
+    console.warn(
+      'Error al cargar el resumen de despacho del backend real. Usando datos mock de contingencia.',
+      err,
+    )
+    return {
+      locations: mockDispatchLocations,
+      expectedOrders: mockDispatchItems,
+      recentMovements: mockDispatchMovements,
+    }
   }
 }
 

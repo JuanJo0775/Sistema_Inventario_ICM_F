@@ -21,50 +21,58 @@ export const fetchReceptionOverview = async (): Promise<ReceptionOverview> => {
     return mockReceptionOverview
   }
 
-  // Llamadas paralelas al backend real
-  const [locationsRes, movementsRes] = await Promise.all([
-    api.get<{ results: Array<{ id: string; code: string; name: string }> }>(
-      '/inventory/locations/',
-    ),
-    api.get<{
-      results: Array<{
-        id: string
-        product_sku: string
-        quantity: number
-        destination_location: string | null
-        executed_by: string
-        created_at: string
-        discrepancy_note: string | null
-      }>
-    }>('/movements/entries/', { params: { page_size: 10, ordering: '-created_at' } }),
-  ])
+  try {
+    // Llamadas paralelas al backend real
+    const [locationsRes, movementsRes] = await Promise.all([
+      api.get<{ results: Array<{ id: string; code: string; name: string }> }>(
+        '/inventory/locations/',
+      ),
+      api.get<{
+        results: Array<{
+          id: string
+          product_sku: string
+          quantity: number
+          destination_location: string | null
+          executed_by: string
+          created_at: string
+          discrepancy_note: string | null
+        }>
+      }>('/movements/entries/', { params: { page_size: 10, ordering: '-created_at' } }),
+    ])
 
-  const locations = locationsRes.data.results.map((loc) => ({
-    id: loc.id,
-    code: loc.code,
-    name: loc.name,
-    capacityLabel: '',
-  }))
+    const locations = locationsRes.data.results.map((loc) => ({
+      id: loc.id,
+      code: loc.code,
+      name: loc.name,
+      capacityLabel: '',
+    }))
 
-  const recentMovements: ReceptionMovement[] = movementsRes.data.results.map((mov) => ({
-    id: mov.id,
-    productName: mov.product_sku,
-    sku: mov.product_sku,
-    quantity: mov.quantity,
-    locationCode: mov.destination_location ?? '-',
-    operator: mov.executed_by,
-    confirmedAt: new Intl.DateTimeFormat('es-CO', {
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(mov.created_at)),
-    discrepancyNote: mov.discrepancy_note ?? undefined,
-  }))
+    const recentMovements: ReceptionMovement[] = movementsRes.data.results.map((mov) => ({
+      id: mov.id,
+      productName: mov.product_sku,
+      sku: mov.product_sku,
+      quantity: mov.quantity,
+      locationCode: mov.destination_location ?? '-',
+      operator: mov.executed_by,
+      confirmedAt: new Intl.DateTimeFormat('es-CO', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(new Date(mov.created_at)),
+      discrepancyNote: mov.discrepancy_note ?? undefined,
+    }))
 
-  return {
-    locations,
-    // expectedOrders vacío hasta que el backend exponga purchase-orders
-    expectedOrders: mockReceptionOverview.expectedOrders,
-    recentMovements,
+    return {
+      locations,
+      // expectedOrders vacío hasta que el backend exponga purchase-orders
+      expectedOrders: mockReceptionOverview.expectedOrders,
+      recentMovements,
+    }
+  } catch (error) {
+    console.warn(
+      'Error al cargar el resumen de recepción del backend real. Usando datos mock de contingencia.',
+      error,
+    )
+    return mockReceptionOverview
   }
 }
 

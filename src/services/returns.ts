@@ -112,39 +112,48 @@ export const fetchReturnsOverview = async (): Promise<ReturnsOverview> => {
     return mockReturnsOverview
   }
 
-  const [locationsRes, returnsRes, categories, rawProducts] = await Promise.all([
-    api.get<{ results: Array<{ id: string; code: string; name: string }> }>('/inventory/locations/'),
-    api.get<{ results: BackendReturnMovement[] }>('/movements/returns/', {
-      params: { page_size: 20, ordering: '-created_at' },
-    }),
-    fetchCategories(),
-    fetchProducts({ limit: 100 }),
-  ])
+  try {
+    const [locationsRes, returnsRes, categories, rawProducts] = await Promise.all([
+      api.get<{ results: Array<{ id: string; code: string; name: string }> }>('/inventory/locations/'),
+      api.get<{ results: BackendReturnMovement[] }>('/movements/returns/', {
+        params: { page_size: 20, ordering: '-created_at' },
+      }),
+      fetchCategories(),
+      fetchProducts({ limit: 100 }),
+    ])
 
-  const locations: ReturnLocation[] = locationsRes.data.results.map((location) => ({
-    id: location.id,
-    code: location.code,
-    name: location.name,
-    capacityLabel: '',
-  }))
+    const locations: ReturnLocation[] = locationsRes.data.results.map((location) => ({
+      id: location.id,
+      code: location.code,
+      name: location.name,
+      capacityLabel: '',
+    }))
 
-  const locationById = new Map(locations.map((location) => [location.id, location]))
-  const products = mapProductsForReturns(rawProducts, categories)
+    const locationById = new Map(locations.map((location) => [location.id, location]))
+    const products = mapProductsForReturns(rawProducts, categories)
 
-  const history: ReturnEntry[] = returnsRes.data.results.map((movement) =>
-    mapMovementToReturnEntry(
-      movement,
+    const history: ReturnEntry[] = returnsRes.data.results.map((movement) =>
+      mapMovementToReturnEntry(
+        movement,
+        products,
+        locationById,
+        'Movimiento registrado en backend',
+      ),
+    )
+
+    return {
+      locations,
       products,
-      locationById,
-      'Movimiento registrado en backend',
-    ),
-  )
-
-  return {
-    locations,
-    products,
-    pendingReturns: [],
-    history,
+      pendingReturns: [],
+      history,
+    }
+  } catch (err) {
+    console.warn(
+      'Error al cargar el resumen de devoluciones del backend real. Usando datos mock de contingencia.',
+      err,
+    )
+    const { mockReturnsOverview } = await import('../mocks/returns')
+    return mockReturnsOverview
   }
 }
 

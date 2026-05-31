@@ -92,10 +92,11 @@ const kpiIcons: Record<KpiKey, typeof PackageCheck> = {
 }
 
 const formatKpiValue = (value: number, unit: string, precision: number, locale = 'es-CO') => {
+  const safePrecision = Math.min(20, Math.max(0, Number.isFinite(Number(precision)) ? Number(precision) : 0))
   const formatted = Number.isFinite(value)
     ? new Intl.NumberFormat(locale, {
-        maximumFractionDigits: precision,
-        minimumFractionDigits: precision,
+        maximumFractionDigits: safePrecision,
+        minimumFractionDigits: safePrecision,
       }).format(value)
     : '0'
   return unit === '%' ? `${formatted}%` : `${formatted} ${unit}`
