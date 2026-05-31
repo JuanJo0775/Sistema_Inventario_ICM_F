@@ -12,7 +12,7 @@ export const fetchActiveAlerts = async (filters?: {
   alert_type?: string
   product_id?: string
 }): Promise<AlertItem[]> => {
-  if (useMocks) {
+  const getMockAlerts = () => {
     return mockAlerts.filter((alert) => {
       if (filters?.alert_type && alert.alert_type !== filters.alert_type) {
         return false
@@ -24,14 +24,26 @@ export const fetchActiveAlerts = async (filters?: {
     })
   }
 
-  const response = await api.get<AlertListResponse>('/alerts/', {
-    params: {
-      alert_type: filters?.alert_type || undefined,
-      product_id: filters?.product_id || undefined,
-    },
-  })
+  if (useMocks) {
+    return getMockAlerts()
+  }
 
-  return normalizeList(response.data)
+  try {
+    const response = await api.get<AlertListResponse>('/alerts/', {
+      params: {
+        alert_type: filters?.alert_type || undefined,
+        product_id: filters?.product_id || undefined,
+      },
+    })
+
+    return normalizeList(response.data)
+  } catch (error) {
+    console.warn(
+      'Error al cargar alertas activas del backend real. Usando datos mock de contingencia.',
+      error,
+    )
+    return getMockAlerts()
+  }
 }
 
 export const resolveAlert = async (alertId: string): Promise<AlertItem> => {

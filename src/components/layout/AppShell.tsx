@@ -1,3 +1,4 @@
+import React from 'react'
 import type { ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -28,6 +29,7 @@ type AppShellChromeProps = Readonly<{
   isDispatch: boolean
   isReturns: boolean
   isAlerts: boolean
+  isCatalog: boolean
   handleLanguageChange: (next: 'es' | 'en') => void
   handleLogout: () => void
 }>
@@ -42,6 +44,7 @@ type ShellRailProps = Readonly<{
   isDispatch: boolean
   isReturns: boolean
   isAlerts: boolean
+  isCatalog: boolean
 }>
 
 type ShellSidebarProps = Readonly<{
@@ -56,6 +59,7 @@ type ShellSidebarProps = Readonly<{
   isReception: boolean
   isDispatch: boolean
   isReturns: boolean
+  isCatalog: boolean
   handleLogout: () => void
 }>
 
@@ -126,6 +130,7 @@ function ShellRail({
   isDispatch,
   isReturns,
   isAlerts,
+  isCatalog,
 }: ShellRailProps) {
   return (
     <nav className="rail" aria-label={t('dashboard.nav.quickAccess')}>
@@ -144,6 +149,11 @@ function ShellRail({
           </svg>
         </Link>
       ) : null}
+      <Link className={`rail__btn${isCatalog ? ' active' : ''}`} title={t('dashboard.nav.catalog')} to="/app/catalog/products">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+        </svg>
+      </Link>
       <Link className={`rail__btn${isReception ? ' active' : ''}`} title={t('dashboard.nav.reception')} to="/app/reception">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M12 2v20M2 12h20" />
@@ -204,8 +214,16 @@ function ShellSidebar({
   isReception,
   isDispatch,
   isReturns,
+  isCatalog,
   handleLogout,
 }: ShellSidebarProps) {
+  const location = useLocation()
+  const [catalogOpen, setCatalogOpen] = React.useState(isCatalog)
+
+  React.useEffect(() => {
+    if (isCatalog) setCatalogOpen(true)
+  }, [isCatalog])
+
   return (
     <aside className="sidebar">
       <header className="sidebar__header">
@@ -243,6 +261,62 @@ function ShellSidebar({
               </svg>
               {t('dashboard.nav.inventory')}
             </Link>
+          ) : null}
+        </div>
+
+        <div className="nav__section">
+          <span className="nav__label">{t('catalog.nav.title')}</span>
+          <button
+            type="button"
+            className={`nav__link nav__link--group${isCatalog ? ' active' : ''}`}
+            onClick={() => setCatalogOpen((o) => !o)}
+            aria-expanded={catalogOpen}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+            {t('dashboard.nav.catalog')}
+            <svg
+              className={`nav__chevron${catalogOpen ? ' nav__chevron--open' : ''}`}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+          {catalogOpen ? (
+            <div className="nav__submenu">
+              <Link
+                className={`nav__sublink${location.pathname.startsWith('/app/catalog/products') ? ' active' : ''}`}
+                to="/app/catalog/products"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <rect x="2" y="2" width="20" height="8" rx="1" />
+                  <rect x="2" y="14" width="20" height="8" rx="1" />
+                </svg>
+                {t('catalog.nav.products')}
+              </Link>
+              <Link
+                className={`nav__sublink${location.pathname.startsWith('/app/catalog/categories') ? ' active' : ''}`}
+                to="/app/catalog/categories"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+                </svg>
+                {t('catalog.nav.categories')}
+              </Link>
+              <Link
+                className={`nav__sublink${location.pathname.startsWith('/app/catalog/brands') ? ' active' : ''}`}
+                to="/app/catalog/brands"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+                  <line x1="7" y1="7" x2="7.01" y2="7" />
+                </svg>
+                {t('catalog.nav.brands')}
+              </Link>
+            </div>
           ) : null}
         </div>
 
@@ -297,14 +371,6 @@ function ShellSidebar({
                 <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
               </svg>
               {t('dashboard.nav.users')}
-            </button>
-            <button className="nav__link" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <rect x="2" y="3" width="4" height="18" />
-                <rect x="10" y="3" width="4" height="18" />
-                <rect x="18" y="3" width="4" height="18" />
-              </svg>
-              {t('dashboard.nav.catalog')}
             </button>
           </div>
         ) : null}
@@ -372,6 +438,7 @@ function AppShellChrome({
   isDispatch,
   isReturns,
   isAlerts,
+  isCatalog,
   handleLanguageChange,
   handleLogout,
 }: AppShellChromeProps) {
@@ -387,6 +454,7 @@ function AppShellChrome({
         isDispatch={isDispatch}
         isReturns={isReturns}
         isAlerts={isAlerts}
+        isCatalog={isCatalog}
       />
 
       <ShellSidebar
@@ -401,6 +469,7 @@ function AppShellChrome({
         isReception={isReception}
         isDispatch={isDispatch}
         isReturns={isReturns}
+        isCatalog={isCatalog}
         handleLogout={handleLogout}
       />
 
@@ -454,6 +523,8 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
 
   const isAlerts = location.pathname.startsWith('/app/alerts')
 
+  const isCatalog = location.pathname.startsWith('/app/catalog')
+
   const handleLanguageChange = (next: 'es' | 'en') => {
     if (next !== language) {
       i18n.changeLanguage(next)
@@ -483,6 +554,7 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
       isDispatch={isDispatch}
       isReturns={isReturns}
       isAlerts={isAlerts}
+      isCatalog={isCatalog}
       handleLanguageChange={handleLanguageChange}
       handleLogout={handleLogout}
     >

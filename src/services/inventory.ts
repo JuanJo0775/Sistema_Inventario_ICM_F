@@ -22,10 +22,18 @@ export const fetchCategories = async () => {
   if (useMocks) {
     return mockCategories
   }
-  const response = await api.get<InventoryListResponse<InventoryCategory>>(
-    '/catalog/categories/',
-  )
-  return normalizeList(response.data)
+  try {
+    const response = await api.get<InventoryListResponse<InventoryCategory>>(
+      '/catalog/categories/',
+    )
+    return normalizeList(response.data)
+  } catch (error) {
+    console.warn(
+      'Error al cargar categorías del backend real. Usando datos mock de contingencia.',
+      error,
+    )
+    return mockCategories
+  }
 }
 
 export const fetchSubcategories = async (categoryId?: string | number) => {
@@ -37,13 +45,26 @@ export const fetchSubcategories = async (categoryId?: string | number) => {
       (subcategory) => String(subcategory.category) === String(categoryId),
     )
   }
-  const response = await api.get<InventoryListResponse<InventorySubcategory>>(
-    '/catalog/subcategories/',
-    {
-      params: categoryId ? { category: categoryId } : undefined,
-    },
-  )
-  return normalizeList(response.data)
+  try {
+    const response = await api.get<InventoryListResponse<InventorySubcategory>>(
+      '/catalog/subcategories/',
+      {
+        params: categoryId ? { category: categoryId } : undefined,
+      },
+    )
+    return normalizeList(response.data)
+  } catch (error) {
+    console.warn(
+      'Error al cargar subcategorías del backend real. Usando datos mock de contingencia.',
+      error,
+    )
+    if (!categoryId) {
+      return mockSubcategories
+    }
+    return mockSubcategories.filter(
+      (subcategory) => String(subcategory.category) === String(categoryId),
+    )
+  }
 }
 
 type FetchProductsParams = {
@@ -55,7 +76,7 @@ type FetchProductsParams = {
 }
 
 export const fetchProducts = async (params: FetchProductsParams) => {
-  if (useMocks) {
+  const getMockProducts = () => {
     const search = params.search?.trim().toLowerCase()
     return mockProducts.filter((product) => {
       if (params.category && String(product.category) !== String(params.category)) {
@@ -77,31 +98,57 @@ export const fetchProducts = async (params: FetchProductsParams) => {
       return haystack.includes(search)
     })
   }
-  const response = await api.get<InventoryListResponse<InventoryProduct>>(
-    '/inventory/search/',
-    {
-      params: {
-        q: params.search,
-        category: params.category,
-        subcategory: params.subcategory,
-        limit: params.limit,
-        offset: params.offset,
+
+  if (useMocks) {
+    return getMockProducts()
+  }
+
+  try {
+    const response = await api.get<InventoryListResponse<InventoryProduct>>(
+      '/inventory/search/',
+      {
+        params: {
+          q: params.search,
+          category: params.category,
+          subcategory: params.subcategory,
+          limit: params.limit,
+          offset: params.offset,
+        },
       },
-    },
-  )
-  return normalizeList(response.data)
+    )
+    return normalizeList(response.data)
+  } catch (error) {
+    console.warn(
+      'Error al buscar productos en el backend real. Usando datos mock de contingencia.',
+      error,
+    )
+    return getMockProducts()
+  }
 }
 
 export const fetchProductStock = async (productId: string | number) => {
-  if (useMocks) {
+  const getMockStock = () => {
     return mockStockByProduct[String(productId)] ?? {
       product_id: String(productId),
       total: 0,
       by_location: [],
     }
   }
-  const response = await api.get<InventoryStockByProduct>(
-    `/inventory/products/${productId}/stock/`,
-  )
-  return response.data
+
+  if (useMocks) {
+    return getMockStock()
+  }
+
+  try {
+    const response = await api.get<InventoryStockByProduct>(
+      `/inventory/products/${productId}/stock/`,
+    )
+    return response.data
+  } catch (error) {
+    console.warn(
+      'Error al cargar el stock del producto en el backend real. Usando datos mock de contingencia.',
+      error,
+    )
+    return getMockStock()
+  }
 }

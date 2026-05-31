@@ -50,7 +50,11 @@
     "actions": {
       "refresh": "Refresh",
       "clear": "Clear"
-    }
+    },
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete"
   },
   "inventory": {
     "title": "Inventory",
@@ -763,6 +767,118 @@
     },
     "success": {
       "resolved": "Alert resolved successfully"
+    }
+  },
+  "catalog": {
+    "nav": {
+      "title": "CATALOG",
+      "products": "Products",
+      "categories": "Categories",
+      "brands": "Brands"
+    },
+    "products": {
+      "title": "Product Catalog",
+      "subtitle": "Manage the main portfolio",
+      "new": "Create Product",
+      "edit": "Edit Product",
+      "search": "Search product...",
+      "empty": "No products match your search.",
+      "form": {
+        "basic": "Basic Information",
+        "name": "Product Name",
+        "sku": "SKU",
+        "description": "Description",
+        "classification": "Classification",
+        "category": "Category",
+        "selectCategory": "Select a category",
+        "brand": "Brand (Subcategory)",
+        "selectBrand": "Select a brand",
+        "barcode": "Barcode",
+        "barcodeAuto": "Auto-generated if left blank",
+        "pricing": "Pricing & Base Stock",
+        "price": "Unit Price",
+        "reorderPoint": "Reorder Point",
+        "settings": "Settings",
+        "requiresSerial": "Serial Control",
+        "requiresSerialHint": "Each unit has a unique serial number",
+        "coldChain": "Cold Chain",
+        "coldChainHint": "Requires temperature-controlled conditions",
+        "logistics": "Logistics Configuration",
+        "requiresLots": "Manages Lots",
+        "requiresLotsHint": "Allows registering inbound lots",
+        "requiresExpiration": "Manages Expiration",
+        "requiresExpirationHint": "Tracks expiration date per lot",
+        "isActive": "Active Product"
+      },
+      "detail": {
+        "title": "Product Details",
+        "view": "Detail",
+        "generalInfo": "General Information",
+        "inventorySettings": "Inventory Settings",
+        "back": "Back to products",
+        "edit": "Edit",
+        "status": "Status",
+        "stock": "Current Stock",
+        "price": "Unit Price",
+        "reorder": "Reorder Point",
+        "serial": "Serial Control",
+        "cold": "Cold Chain",
+        "category": "Category",
+        "brand": "Brand",
+        "yes": "Yes",
+        "no": "No",
+        "active": "Active",
+        "inactive": "Inactive",
+        "delete": "Deactivate",
+        "restore": "Reactivate"
+      },
+      "notFound": "Product not found.",
+      "messages": {
+        "created": "Product created successfully",
+        "updated": "Product updated successfully",
+        "error": "Error saving product",
+        "loadError": "Error loading products",
+        "deactivateConfirm": "Are you sure you want to deactivate this product?"
+      }
+    },
+    "categories": {
+      "title": "Categories",
+      "subtitle": "Organize products by family",
+      "new": "New Category",
+      "search": "Search category...",
+      "empty": "No categories found.",
+      "productsCount": "{{count}} products",
+      "form": {
+        "name": "Name",
+        "description": "Description",
+        "save": "Save",
+        "cancel": "Cancel"
+      },
+      "messages": {
+        "created": "Category created",
+        "updated": "Category updated",
+        "error": "Error saving category"
+      }
+    },
+    "brands": {
+      "title": "Brands",
+      "subtitle": "Manage brands (subcategories)",
+      "new": "New Brand",
+      "search": "Search brand...",
+      "empty": "No brands found.",
+      "productsCount": "{{count}} products",
+      "form": {
+        "name": "Name",
+        "description": "Description",
+        "category": "Parent Category",
+        "save": "Save",
+        "cancel": "Cancel"
+      },
+      "messages": {
+        "created": "Brand created",
+        "updated": "Brand updated",
+        "error": "Error saving brand"
+      }
     }
   }
 }

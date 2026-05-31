@@ -50,7 +50,11 @@
     "actions": {
       "refresh": "Actualizar",
       "clear": "Limpiar"
-    }
+    },
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "edit": "Editar",
+    "delete": "Eliminar"
   },
   "inventory": {
     "title": "Inventario",
@@ -763,6 +767,114 @@
     },
     "success": {
       "resolved": "Alerta resuelta correctamente"
+    }
+  },
+  "catalog": {
+    "nav": {
+      "title": "CATÁLOGO",
+      "products": "Productos",
+      "categories": "Categorías",
+      "brands": "Marcas"
+    },
+    "products": {
+      "title": "Catálogo de Productos",
+      "subtitle": "Administra el portafolio principal",
+      "new": "Crear Producto",
+      "edit": "Editar Producto",
+      "search": "Buscar producto...",
+      "empty": "No hay productos que coincidan con la búsqueda.",
+      "form": {
+        "basic": "Información Básica",
+        "name": "Nombre del Producto",
+        "sku": "SKU",
+        "description": "Descripción",
+        "classification": "Clasificación",
+        "category": "Categoría",
+        "selectCategory": "Selecciona una categoría",
+        "brand": "Marca",
+        "selectBrand": "Selecciona una marca",
+        "barcode": "Código de barras",
+        "barcodeAuto": "Se genera automáticamente si se deja vacío",
+        "pricing": "Precios y Stock Base",
+        "price": "Precio Unitario",
+        "reorderPoint": "Punto de Reorden",
+        "settings": "Configuración",
+        "requiresSerial": "Control Serial",
+        "coldChain": "Cadena de Frío",
+        "logistics": "Configuración Logística",
+        "requiresLots": "Maneja Lotes",
+        "requiresExpiration": "Maneja Vencimiento",
+        "isActive": "Producto Activo"
+      },
+      "detail": {
+        "title": "Detalles del Producto",
+        "view": "Detalle",
+        "generalInfo": "Información General",
+        "inventorySettings": "Configuración de Inventario",
+        "back": "Volver a productos",
+        "edit": "Editar",
+        "status": "Estado",
+        "stock": "Stock Actual",
+        "price": "Precio Unitario",
+        "reorder": "Punto Reorden",
+        "serial": "Control Serial",
+        "cold": "Cadena Frío",
+        "category": "Categoría",
+        "brand": "Marca",
+        "yes": "Sí",
+        "no": "No",
+        "active": "Activo",
+        "inactive": "Inactivo",
+        "delete": "Desactivar",
+        "restore": "Reactivar"
+      },
+      "notFound": "Producto no encontrado.",
+      "messages": {
+        "created": "Producto creado correctamente",
+        "updated": "Producto actualizado correctamente",
+        "error": "Error al guardar el producto",
+        "loadError": "Error al cargar los productos",
+        "deactivateConfirm": "¿Estás seguro de que deseas desactivar este producto?"
+      }
+    },
+    "categories": {
+      "title": "Categorías",
+      "subtitle": "Organiza los productos por familia",
+      "new": "Nueva Categoría",
+      "search": "Buscar categoría...",
+      "empty": "No hay categorías.",
+      "productsCount": "{{count}} productos",
+      "form": {
+        "name": "Nombre",
+        "description": "Descripción",
+        "save": "Guardar",
+        "cancel": "Cancelar"
+      },
+      "messages": {
+        "created": "Categoría creada",
+        "updated": "Categoría actualizada",
+        "error": "Error al guardar la categoría"
+      }
+    },
+    "brands": {
+      "title": "Marcas",
+      "subtitle": "Gestión de marcas (subcategorías)",
+      "new": "Nueva Marca",
+      "search": "Buscar marca...",
+      "empty": "No hay marcas.",
+      "productsCount": "{{count}} productos",
+      "form": {
+        "name": "Nombre",
+        "description": "Descripción",
+        "category": "Categoría Padre",
+        "save": "Guardar",
+        "cancel": "Cancelar"
+      },
+      "messages": {
+        "created": "Marca creada",
+        "updated": "Marca actualizada",
+        "error": "Error al guardar la marca"
+      }
     }
   }
 }

@@ -10,6 +10,11 @@ import ReturnsPage from './features/returns/ReturnsPage'
 import AdjustmentsPage from './features/adjustments/AdjustmentsPage'
 import AlertsPage from './features/alerts/AlertsPage'
 import ProtectedRoute from './router/ProtectedRoute'
+import CatalogProductsPage from './features/catalog/CatalogProductsPage'
+import CatalogProductDetailPage from './features/catalog/CatalogProductDetailPage'
+import CatalogProductFormPage from './features/catalog/CatalogProductFormPage'
+import CatalogCategoriesPage from './features/catalog/CatalogCategoriesPage'
+import CatalogBrandsPage from './features/catalog/CatalogBrandsPage'
 
 function App() {
   return (
@@ -72,6 +77,56 @@ function App() {
           element={
             <ProtectedRoute>
               <AlertsPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Catalog Module */}
+        <Route path="/app/catalog" element={<Navigate to="/app/catalog/products" replace />} />
+        <Route
+          path="/app/catalog/products"
+          element={
+            <ProtectedRoute>
+              <CatalogProductsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/catalog/products/new"
+          element={
+            <ProtectedRoute>
+              <CatalogProductFormPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/catalog/products/:id"
+          element={
+            <ProtectedRoute>
+              <CatalogProductDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/catalog/products/:id/edit"
+          element={
+            <ProtectedRoute>
+              <CatalogProductFormPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/catalog/categories"
+          element={
+            <ProtectedRoute>
+              <CatalogCategoriesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/catalog/brands"
+          element={
+            <ProtectedRoute>
+              <CatalogBrandsPage />
             </ProtectedRoute>
           }
         />
