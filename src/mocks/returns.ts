@@ -32,7 +32,7 @@ export const mockReturnProducts: ReturnProduct[] = [
     barcode: '770000000103',
     category: 'Manoterapia',
     canReturn: false,
-    blockReason: 'BR-05: solo Electroterapia y Electronicos admiten devolucion.',
+    blockReason: 'Solo Electroterapia y Electrónicos admiten devolución.',
     requiresSerial: false,
   },
   {
@@ -43,7 +43,7 @@ export const mockReturnProducts: ReturnProduct[] = [
     barcode: '770000000104',
     category: 'Consumibles',
     canReturn: false,
-    blockReason: 'BR-05: los consumibles no tienen flujo de devolucion.',
+    blockReason: 'Los consumibles no tienen flujo de devolución.',
     requiresSerial: false,
   },
 ]

@@ -2,20 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   AlertTriangle,
-  Barcode,
   CheckCircle2,
   Clock3,
-  PackageCheck,
-  Undo2,
-  XCircle,
 } from 'lucide-react'
 
 import AppShell from '../../components/layout/AppShell'
-import { Badge } from '../../components/ui/badge'
-import { Button } from '../../components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
-import { Input } from '../../components/ui/input'
-import { Select } from '../../components/ui/select'
 import type { ReturnEntry, ReturnProduct, ReturnsOverview, ReturnStatus } from '../../interfaces/returns'
 import { useMocks } from '../../mocks/config'
 import { fetchReturnsOverview, getSubmitReturnErrorMessage, submitReturn } from '../../services/returns'
@@ -31,13 +22,6 @@ type ReturnFormState = {
   relatedMovementId: string
 }
 
-const returnStatusVariant: Record<ReturnStatus, 'success' | 'warning' | 'destructive' | 'secondary'> = {
-  pending: 'warning',
-  recorded: 'secondary',
-  reincorporated: 'success',
-  rejected: 'destructive',
-  blocked: 'destructive',
-}
 
 const returnStateOptions = [
   'Bueno',
@@ -128,8 +112,17 @@ function ReturnsValidationStrip({ product, t }: ReturnsValidationStripProps) {
   if (!product) return null
 
   return (
-    <div className={product.canReturn ? 'returns-validation-strip returns-validation-strip--ok' : 'returns-validation-strip returns-validation-strip--warn'}>
-      <Undo2 />
+    <div className={product.canReturn ? 'val-strip val-strip--ok mb-16' : 'val-strip val-strip--fail mb-16'}>
+      {product.canReturn ? (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      )}
       <span>
         {product.canReturn
           ? t('returns.validation.allowed', {
@@ -254,16 +247,6 @@ function ReturnsPage() {
     [form, quantity, selectedProduct, t],
   )
 
-  const summary = useMemo(() => {
-    const serialRequired = products.filter((item) => item.requiresSerial).length
-    const blocked = products.filter((item) => !item.canReturn).length
-    return {
-      pending: pendingReturns.length,
-      history: historyEntries.length,
-      serialRequired,
-      blocked,
-    }
-  }, [historyEntries.length, pendingReturns.length, products])
 
   const handleSubmit = async () => {
     if (!selectedProduct || validationMessage) return
@@ -305,44 +288,13 @@ function ReturnsPage() {
       title={t('returns.title')}
       subtitle={t('returns.subtitle')}
       actions={
-        <Button variant="ghost" size="sm" onClick={loadOverview}>
+        <button className="btn btn--ghost btn--sm" style={{ margin: 0 }} onClick={loadOverview}>
           {t('common.actions.refresh')}
-        </Button>
+        </button>
       }
     >
       <div className="page-body returns-page">
-        <section className="reception-stats" aria-label={t('returns.stats.ariaLabel')}>
-          <Card className="reception-stat rounded-lg">
-            <PackageCheck />
-            <div>
-              <span>{summary.pending}</span>
-              <p>{t('returns.stats.pending')}</p>
-            </div>
-          </Card>
-          <Card className="reception-stat rounded-lg">
-            <AlertTriangle />
-            <div>
-              <span>{summary.blocked}</span>
-              <p>{t('returns.stats.blocked')}</p>
-            </div>
-          </Card>
-          <Card className="reception-stat rounded-lg">
-            <Clock3 />
-            <div>
-              <span>{summary.history}</span>
-              <p>{t('returns.stats.history')}</p>
-            </div>
-          </Card>
-          <Card className="reception-stat rounded-lg">
-            <Barcode />
-            <div>
-              <span>{summary.serialRequired}</span>
-              <p>{t('returns.stats.serialRequired')}</p>
-            </div>
-          </Card>
-        </section>
-
-        <div className="alert-bar alert-bar--warn" role="alert">
+        <div className="alert-bar alert-bar--warn mb-24" role="alert">
           <AlertTriangle />
           <span>
             <strong>{t('returns.alerts.policyPrefix')}</strong> {t('returns.alerts.policy')}
@@ -350,7 +302,7 @@ function ReturnsPage() {
         </div>
 
         {useMocks ? null : (
-          <output className="alert-bar alert-bar--info" aria-live="polite">
+          <output className="alert-bar alert-bar--info mb-24" aria-live="polite">
             <Clock3 />
             <span>{t('returns.alerts.backendMode')}</span>
           </output>
@@ -358,8 +310,8 @@ function ReturnsPage() {
 
         <ReturnsBanner error={error} successMessage={successMessage} />
 
-        <div className="reception-layout returns-layout">
-          <section aria-label={t('returns.form.ariaLabel')}>
+        <div className="split split--2-1">
+          <div>
             <div className="s-head">
               <span className="s-head__label">{t('returns.form.title')}</span>
               <div className="s-head__rule" />
@@ -367,199 +319,210 @@ function ReturnsPage() {
 
             <ReturnsValidationStrip product={selectedProduct} t={t} />
 
-            <Card className="reception-form-card rounded-lg">
-              <CardHeader>
-                <CardTitle className="reception-form-card__title">
-                  {selectedProduct?.productName ?? t('returns.form.emptyTitle')}
-                </CardTitle>
-                <CardDescription>
-                  {selectedProduct
-                    ? t('returns.form.description', {
-                        sku: selectedProduct.sku,
-                        category: selectedProduct.category,
-                      })
-                    : t('returns.form.emptyDescription')}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="reception-form">
-                <div className="reception-form__grid">
-                  <div className="inventory-field">
-                    <label className="inventory-label" htmlFor="return-product">
-                      {t('returns.form.product')}
-                    </label>
-                    <Select
-                      id="return-product"
-                      value={form.productId}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          productId: event.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">{t('returns.form.productPlaceholder')}</option>
-                      {products.map((product) => (
-                        <option key={product.id} value={product.productId}>
-                          {product.productName} - {product.sku}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
+            <form noValidate>
+              <div className="form-surface">
+                <fieldset>
+                  <legend>{selectedProduct?.productName ?? t('returns.form.emptyTitle')}</legend>
+                  <div className="f-row f-row-2">
+                    <div className="f-group f-group--full">
+                      <label className="f-label" htmlFor="return-product">
+                        {t('returns.form.product')}
+                      </label>
+                      <select
+                        id="return-product"
+                        className="f-input"
+                        value={form.productId}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            productId: event.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">{t('returns.form.productPlaceholder')}</option>
+                        {products.map((product) => (
+                          <option key={product.id} value={product.productId}>
+                            {product.productName} — {product.sku}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <div className="inventory-field">
-                    <label className="inventory-label" htmlFor="return-location">
-                      {t('returns.form.location')}
-                    </label>
-                    <Select
-                      id="return-location"
-                      value={form.locationId}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          locationId: event.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">{t('returns.form.locationPlaceholder')}</option>
-                      {locations.map((location) => (
-                        <option key={location.id} value={location.id}>
-                          {location.code} - {location.name}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
+                    <div className="f-group">
+                      <label className="f-label" htmlFor="return-location">
+                        {t('returns.form.location')}
+                      </label>
+                      <select
+                        id="return-location"
+                        className="f-input"
+                        value={form.locationId}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            locationId: event.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">{t('returns.form.locationPlaceholder')}</option>
+                        {locations.map((location) => (
+                          <option key={location.id} value={location.id}>
+                            {location.code} — {location.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <div className="inventory-field">
-                    <label className="inventory-label" htmlFor="return-quantity">
-                      {t('returns.form.quantity')}
-                    </label>
-                    <Input
-                      id="return-quantity"
-                      type="number"
-                      min="1"
-                      value={form.quantity}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          quantity: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
+                    <div className="f-group">
+                      <label className="f-label" htmlFor="return-quantity">
+                        {t('returns.form.quantity')}
+                      </label>
+                      <input
+                        id="return-quantity"
+                        className="f-input"
+                        type="number"
+                        min="1"
+                        value={form.quantity}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            quantity: event.target.value,
+                          }))
+                        }
+                      />
+                    </div>
 
-                  <div className="inventory-field">
-                    <label className="inventory-label" htmlFor="return-serial">
-                      {t('returns.form.serialNumber')}
-                    </label>
-                    <Input
-                      id="return-serial"
-                      className="text-mono"
-                      placeholder={selectedProduct?.requiresSerial ? t('returns.form.serialPlaceholder') : t('returns.form.serialOptionalPlaceholder')}
-                      value={form.serialNumber}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          serialNumber: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
+                    <div className="f-group">
+                      <label className="f-label" htmlFor="return-serial">
+                        {t('returns.form.serialNumber')}
+                      </label>
+                      <input
+                        id="return-serial"
+                        className="f-input text-mono"
+                        placeholder={selectedProduct?.requiresSerial ? t('returns.form.serialPlaceholder') : t('returns.form.serialOptionalPlaceholder')}
+                        value={form.serialNumber}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            serialNumber: event.target.value,
+                          }))
+                        }
+                      />
+                    </div>
 
-                  <div className="inventory-field">
-                    <label className="inventory-label" htmlFor="return-state">
-                      {t('returns.form.state')}
-                    </label>
-                    <Select
-                      id="return-state"
-                      value={form.productState}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          productState: event.target.value,
-                        }))
-                      }
-                    >
-                      {returnStateOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
+                    <div className="f-group">
+                      <label className="f-label" htmlFor="return-state">
+                        {t('returns.form.state')}
+                      </label>
+                      <select
+                        id="return-state"
+                        className="f-input"
+                        value={form.productState}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            productState: event.target.value,
+                          }))
+                        }
+                      >
+                        {returnStateOptions.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <div className="inventory-field returns-span-2">
-                    <label className="inventory-label" htmlFor="return-reason">
-                      {t('returns.form.reason')}
-                    </label>
-                    <Input
-                      id="return-reason"
-                      placeholder={t('returns.form.reasonPlaceholder')}
-                      value={form.reason}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          reason: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
+                    <div className="f-group f-group--full">
+                      <label className="f-label" htmlFor="return-reason">
+                        {t('returns.form.reason')}
+                      </label>
+                      <input
+                        id="return-reason"
+                        className="f-input"
+                        placeholder={t('returns.form.reasonPlaceholder')}
+                        value={form.reason}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            reason: event.target.value,
+                          }))
+                        }
+                      />
+                    </div>
 
-                  <div className="inventory-field returns-span-2">
-                    <label className="inventory-label" htmlFor="return-note">
-                      {t('returns.form.note')}
-                    </label>
-                    <Input
-                      id="return-note"
-                      placeholder={t('returns.form.notePlaceholder')}
-                      value={form.note}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          note: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
+                    <div className="f-group f-group--full">
+                      <label className="f-label" htmlFor="return-note">
+                        {t('returns.form.note')}
+                      </label>
+                      <input
+                        id="return-note"
+                        className="f-input"
+                        placeholder={t('returns.form.notePlaceholder')}
+                        value={form.note}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            note: event.target.value,
+                          }))
+                        }
+                      />
+                    </div>
 
-                  <div className="inventory-field returns-span-2">
-                    <label className="inventory-label" htmlFor="return-related">
-                      {t('returns.form.relatedMovement')}
-                    </label>
-                    <Input
-                      id="return-related"
-                      placeholder={t('returns.form.relatedMovementPlaceholder')}
-                      value={form.relatedMovementId}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          relatedMovementId: event.target.value,
-                        }))
-                      }
-                    />
+                    <div className="f-group f-group--full">
+                      <label className="f-label" htmlFor="return-related">
+                        {t('returns.form.relatedMovement')}
+                      </label>
+                      <input
+                        id="return-related"
+                        className="f-input"
+                        placeholder={t('returns.form.relatedMovementPlaceholder')}
+                        value={form.relatedMovementId}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            relatedMovementId: event.target.value,
+                          }))
+                        }
+                      />
+                    </div>
                   </div>
-                </div>
+                </fieldset>
 
-                <div className="returns-block-example">
-                  <p className="returns-block-example__eyebrow">{t('returns.blockExample.eyebrow')}</p>
-                  <div className="returns-validation-strip returns-validation-strip--warn">
-                    <XCircle />
+                <div style={{ padding: '11px', background: 'rgba(179,58,42,.04)', border: '1px dashed rgba(179,58,42,.2)', borderRadius: '8px', margin: '14px 0' }}>
+                  <p style={{ fontFamily: 'var(--ff-mono)', fontSize: '9px', letterSpacing: '1.5px', color: 'var(--err)', marginBottom: '6px' }}>
+                    {t('returns.blockExample.eyebrow')}
+                  </p>
+                  <div className="val-strip val-strip--fail">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
                     <span>{t('returns.blockExample.message')}</span>
                   </div>
                 </div>
 
-                <div className="form-footer returns-form-footer">
-                  <Button type="button" variant="outline" onClick={() => setForm(toFormState(selectedProduct, selectedLocation?.id ?? ''))}>
+                <div className="form-footer">
+                  <button
+                    type="button"
+                    className="btn btn--outline"
+                    onClick={() => setForm(toFormState(selectedProduct, selectedLocation?.id ?? ''))}
+                  >
                     {t('returns.form.reset')}
-                  </Button>
-                  <Button type="button" onClick={handleSubmit} disabled={saving || Boolean(validationMessage)}>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--primary"
+                    onClick={handleSubmit}
+                    disabled={saving || Boolean(validationMessage)}
+                  >
                     {saving ? t('returns.form.saving') : t('returns.form.submit')}
-                  </Button>
+                  </button>
                 </div>
 
-                {validationMessage ? <p className="prod-sub prod-sub--warn">{validationMessage}</p> : null}
-              </CardContent>
-            </Card>
-          </section>
+                {validationMessage ? <p className="prod-sub prod-sub--warn" style={{ marginTop: '8px' }}>{validationMessage}</p> : null}
+              </div>
+            </form>
+          </div>
 
           <aside className="returns-panel" aria-label={t('returns.pending.ariaLabel')}>
             <section>
@@ -571,69 +534,82 @@ function ReturnsPage() {
 
               <div className="returns-panel-stack">
                 {loading ? (
-                  <Card className="returns-panel-card rounded-lg">
-                    <CardContent className="returns-panel-card__content">
-                      <p className="inventory-empty">{t('common.loading')}</p>
-                    </CardContent>
-                  </Card>
+                  <div style={{ border: '1px solid var(--ink-12)', borderRadius: 'var(--r-md)', padding: '14px', background: 'var(--white)' }}>
+                    <p className="inventory-empty">{t('common.loading')}</p>
+                  </div>
                 ) : null}
 
                 {!loading && pendingReturns.length === 0 ? (
-                  <Card className="returns-panel-card rounded-lg">
-                    <CardContent className="returns-panel-card__content">
-                      <p className="inventory-empty">{t('returns.pending.empty')}</p>
-                    </CardContent>
-                  </Card>
+                  <div style={{ border: '1px solid var(--ink-12)', borderRadius: 'var(--r-md)', padding: '14px', background: 'var(--white)' }}>
+                    <p className="inventory-empty">{t('returns.pending.empty')}</p>
+                  </div>
                 ) : null}
 
                 {pendingReturns.map((entry) => (
-                  <Card key={entry.id} className="returns-panel-card rounded-lg">
-                    <CardContent className="returns-panel-card__content">
-                      <div className="inventory-detail__head">
-                        <div>
-                          <p className="prod-name">{entry.productName}</p>
-                          <p className="sku">
-                            {entry.sku} · {entry.serialNumber}
-                          </p>
-                        </div>
-                        <Badge variant={returnStatusVariant[entry.status]}>{t(`returns.status.${entry.status}`)}</Badge>
+                  <div
+                    key={entry.id}
+                    style={{
+                      border: '1px solid var(--ink-12)',
+                      borderRadius: 'var(--r-md)',
+                      padding: '14px',
+                      marginBottom: '20px',
+                      background: 'var(--white)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                      <div>
+                        <p style={{ fontWeight: 600, fontSize: '13px', margin: 0 }}>{entry.productName}</p>
+                        <p className="sku" style={{ margin: 0, fontSize: '11px', color: 'var(--ink-40)' }}>
+                          {entry.sku} {entry.serialNumber ? `· SN: ${entry.serialNumber}` : ''}
+                        </p>
                       </div>
-                      <dl className="returns-meta">
-                        <div>
-                          <dt>{t('returns.pending.details.reason')}</dt>
-                          <dd>{entry.reason}</dd>
-                        </div>
-                        <div>
-                          <dt>{t('returns.pending.details.state')}</dt>
-                          <dd>{entry.productState}</dd>
-                        </div>
-                        <div>
-                          <dt>{t('returns.pending.details.operator')}</dt>
-                          <dd>{entry.registeredBy}</dd>
-                        </div>
-                        <div>
-                          <dt>{t('returns.pending.details.location')}</dt>
-                          <dd>{entry.locationCode}</dd>
-                        </div>
-                      </dl>
-                      {useMocks ? (
-                        <div className="returns-pending-card__actions">
-                          <Button type="button" size="sm" onClick={() => handleResolvePending(entry, 'reincorporated')}>
-                            {t('returns.pending.approve')}
-                          </Button>
-                          <Button type="button" size="sm" variant="destructive" onClick={() => handleResolvePending(entry, 'rejected')}>
-                            {t('returns.pending.reject')}
-                          </Button>
-                        </div>
-                      ) : null}
-                    </CardContent>
-                  </Card>
+                      <span className="pill pill--warn">{t(`returns.status.${entry.status}`)}</span>
+                    </div>
+                    <dl style={{ fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '5px', margin: 0, padding: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <dt style={{ color: 'var(--ink-40)' }}>{t('returns.pending.details.reason')}</dt>
+                        <dd style={{ fontWeight: 500, margin: 0 }}>{entry.reason}</dd>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <dt style={{ color: 'var(--ink-40)' }}>{t('returns.pending.details.state')}</dt>
+                        <dd style={{ fontWeight: 500, margin: 0 }}>{entry.productState}</dd>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <dt style={{ color: 'var(--ink-40)' }}>{t('returns.pending.details.operator')}</dt>
+                        <dd style={{ fontWeight: 500, margin: 0 }}>{entry.registeredBy}</dd>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <dt style={{ color: 'var(--ink-40)' }}>{t('returns.pending.details.location')}</dt>
+                        <dd style={{ fontWeight: 500, margin: 0 }}>{entry.locationCode}</dd>
+                      </div>
+                    </dl>
+                    {useMocks ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '12px' }}>
+                        <button
+                          type="button"
+                          className="btn btn--primary btn--sm"
+                          style={{ justifyContent: 'center' }}
+                          onClick={() => handleResolvePending(entry, 'reincorporated')}
+                        >
+                          {t('returns.pending.approve')}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn--danger btn--sm"
+                          style={{ justifyContent: 'center' }}
+                          onClick={() => handleResolvePending(entry, 'rejected')}
+                        >
+                          {t('returns.pending.reject')}
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 ))}
               </div>
             </section>
 
             <section>
-              <div className="s-head returns-history-head">
+              <div className="s-head returns-history-head" style={{ marginBottom: '10px' }}>
                 <span className="s-head__label">{t('returns.history.title')}</span>
                 <div className="s-head__rule" />
               </div>

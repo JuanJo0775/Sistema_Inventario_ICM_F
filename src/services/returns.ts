@@ -22,7 +22,7 @@ const formatTimestamp = (value: string) =>
   }).format(new Date(value))
 
 const BR05_BLOCK_REASON =
-  'BR-05: solo Electroterapia y Electrónicos admiten devolución.'
+  'Solo Electroterapia y Electrónicos admiten devolución.'
 
 type BackendReturnMovement = {
   id: string
