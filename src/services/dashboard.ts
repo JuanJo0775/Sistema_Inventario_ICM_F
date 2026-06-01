@@ -97,20 +97,12 @@ export const fetchDashboardOverview = async (
     return mockDashboardOverview
   }
 
-  try {
-    const response = await api.get<DashboardApiOverview>('/dashboard/overview/', {
-      params: {
-        period_days: params.periodDays,
-        movements_limit: params.movementsLimit,
-      },
-    })
+  const response = await api.get<DashboardApiOverview>('/dashboard/overview/', {
+    params: {
+      period_days: params.periodDays,
+      movements_limit: params.movementsLimit,
+    },
+  })
 
-    return mapOverview(response.data)
-  } catch (error) {
-    console.warn(
-      'Error al cargar el resumen del dashboard del backend real. Usando datos mock de contingencia.',
-      error,
-    )
-    return mockDashboardOverview
-  }
+  return mapOverview(response.data)
 }

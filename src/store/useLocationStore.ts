@@ -44,7 +44,7 @@ interface LocationState {
   deactivateLocation: (id: string) => Promise<void>
 }
 
-const useLocationStore = create<LocationState>((set, get) => ({
+const useLocationStore = create<LocationState>((set) => ({
   locations: [],
   storageTypes: [],
   loading: false,

@@ -77,7 +77,7 @@ type ShellTopbarProps = Readonly<{
 }>
 
 function getRoleLabel(
-  t: (key: string) => string,
+  t: any,
   role: string | undefined,
 ) {
   switch (role) {
@@ -93,7 +93,7 @@ function getRoleLabel(
 }
 
 function getDisplayName(
-  t: (key: string) => string,
+  t: any,
   user: {
     first_name?: string | null
     last_name?: string | null
@@ -125,7 +125,7 @@ function getAvatarInitials(displayName: string) {
 }
 
 type SidebarNavCommonProps = Readonly<{
-  t: (key: string) => string
+  t: any
   locationPathname: string
   canManageInventory: boolean
   canManageAdmin: boolean
@@ -390,7 +390,7 @@ function ShellRail({
         </svg>
       </Link>
       {canManageInventory ? (
-        <Link className={`rail__btn${isLocations ? ' active' : ''}`} title={t('dashboard.nav.locations', 'LOCACIÓN')} to="/app/locations">
+        <Link className={`rail__btn${isLocations ? ' active' : ''}`} title={t('dashboard.nav.locations') || 'LOCACIÓN'} to="/app/locations">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
             <circle cx="12" cy="12" r="3" />

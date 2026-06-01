@@ -12,6 +12,12 @@ import type {
   DispatchSubmitPayload,
 } from '../interfaces/dispatch'
 
+type BackendListResponse<T> = T[] | { results?: T[]; count?: number }
+const normalizeList = <T,>(payload: BackendListResponse<T>): T[] => {
+  if (Array.isArray(payload)) return payload
+  return payload.results ?? []
+}
+
 export interface DispatchOverview {
   locations: DispatchLocation[]
   expectedOrders: DispatchItem[]
@@ -27,43 +33,48 @@ export const fetchDispatchOverview = async (): Promise<DispatchOverview> => {
     }
   }
 
-  try {
-    // Parrallel backend calls
-    const [locationsRes, movementsRes, ordersRes] = await Promise.all([
-      api.get<{ results: Array<{ id: string; code: string; name: string }> }>(
-        '/inventory/locations/',
-      ),
-      api.get<{
-        results: Array<{
-          id: string
-          product_sku: string
-          quantity: number
-          origin_location: string | null
-          executed_by: string
-          created_at: string
-          invoice_number: string | null
-          note: string | null
-        }>
-      }>('/movements/dispatches/', { params: { page_size: 10, ordering: '-created_at' } }),
-      api.get<{
-        results: Array<{
-          invoice_number: string
-          movements: number
-          total_quantity: number
-          items: number
-          dispatched_at: string | null
-        }>
-      }>('/reports/dispatch-operational/orders/', { params: { limit: 10 } }),
-    ])
+  // Use allSettled so one failing endpoint doesn't block the whole page
+  const [locationsResult, movementsResult, productsResult] = await Promise.allSettled([
+    api.get<BackendListResponse<{ id: string; code: string; name: string }>>(
+      '/inventory/locations/',
+    ),
+    api.get<BackendListResponse<{
+      id: string
+      product_sku: string
+      quantity: number
+      origin_location: string | null
+      executed_by: string
+      created_at: string
+      invoice_number: string | null
+      note: string | null
+    }>>('/movements/dispatches/', { params: { page_size: 10, ordering: '-created_at' } }),
+    api.get<BackendListResponse<{
+      id: string
+      name: string
+      sku: string
+      barcode: string | null
+      category: string | null
+      category_slug: string | null
+      requires_cold_chain: boolean
+      is_active: boolean
+    }>>('/catalog/products/'),
+  ])
 
-    const locations = locationsRes.data.results.map((loc) => ({
-      id: loc.id,
-      code: loc.code,
-      name: loc.name,
-      capacityLabel: '',
-    }))
+  // Locations – critical, throw if failed
+  if (locationsResult.status === 'rejected') {
+    throw locationsResult.reason
+  }
+  const locations = normalizeList(locationsResult.value.data).map((loc) => ({
+    id: loc.id,
+    code: loc.code,
+    name: loc.name,
+    capacityLabel: '',
+  }))
 
-    const recentMovements: DispatchMovement[] = movementsRes.data.results.map((mov) => ({
+  // Recent dispatch movements – optional, default to empty
+  let recentMovements: DispatchMovement[] = []
+  if (movementsResult.status === 'fulfilled') {
+    recentMovements = normalizeList(movementsResult.value.data).map((mov) => ({
       id: mov.id,
       productName: mov.product_sku,
       sku: mov.product_sku,
@@ -77,49 +88,35 @@ export const fetchDispatchOverview = async (): Promise<DispatchOverview> => {
       invoiceNumber: mov.invoice_number ?? undefined,
       note: mov.note ?? undefined,
     }))
+  }
 
-    // Mapear órdenes del endpoint o fallback a mock si no hay
-    const backendOrders = ordersRes.data.results || []
-    let expectedOrders: DispatchItem[] = []
+  // Products from catalog – build the dispatch item list from real products
+  let expectedOrders: DispatchItem[] = []
+  if (productsResult.status === 'fulfilled') {
+    const products = normalizeList(productsResult.value.data)
+    expectedOrders = products
+      .filter((p) => p.is_active)
+      .map((prod) => ({
+        id: prod.id,
+        invoiceNumber: '',
+        customerName: '',
+        productId: prod.id,
+        productName: prod.name,
+        sku: prod.sku,
+        barcode: prod.barcode || '',
+        category: prod.category_slug || '',
+        expectedQuantity: 0,
+        dispatchedQuantity: 0,
+        status: 'pending' as const,
+        requiresSerial: false,
+        requiresColdChain: prod.requires_cold_chain ?? false,
+      }))
+  }
 
-    if (backendOrders.length > 0) {
-      expectedOrders = backendOrders.map((ord, idx) => {
-        // Enlazar con algún producto conocido
-        return {
-          id: `pick-${idx}`,
-          invoiceNumber: ord.invoice_number,
-          customerName: 'Cliente Mayorista ICM',
-          productId: 'prod-002', // fallback a un UUID o producto de catálogo
-          productName: 'Producto Despacho ' + ord.invoice_number,
-          sku: 'CAN-TENS-003',
-          barcode: '770000000002',
-          category: 'Consumibles',
-          expectedQuantity: ord.total_quantity,
-          dispatchedQuantity: ord.total_quantity,
-          status: 'ready',
-          requiresSerial: false,
-          requiresColdChain: false,
-        }
-      })
-    } else {
-      expectedOrders = mockDispatchItems
-    }
-
-    return {
-      locations,
-      expectedOrders,
-      recentMovements,
-    }
-  } catch (err) {
-    console.warn(
-      'Error al cargar el resumen de despacho del backend real. Usando datos mock de contingencia.',
-      err,
-    )
-    return {
-      locations: mockDispatchLocations,
-      expectedOrders: mockDispatchItems,
-      recentMovements: mockDispatchMovements,
-    }
+  return {
+    locations,
+    expectedOrders,
+    recentMovements,
   }
 }
 
