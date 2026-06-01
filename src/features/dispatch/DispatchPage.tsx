@@ -46,17 +46,18 @@ import {
   fetchDispatchOverview,
   submitDispatch,
 } from '../../services/dispatch'
-  type DispatchForm = Readonly<{
-    quantity: string
-    locationId: string
-    lotCode: string
-    serialNumber: string
-    customerName: string
-    customerDoc: string
-    note: string
-    coldChainConfirmed: boolean
-    electricalSafetyConfirmed: boolean
-  }>
+
+type DispatchForm = Readonly<{
+  quantity: string
+  locationId: string
+  lotCode: string
+  serialNumber: string
+  customerName: string
+  customerDoc: string
+  note: string
+  coldChainConfirmed: boolean
+  electricalSafetyConfirmed: boolean
+}>
 
   type DispatchMode = 'wholesale' | 'retail' | 'damage' | 'expiry'
 
@@ -137,7 +138,6 @@ import {
     if (dispatchedIds.has(selectedOrder.id)) return t('dispatch.errors.alreadyDispatched')
     if (!Number.isFinite(quantity) || quantity <= 0) return t('dispatch.errors.quantity')
     if (!form.locationId) return t('dispatch.errors.location')
-    if (!form.lotCode) return t('dispatch.errors.lot')
     if (selectedOrder.requiresSerial && !form.serialNumber.trim()) return t('dispatch.errors.serials')
     if (selectedOrder.requiresColdChain && !form.coldChainConfirmed) return t('dispatch.errors.coldChain')
     if (selectedOrder.requiresSerial && !form.electricalSafetyConfirmed) return t('dispatch.errors.electricalSafety')
@@ -145,19 +145,19 @@ import {
     return null
   }
 
-  function toForm(order?: DispatchItem): DispatchForm {
-    return {
-      quantity: order?.expectedQuantity.toString() ?? '',
-      locationId: '',
-      lotCode: '',
-      serialNumber: '',
-      customerName: order?.customerName ?? '',
-      customerDoc: '',
-      note: '',
-      coldChainConfirmed: false,
-      electricalSafetyConfirmed: false,
-    }
+function toForm(order?: DispatchItem): DispatchForm {
+  return {
+    quantity: order?.expectedQuantity.toString() ?? '',
+    locationId: '',
+    lotCode: '',
+    serialNumber: '',
+    customerName: order?.customerName ?? '',
+    customerDoc: '',
+    note: '',
+    coldChainConfirmed: false,
+    electricalSafetyConfirmed: false,
   }
+}
 
   const statusVariant: Record<DispatchStatus, 'success' | 'warning' | 'destructive' | 'secondary'> = {
     pending: 'secondary',

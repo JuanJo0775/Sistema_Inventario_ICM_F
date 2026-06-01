@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, X } from 'lucide-react';
 import AppShell from '../../components/layout/AppShell';
 import useCatalogStore from '../../store/useCatalogStore';
+import { fetchProductStock } from '../../services/inventory';
 
 const CatalogProductsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -15,12 +16,42 @@ const CatalogProductsPage: React.FC = () => {
   const [brandFilter, setBrandFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
+  const [productStockTotals, setProductStockTotals] = useState<Record<string, number>>({});
 
   useEffect(() => {
     fetchProducts();
     fetchCategories();
     fetchBrands();
   }, [fetchProducts, fetchCategories, fetchBrands]);
+
+  useEffect(() => {
+    if (!products || products.length === 0) {
+      setProductStockTotals({})
+      return
+    }
+
+    const loadStocks = async () => {
+      try {
+        const stockResults = await Promise.allSettled(
+          products.map((product: any) => fetchProductStock(product.id)),
+        )
+
+        const nextStockTotals: Record<string, number> = {}
+        stockResults.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            nextStockTotals[String(products[index].id)] = result.value.total
+          }
+        })
+
+        setProductStockTotals(nextStockTotals)
+      } catch (err) {
+        console.warn('Error cargando stock de productos para catálogo:', err)
+        setProductStockTotals({})
+      }
+    }
+
+    loadStocks()
+  }, [products])
 
   const handleRefresh = () => {
     setLocalError(null);
@@ -175,18 +206,20 @@ const CatalogProductsPage: React.FC = () => {
           </div>
         ) : (
           <div className="entity-list">
-            {filteredProducts.map((product: any) => (
-              <div key={product.id} className="entity-card">
-                <div className="entity-card__info" style={{ flex: 1 }}>
-                  <h3 className="entity-card__name" style={{ fontSize: '1rem', color: '#1a202c', marginBottom: '4px', fontWeight: 600 }}>{product.name}</h3>
-                  <p className="entity-card__desc" style={{ fontSize: '0.8rem', color: '#a0aec0', margin: 0 }}>
-                    SKU: {product.sku}
-                  </p>
-                </div>
-                <div className="entity-card__meta" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <span style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-                    {product.stockTotal !== undefined ? `Stock: ${product.stockTotal}` : (product.stock ? `Stock: ${product.stock}` : 'Stock: 0')}
-                  </span>
+            {filteredProducts.map((product: any) => {
+              const stockValue = product.stockTotal ?? product.stock ?? productStockTotals[String(product.id)] ?? 0
+              return (
+                <div key={product.id} className="entity-card">
+                  <div className="entity-card__info" style={{ flex: 1 }}>
+                    <h3 className="entity-card__name" style={{ fontSize: '1rem', color: '#1a202c', marginBottom: '4px', fontWeight: 600 }}>{product.name}</h3>
+                    <p className="entity-card__desc" style={{ fontSize: '0.8rem', color: '#a0aec0', margin: 0 }}>
+                      SKU: {product.sku}
+                    </p>
+                  </div>
+                  <div className="entity-card__meta" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <span style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'var(--color-primary)' }}>
+                      Stock: {stockValue}
+                    </span>
                   
                   <span style={{ 
                     padding: '4px 12px', 
@@ -236,7 +269,7 @@ const CatalogProductsPage: React.FC = () => {
                   </button>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         )}
       </div>

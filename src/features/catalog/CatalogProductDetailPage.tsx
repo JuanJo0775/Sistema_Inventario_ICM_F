@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import AppShell from '../../components/layout/AppShell';
 import useCatalogStore from '../../store/useCatalogStore';
+import { fetchProductStock } from '../../services/inventory';
 
 const CatalogProductDetailPage = () => {
   const { t } = useTranslation();
@@ -20,6 +21,8 @@ const CatalogProductDetailPage = () => {
   const isLoading = useCatalogStore((state: any) => state.loading);
   
   const [product, setProduct] = useState<any>(null);
+  const [stockTotal, setStockTotal] = useState<number | null>(null);
+  const [stockError, setStockError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!products || products.length === 0) {
@@ -39,6 +42,27 @@ const CatalogProductDetailPage = () => {
       setProduct(found || null);
     }
   }, [products, id]);
+
+  useEffect(() => {
+    if (!id) {
+      setStockTotal(null)
+      return
+    }
+
+    const loadStock = async () => {
+      try {
+        const stock = await fetchProductStock(id)
+        setStockTotal(stock.total)
+        setStockError(null)
+      } catch (err) {
+        console.warn('Error cargando stock del producto:', err)
+        setStockTotal(null)
+        setStockError('No se pudo cargar el stock')
+      }
+    }
+
+    loadStock()
+  }, [id]);
 
   const handleDeactivate = async () => {
     if (window.confirm(t('catalog.products.messages.deactivateConfirm', '¿Estás seguro de que deseas desactivar este producto?'))) {
@@ -180,8 +204,13 @@ const CatalogProductDetailPage = () => {
                   </h3>
                   <div className="detail-row flex justify-between mb-2" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
                     <span className="font-medium" style={{ fontWeight: 500, color: '#718096' }}>{t('catalog.products.detail.stock', 'Stock')}:</span>
-                    <span style={{ fontWeight: 600, color: '#2d3748' }}>{product.stock || 0}</span>
+                    <span style={{ fontWeight: 600, color: '#2d3748' }}>{stockTotal !== null ? stockTotal : (product.stock ?? 0)}</span>
                   </div>
+                  {stockError && (
+                    <div className="detail-row flex justify-between mb-2" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
+                      <span style={{ color: '#c53030', fontSize: '0.85rem' }}>{stockError}</span>
+                    </div>
+                  )}
                   <div className="detail-row flex justify-between mb-2" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
                     <span className="font-medium" style={{ fontWeight: 500, color: '#718096' }}>{t('catalog.products.detail.reorder', 'Punto Reorden')}:</span>
                     <span style={{ color: '#2d3748' }}>{product.reorder_point || 0}</span>
