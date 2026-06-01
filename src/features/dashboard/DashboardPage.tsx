@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import {
   AlertTriangle,
   Bell,
@@ -89,6 +90,16 @@ const kpiIcons: Record<KpiKey, typeof PackageCheck> = {
   descarte: ClipboardList,
   devoluciones: PackageCheck,
   cadena_frio: Thermometer,
+}
+
+const kpiIconClass: Record<KpiKey, string> = {
+  rotacion: 'kpi-score-card__icon--rotacion',
+  danados: 'kpi-score-card__icon--danados',
+  utilizacion: 'kpi-score-card__icon--utilizacion',
+  otif: 'kpi-score-card__icon--otif',
+  descarte: 'kpi-score-card__icon--descarte',
+  devoluciones: 'kpi-score-card__icon--devoluciones',
+  cadena_frio: 'kpi-score-card__icon--cadena-frio',
 }
 
 const formatKpiValue = (value: number, unit: string, precision: number, locale = 'es-CO') => {
@@ -267,6 +278,7 @@ function KpiChart({ kpi }: { kpi: DashboardVisualKpi }) {
 function DashboardPage() {
   const user = useAuthStore((state) => state.user)
   const { i18n, t } = useTranslation()
+  const navigate = useNavigate()
   const locale = i18n.language === 'en' ? 'en-US' : 'es-CO'
   const [kpiPanelOpen, setKpiPanelOpen] = useState(false)
   const [kpis, setKpis] = useState(initialKpis)
@@ -341,7 +353,7 @@ function DashboardPage() {
             <SlidersHorizontal />
             {t('dashboard.topbar.customizeKpis')}
           </Button>
-          <Button variant="ghost" size="sm" type="button">
+          <Button variant="ghost" size="sm" type="button" onClick={() => navigate('/app/alerts')}>
             <Bell />
             {t('dashboard.topbar.alertsButton', { count: alertSummary?.active ?? 0 })}
           </Button>
@@ -416,7 +428,7 @@ function DashboardPage() {
             return (
               <Card key={kpi.key} className="kpi-score-card rounded-lg">
                 <CardHeader className="kpi-score-card__head">
-                  <div className="kpi-score-card__icon" style={{ color: chartColors[kpi.key] }}>
+                  <div className={`kpi-score-card__icon ${kpiIconClass[kpi.key]}`}>
                     <Icon />
                   </div>
                   <Badge variant={statusVariant[kpi.status]}>{kpiText(t, kpi, 'statusLabel')}</Badge>
