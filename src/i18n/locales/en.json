@@ -618,9 +618,9 @@
     "title": "Returns",
     "subtitle": "Return registration and tracking",
     "alerts": {
-      "policyPrefix": "BR-05 restriction:",
+      "policyPrefix": "Return restriction:",
       "policy": "only Electrotherapy and Electronics allow returns. Tables and Manotherapy are blocked automatically.",
-      "backendMode": "The backend registers the return and updates stock immediately. Two-stage approval (RF-008) will be available once those API endpoints are exposed."
+      "backendMode": "The backend registers the return and updates stock immediately. Two-stage approval will be available soon."
     },
     "stats": {
       "ariaLabel": "Returns summary",
@@ -634,7 +634,7 @@
       "blocked": "{{product}} — {{reason}}"
     },
     "blockExample": {
-      "eyebrow": "BR-05 block example",
+      "eyebrow": "Return restriction example",
       "message": "Basic Hydraulic Table — Does not allow returns."
     },
     "form": {
@@ -642,7 +642,7 @@
       "title": "Register return",
       "description": "SKU: {{sku}} · Category: {{category}}",
       "emptyTitle": "No product selected",
-      "emptyDescription": "Select a product to see the BR-05 validation.",
+      "emptyDescription": "Select a product to see the return policy validation.",
       "product": "Product",
       "productPlaceholder": "Select a product...",
       "location": "Location",
@@ -692,7 +692,7 @@
       "load": "Could not load return information",
       "save": "Could not register the return. Please try again.",
       "noProduct": "Select a product to continue",
-      "blocked": "That product does not allow returns under BR-05",
+      "blocked": "This product does not allow returns.",
       "quantity": "Enter a valid quantity greater than 0",
       "location": "Select a location",
       "serial": "You must enter the serial number",
@@ -717,7 +717,7 @@
       "justificationPlaceholder": "Explain why the adjustment is required...",
       "newQuantity": "New stock (physical)",
       "justification": "Justification",
-      "justificationLabel": "Mandatory — BR-07 *",
+      "justificationLabel": "Mandatory *",
       "cancel": "Cancel",
       "submit": "Register adjustment"
     },
@@ -729,17 +729,28 @@
     }
   },
   "alerts": {
-    "title": "Operational Alerts",
+    "title": "Operational alerts",
     "subtitle": "Clinical safety and replenishment control center",
+    "hero": {
+      "ariaLabel": "Main alerts summary",
+      "title": "Alerts panel",
+      "subtitle": "Active tracking of stock, expirations, and special protocols.",
+      "meta": "{{count}} resolved alerts logged"
+    },
+    "header": {
+      "activePill": "{{count}} active"
+    },
     "stats": {
       "ariaLabel": "Operational alerts summary",
-      "critical": "Criticals",
+      "critical": "Critical",
       "warning": "Warnings",
+      "special": "Follow-up",
       "resolved": "Resolved"
     },
     "filters": {
       "ariaLabel": "Alerts filters",
       "typeLabel": "Alert type",
+      "hint": "Filter by type to prioritize operational work.",
       "typeAll": "All alerts",
       "LOW_STOCK": "Stock below minimum",
       "EXPIRATION_30": "Expiration in 30 days",
@@ -747,23 +758,42 @@
       "COLD_CHAIN_MISSING": "Cold chain anomaly",
       "STOCK_MISMATCH": "Stock vs ledger desync"
     },
+    "sections": {
+      "stockMinimum": "Stock minimum",
+      "stockMinimumHint": "Reorder and inventory mismatch alerts that require immediate action.",
+      "expiration": "Expiration",
+      "expirationHint": "Lot alerts close to expiry to avoid late rotation.",
+      "specialHandling": "Special handling",
+      "specialHandlingHint": "Alerts that trigger cold chain, traceability, or manual review protocols.",
+      "resolvedHistory": "Recent history",
+      "resolvedHistoryHint": "Already handled alerts for operational traceability."
+    },
+    "badges": {
+      "critical": "Critical",
+      "warning": "Reorder",
+      "special": "Follow-up",
+      "resolved": "Resolved"
+    },
+    "card": {
+      "product": "Product",
+      "lot": "Lot",
+      "noLocation": "No location registered",
+      "createdAt": "Created",
+      "resolvedBy": "Resolved by {{name}}",
+      "system": "System"
+    },
+    "empty": {
+      "active": "There are no active alerts for this filter."
+    },
     "table": {
-      "ariaLabel": "Operational alerts list",
-      "columns": {
-        "type": "Type",
-        "product": "Product",
-        "message": "Detail / Message",
-        "created": "Report date",
-        "status": "Status",
-        "action": "Action"
-      },
       "resolve": "Resolve",
       "resolved": "Resolved"
     },
     "errors": {
       "load": "Could not load alerts information",
       "resolve": "Could not resolve the alert. Please try again.",
-      "unauthorized": "You do not have privileges to resolve this alert. Only Stockkeepers and Administrators can resolve operational alerts."
+      "unauthorized": "You do not have privileges to resolve this alert. Only Stockkeepers and Administrators can resolve operational alerts.",
+      "unauthorizedShort": "No permission"
     },
     "success": {
       "resolved": "Alert resolved successfully"

@@ -618,9 +618,9 @@
     "title": "Devoluciones",
     "subtitle": "Registro y seguimiento de devoluciones de productos",
     "alerts": {
-      "policyPrefix": "Restricción BR-05:",
+      "policyPrefix": "Restricción de devolución:",
       "policy": "solo Electroterapia y Electrónicos admiten devolución. Mesas y Manoterapia se bloquean automáticamente.",
-      "backendMode": "El backend registra la devolución y actualiza stock de inmediato. La aprobación en dos etapas (RF-008) estará disponible cuando el API exponga esos endpoints."
+      "backendMode": "El backend registra la devolución y actualiza stock de inmediato. La aprobación en dos etapas estará disponible próximamente."
     },
     "stats": {
       "ariaLabel": "Resumen de devoluciones",
@@ -634,7 +634,7 @@
       "blocked": "{{product}} — {{reason}}"
     },
     "blockExample": {
-      "eyebrow": "Ejemplo de bloqueo BR-05",
+      "eyebrow": "Ejemplo de restricción de devolución",
       "message": "Mesa Hidraulica Basica — No admite devolucion."
     },
     "form": {
@@ -642,7 +642,7 @@
       "title": "Registrar devolución",
       "description": "SKU: {{sku}} · Categoría: {{category}}",
       "emptyTitle": "Sin producto seleccionado",
-      "emptyDescription": "Selecciona un producto para ver la validación BR-05.",
+      "emptyDescription": "Selecciona un producto para ver la validación de la política de devolución.",
       "product": "Producto",
       "productPlaceholder": "Selecciona un producto...",
       "location": "Ubicación",
@@ -692,7 +692,7 @@
       "load": "No se pudo cargar la información de devoluciones",
       "save": "No se pudo registrar la devolución. Intenta de nuevo.",
       "noProduct": "Selecciona un producto para continuar",
-      "blocked": "Ese producto no admite devoluciones según BR-05",
+      "blocked": "Este producto no admite devoluciones",
       "quantity": "Ingresa una cantidad válida mayor a 0",
       "location": "Selecciona una ubicación",
       "serial": "Debes ingresar el número de serie",
@@ -717,7 +717,7 @@
       "justificationPlaceholder": "Explique por qué se requiere el ajuste...",
       "newQuantity": "Stock real (conteo físico)",
       "justification": "Justificación",
-      "justificationLabel": "Obligatoria — BR-07 *",
+      "justificationLabel": "Obligatoria *",
       "cancel": "Cancelar",
       "submit": "Registrar ajuste"
     },
@@ -729,17 +729,28 @@
     }
   },
   "alerts": {
-    "title": "Alertas Operativas",
+    "title": "Alertas operativas",
     "subtitle": "Centro de control de seguridad clínica y reabastecimiento",
+    "hero": {
+      "ariaLabel": "Resumen principal de alertas",
+      "title": "Panel de alertas",
+      "subtitle": "Seguimiento activo de stock, vencimientos y protocolos especiales.",
+      "meta": "{{count}} alertas resueltas registradas"
+    },
+    "header": {
+      "activePill": "{{count}} activas"
+    },
     "stats": {
       "ariaLabel": "Resumen de alertas operativas",
       "critical": "Críticas",
       "warning": "Advertencias",
+      "special": "Seguimiento",
       "resolved": "Resueltas"
     },
     "filters": {
       "ariaLabel": "Filtros de alertas",
       "typeLabel": "Tipo de alerta",
+      "hint": "Filtra por tipo para priorizar el trabajo operativo.",
       "typeAll": "Todas las alertas",
       "LOW_STOCK": "Stock bajo mínimo",
       "EXPIRATION_30": "Vencimiento en 30 días",
@@ -747,23 +758,42 @@
       "COLD_CHAIN_MISSING": "Cadena de frío irregular",
       "STOCK_MISMATCH": "Desincronización stock vs ledger"
     },
+    "sections": {
+      "stockMinimum": "Stock mínimo",
+      "stockMinimumHint": "Alertas de reorden y desajustes de inventario que requieren acción inmediata.",
+      "expiration": "Vencimiento",
+      "expirationHint": "Alertas de lotes próximos a vencer para evitar rotación tardía.",
+      "specialHandling": "Manejo especial",
+      "specialHandlingHint": "Alertas que activan protocolos de frío, trazabilidad o revisión manual.",
+      "resolvedHistory": "Historial reciente",
+      "resolvedHistoryHint": "Alertas ya tratadas para dejar trazabilidad operativa."
+    },
+    "badges": {
+      "critical": "Crítico",
+      "warning": "Reorden",
+      "special": "Seguimiento",
+      "resolved": "Resuelta"
+    },
+    "card": {
+      "product": "Producto",
+      "lot": "Lote",
+      "noLocation": "Sin ubicación registrada",
+      "createdAt": "Creada",
+      "resolvedBy": "Resuelta por {{name}}",
+      "system": "Sistema"
+    },
+    "empty": {
+      "active": "No hay alertas activas para este filtro."
+    },
     "table": {
-      "ariaLabel": "Listado de alertas operativas",
-      "columns": {
-        "type": "Tipo",
-        "product": "Producto",
-        "message": "Detalle / Mensaje",
-        "created": "Fecha de reporte",
-        "status": "Estado",
-        "action": "Acción"
-      },
       "resolve": "Resolver",
       "resolved": "Resuelta"
     },
     "errors": {
       "load": "No se pudo cargar la información de alertas",
       "resolve": "No se pudo resolver la alerta. Intenta de nuevo.",
-      "unauthorized": "No tienes privilegios para resolver esta alerta. Solo Almacenistas y Administradores pueden resolver alertas operativas."
+      "unauthorized": "No tienes privilegios para resolver esta alerta. Solo Almacenistas y Administradores pueden resolver alertas operativas.",
+      "unauthorizedShort": "Sin permisos"
     },
     "success": {
       "resolved": "Alerta resuelta correctamente"
