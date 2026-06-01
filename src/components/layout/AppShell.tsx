@@ -59,6 +59,7 @@ type ShellSidebarProps = Readonly<{
   isReception: boolean
   isDispatch: boolean
   isReturns: boolean
+  isAlerts: boolean
   isCatalog: boolean
   handleLogout: () => void
 }>
@@ -118,6 +119,189 @@ function getAvatarInitials(displayName: string) {
     .filter(Boolean)
 
   return letters.join('') || 'ICM'
+}
+
+type SidebarNavCommonProps = Readonly<{
+  t: (key: string) => string
+  locationPathname: string
+  canManageInventory: boolean
+  canManageAdmin: boolean
+  isDashboard: boolean
+  isInventory: boolean
+  isReception: boolean
+  isDispatch: boolean
+  isReturns: boolean
+  isAlerts: boolean
+}>
+
+function SidebarGeneralSection({ t, isDashboard, isInventory, canManageInventory }: SidebarNavCommonProps) {
+  return (
+    <div className="nav__section">
+      <span className="nav__label">{t('dashboard.nav.general')}</span>
+      <Link className={`nav__link${isDashboard ? ' active' : ''}`} to="/app">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+        </svg>
+        {t('dashboard.nav.dashboard')}
+      </Link>
+      {canManageInventory ? (
+        <Link className={`nav__link${isInventory ? ' active' : ''}`} to="/app/inventory">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+          </svg>
+          {t('dashboard.nav.inventory')}
+        </Link>
+      ) : null}
+    </div>
+  )
+}
+
+type SidebarCatalogSectionProps = Readonly<SidebarNavCommonProps & {
+  isCatalog: boolean
+  catalogOpen: boolean
+  setCatalogOpen: React.Dispatch<React.SetStateAction<boolean>>
+}>
+
+function SidebarCatalogSection({ t, locationPathname, isCatalog, catalogOpen, setCatalogOpen }: SidebarCatalogSectionProps) {
+  return (
+    <div className="nav__section">
+      <span className="nav__label">{t('catalog.nav.title')}</span>
+      <button
+        type="button"
+        className={`nav__link nav__link--group${isCatalog ? ' active' : ''}`}
+        onClick={() => setCatalogOpen((open) => !open)}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+        </svg>
+        {t('dashboard.nav.catalog')}
+        <svg
+          className={`nav__chevron${catalogOpen ? ' nav__chevron--open' : ''}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {catalogOpen ? (
+        <div className="nav__submenu">
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/catalog/products') ? ' active' : ''}`}
+            to="/app/catalog/products"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="2" y="2" width="20" height="8" rx="1" />
+              <rect x="2" y="14" width="20" height="8" rx="1" />
+            </svg>
+            {t('catalog.nav.products')}
+          </Link>
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/catalog/categories') ? ' active' : ''}`}
+            to="/app/catalog/categories"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+            </svg>
+            {t('catalog.nav.categories')}
+          </Link>
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/catalog/brands') ? ' active' : ''}`}
+            to="/app/catalog/brands"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+              <line x1="7" y1="7" x2="7.01" y2="7" />
+            </svg>
+            {t('catalog.nav.brands')}
+          </Link>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function SidebarOperationsSection({
+  t,
+  locationPathname,
+  canManageInventory,
+  isReception,
+  isDispatch,
+  isReturns,
+  isAlerts,
+}: SidebarNavCommonProps) {
+  return (
+    <div className="nav__section">
+      <span className="nav__label">{t('dashboard.nav.operations')}</span>
+      <Link className={`nav__link${isReception ? ' active' : ''}`} to="/app/reception">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M12 2v20M2 12h20" />
+        </svg>
+        {t('dashboard.nav.reception')}
+      </Link>
+      <Link className={`nav__link${isDispatch ? ' active' : ''}`} to="/app/dispatch">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M5 12h14M12 5l7 7-7 7" />
+        </svg>
+        {t('dashboard.nav.dispatch')}
+      </Link>
+      {canManageInventory ? (
+        <Link className={`nav__link${isReturns ? ' active' : ''}`} to="/app/returns">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M9 14L4 9l5-5" />
+            <path d="M4 9h11a6 6 0 010 12h-1" />
+          </svg>
+          {t('dashboard.nav.returns')}
+        </Link>
+      ) : null}
+      {canManageInventory ? (
+        <Link className={`nav__link${locationPathname.startsWith('/app/adjustments') ? ' active' : ''}`} to="/app/adjustments">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M3 3h18v4H3z" />
+            <path d="M3 11h18v10H3z" />
+          </svg>
+          {t('dashboard.nav.adjustments')}
+        </Link>
+      ) : null}
+      <Link className={`nav__link${isAlerts ? ' active' : ''}`} to="/app/alerts">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 01-3.46 0" />
+        </svg>
+        {t('dashboard.nav.alerts')}
+      </Link>
+    </div>
+  )
+}
+
+function SidebarAdminSection({ t, canManageAdmin }: SidebarNavCommonProps) {
+  if (!canManageAdmin) {
+    return null
+  }
+
+  return (
+    <div className="nav__section">
+      <span className="nav__label">{t('dashboard.nav.admin')}</span>
+      <button className="nav__link" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+        </svg>
+        {t('dashboard.nav.audit')}
+      </button>
+      <button className="nav__link" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+        </svg>
+        {t('dashboard.nav.users')}
+      </button>
+    </div>
+  )
 }
 
 function ShellRail({
@@ -214,6 +398,7 @@ function ShellSidebar({
   isReception,
   isDispatch,
   isReturns,
+  isAlerts,
   isCatalog,
   handleLogout,
 }: ShellSidebarProps) {
@@ -243,137 +428,57 @@ function ShellSidebar({
         </div>
       </header>
       <nav aria-label={t('dashboard.nav.mainMenu')}>
-        <div className="nav__section">
-          <span className="nav__label">{t('dashboard.nav.general')}</span>
-          <Link className={`nav__link${isDashboard ? ' active' : ''}`} to="/app">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <rect x="3" y="3" width="7" height="7" />
-              <rect x="14" y="3" width="7" height="7" />
-              <rect x="14" y="14" width="7" height="7" />
-              <rect x="3" y="14" width="7" height="7" />
-            </svg>
-            {t('dashboard.nav.dashboard')}
-          </Link>
-          {canManageInventory ? (
-            <Link className={`nav__link${isInventory ? ' active' : ''}`} to="/app/inventory">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
-              </svg>
-              {t('dashboard.nav.inventory')}
-            </Link>
-          ) : null}
-        </div>
-
-        <div className="nav__section">
-          <span className="nav__label">{t('catalog.nav.title')}</span>
-          <button
-            type="button"
-            className={`nav__link nav__link--group${isCatalog ? ' active' : ''}`}
-            onClick={() => setCatalogOpen((o) => !o)}
-            aria-expanded={catalogOpen}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-            </svg>
-            {t('dashboard.nav.catalog')}
-            <svg
-              className={`nav__chevron${catalogOpen ? ' nav__chevron--open' : ''}`}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-            >
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
-          {catalogOpen ? (
-            <div className="nav__submenu">
-              <Link
-                className={`nav__sublink${location.pathname.startsWith('/app/catalog/products') ? ' active' : ''}`}
-                to="/app/catalog/products"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <rect x="2" y="2" width="20" height="8" rx="1" />
-                  <rect x="2" y="14" width="20" height="8" rx="1" />
-                </svg>
-                {t('catalog.nav.products')}
-              </Link>
-              <Link
-                className={`nav__sublink${location.pathname.startsWith('/app/catalog/categories') ? ' active' : ''}`}
-                to="/app/catalog/categories"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
-                </svg>
-                {t('catalog.nav.categories')}
-              </Link>
-              <Link
-                className={`nav__sublink${location.pathname.startsWith('/app/catalog/brands') ? ' active' : ''}`}
-                to="/app/catalog/brands"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
-                  <line x1="7" y1="7" x2="7.01" y2="7" />
-                </svg>
-                {t('catalog.nav.brands')}
-              </Link>
-            </div>
-          ) : null}
-        </div>
-
-        <div className="nav__section">
-          <span className="nav__label">{t('dashboard.nav.operations')}</span>
-          <Link className={`nav__link${isReception ? ' active' : ''}`} to="/app/reception">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M12 2v20M2 12h20" />
-            </svg>
-            {t('dashboard.nav.reception')}
-          </Link>
-          <Link className={`nav__link${isDispatch ? ' active' : ''}`} to="/app/dispatch">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-            {t('dashboard.nav.dispatch')}
-          </Link>
-          {canManageInventory ? (
-            <Link className={`nav__link${isReturns ? ' active' : ''}`} to="/app/returns">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M9 14L4 9l5-5" />
-                <path d="M4 9h11a6 6 0 010 12h-1" />
-              </svg>
-              {t('dashboard.nav.returns')}
-            </Link>
-          ) : null}
-          {canManageInventory ? (
-            <Link className={`nav__link${location.pathname.startsWith('/app/adjustments') ? ' active' : ''}`} to="/app/adjustments">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M3 3h18v4H3z" />
-                <path d="M3 11h18v10H3z" />
-              </svg>
-              {t('dashboard.nav.adjustments')}
-            </Link>
-          ) : null}
-        </div>
-
-        {canManageAdmin ? (
-          <div className="nav__section">
-            <span className="nav__label">{t('dashboard.nav.admin')}</span>
-            <button className="nav__link" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-              </svg>
-              {t('dashboard.nav.audit')}
-            </button>
-            <button className="nav__link" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-              </svg>
-              {t('dashboard.nav.users')}
-            </button>
-          </div>
-        ) : null}
+        <SidebarGeneralSection
+          t={t}
+          locationPathname={location.pathname}
+          canManageInventory={canManageInventory}
+          canManageAdmin={canManageAdmin}
+          isDashboard={isDashboard}
+          isInventory={isInventory}
+          isReception={isReception}
+          isDispatch={isDispatch}
+          isReturns={isReturns}
+          isAlerts={isAlerts}
+        />
+        <SidebarCatalogSection
+          t={t}
+          locationPathname={location.pathname}
+          canManageInventory={canManageInventory}
+          canManageAdmin={canManageAdmin}
+          isDashboard={isDashboard}
+          isInventory={isInventory}
+          isReception={isReception}
+          isDispatch={isDispatch}
+          isReturns={isReturns}
+          isAlerts={isAlerts}
+          isCatalog={isCatalog}
+          catalogOpen={catalogOpen}
+          setCatalogOpen={setCatalogOpen}
+        />
+        <SidebarOperationsSection
+          t={t}
+          locationPathname={location.pathname}
+          canManageInventory={canManageInventory}
+          canManageAdmin={canManageAdmin}
+          isDashboard={isDashboard}
+          isInventory={isInventory}
+          isReception={isReception}
+          isDispatch={isDispatch}
+          isReturns={isReturns}
+          isAlerts={isAlerts}
+        />
+        <SidebarAdminSection
+          t={t}
+          locationPathname={location.pathname}
+          canManageInventory={canManageInventory}
+          canManageAdmin={canManageAdmin}
+          isDashboard={isDashboard}
+          isInventory={isInventory}
+          isReception={isReception}
+          isDispatch={isDispatch}
+          isReturns={isReturns}
+          isAlerts={isAlerts}
+        />
       </nav>
       <footer className="sidebar__footer">
         <button className="nav__link" onClick={handleLogout} type="button">
@@ -469,6 +574,7 @@ function AppShellChrome({
         isReception={isReception}
         isDispatch={isDispatch}
         isReturns={isReturns}
+        isAlerts={isAlerts}
         isCatalog={isCatalog}
         handleLogout={handleLogout}
       />
