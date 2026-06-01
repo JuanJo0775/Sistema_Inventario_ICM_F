@@ -15,6 +15,7 @@ import CatalogProductDetailPage from './features/catalog/CatalogProductDetailPag
 import CatalogProductFormPage from './features/catalog/CatalogProductFormPage'
 import CatalogCategoriesPage from './features/catalog/CatalogCategoriesPage'
 import CatalogBrandsPage from './features/catalog/CatalogBrandsPage'
+import LocationsPage from './features/locations/LocationsPage'
 
 function App() {
   return (
@@ -127,6 +128,15 @@ function App() {
           element={
             <ProtectedRoute>
               <CatalogBrandsPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Locations Module */}
+        <Route
+          path="/app/locations"
+          element={
+            <ProtectedRoute>
+              <LocationsPage />
             </ProtectedRoute>
           }
         />

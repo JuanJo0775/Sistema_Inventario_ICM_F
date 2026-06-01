@@ -166,6 +166,8 @@
       "audit": "Audit",
       "users": "Users",
       "catalog": "Catalog",
+      "locations": "Location",
+      "warehouse": "Warehouse",
       "logout": "Sign out"
     },
     "sidebar": {
@@ -908,6 +910,41 @@
         "created": "Brand created",
         "updated": "Brand updated",
         "error": "Error saving brand"
+      }
+    },
+    "locations": {
+      "title": "LOCATION",
+      "subtitle": "Manage warehouses and showcases",
+      "new": "New Location",
+      "edit": "Edit Location",
+      "empty": "No locations registered in the system.",
+      "form": {
+        "nameLabel": "Name",
+        "namePlaceholder": "E.g. Main Showcase",
+        "typeLabel": "Type",
+        "typePlaceholder": "Select type...",
+        "capacityLabel": "Relative capacity",
+        "capacityPlaceholder": "E.g. 100",
+        "descriptionLabel": "Description (optional)",
+        "descriptionPlaceholder": "Enter an optional description...",
+        "save": "Save location",
+        "errors": {
+          "nameRequired": "Name is required",
+          "typeRequired": "Type is required",
+          "capacityRequired": "Relative capacity is required",
+          "capacityMin": "Capacity must be greater than 0"
+        }
+      },
+      "deactivate": {
+        "title": "Deactivate Location",
+        "confirm": "Are you sure you want to deactivate this location?",
+        "warning": "A deactivated location cannot receive receptions, transfers, or participate in sales.",
+        "submit": "Confirm Deactivation"
+      },
+      "stats": {
+        "total": "Total locations",
+        "warehouses": "Active warehouses",
+        "showcases": "Active showcases"
       }
     }
   }

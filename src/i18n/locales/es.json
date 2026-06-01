@@ -166,6 +166,8 @@
       "audit": "Auditoria",
       "users": "Usuarios",
       "catalog": "Catalogo",
+      "locations": "Locación",
+      "warehouse": "Bodega",
       "logout": "Cerrar sesion"
     },
     "sidebar": {
@@ -904,6 +906,41 @@
         "created": "Marca creada",
         "updated": "Marca actualizada",
         "error": "Error al guardar la marca"
+      }
+    },
+    "locations": {
+      "title": "LOCACIÓN",
+      "subtitle": "Gestión de bodegas y vitrinas",
+      "new": "Nueva Ubicación",
+      "edit": "Editar Ubicación",
+      "empty": "No hay ubicaciones registradas en el sistema.",
+      "form": {
+        "nameLabel": "Nombre",
+        "namePlaceholder": "Ej. Vitrina Principal",
+        "typeLabel": "Tipo",
+        "typePlaceholder": "Seleccionar tipo...",
+        "capacityLabel": "Capacidad relativa",
+        "capacityPlaceholder": "Ej. 100",
+        "descriptionLabel": "Descripción (opcional)",
+        "descriptionPlaceholder": "Ingresa una descripción opcional...",
+        "save": "Guardar ubicación",
+        "errors": {
+          "nameRequired": "El nombre es obligatorio",
+          "typeRequired": "El tipo es obligatorio",
+          "capacityRequired": "La capacidad relativa es obligatoria",
+          "capacityMin": "La capacidad debe ser mayor que 0"
+        }
+      },
+      "deactivate": {
+        "title": "Desactivar Ubicación",
+        "confirm": "¿Está seguro que desea desactivar esta ubicación?",
+        "warning": "Una ubicación desactivada no recibirá entradas, transferencias ni participará en ventas.",
+        "submit": "Confirmar Desactivación"
+      },
+      "stats": {
+        "total": "Ubicaciones totales",
+        "warehouses": "Bodegas activas",
+        "showcases": "Vitrinas activas"
       }
     }
   }

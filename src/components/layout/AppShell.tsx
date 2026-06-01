@@ -30,6 +30,7 @@ type AppShellChromeProps = Readonly<{
   isReturns: boolean
   isAlerts: boolean
   isCatalog: boolean
+  isLocations: boolean
   handleLanguageChange: (next: 'es' | 'en') => void
   handleLogout: () => void
 }>
@@ -45,6 +46,7 @@ type ShellRailProps = Readonly<{
   isReturns: boolean
   isAlerts: boolean
   isCatalog: boolean
+  isLocations: boolean
 }>
 
 type ShellSidebarProps = Readonly<{
@@ -61,6 +63,7 @@ type ShellSidebarProps = Readonly<{
   isReturns: boolean
   isAlerts: boolean
   isCatalog: boolean
+  isLocations: boolean
   handleLogout: () => void
 }>
 
@@ -224,6 +227,53 @@ function SidebarCatalogSection({ t, locationPathname, isCatalog, catalogOpen, se
   )
 }
 
+type SidebarLocationsSectionProps = Readonly<SidebarNavCommonProps & {
+  isLocations: boolean
+  locationsOpen: boolean
+  setLocationsOpen: React.Dispatch<React.SetStateAction<boolean>>
+}>
+
+function SidebarLocationsSection({ t, locationPathname, isLocations, locationsOpen, setLocationsOpen }: SidebarLocationsSectionProps) {
+  return (
+    <div className="nav__section">
+      <span className="nav__label">{t('dashboard.nav.locationsSection', 'LOCACIÓN')}</span>
+      <button
+        type="button"
+        className={`nav__link nav__link--group${isLocations ? ' active' : ''}`}
+        onClick={() => setLocationsOpen((open) => !open)}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+        {t('dashboard.nav.locations', 'LOCACIÓN')}
+        <svg
+          className={`nav__chevron${locationsOpen ? ' nav__chevron--open' : ''}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {locationsOpen ? (
+        <div className="nav__submenu">
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/locations') ? ' active' : ''}`}
+            to="/app/locations"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+            {t('dashboard.nav.warehouse', 'Bodega')}
+          </Link>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 function SidebarOperationsSection({
   t,
   locationPathname,
@@ -315,6 +365,7 @@ function ShellRail({
   isReturns,
   isAlerts,
   isCatalog,
+  isLocations,
 }: ShellRailProps) {
   return (
     <nav className="rail" aria-label={t('dashboard.nav.quickAccess')}>
@@ -338,6 +389,14 @@ function ShellRail({
           <path d="M4 6h16M4 10h16M4 14h16M4 18h16" />
         </svg>
       </Link>
+      {canManageInventory ? (
+        <Link className={`rail__btn${isLocations ? ' active' : ''}`} title={t('dashboard.nav.locations', 'LOCACIÓN')} to="/app/locations">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </Link>
+      ) : null}
       <Link className={`rail__btn${isReception ? ' active' : ''}`} title={t('dashboard.nav.reception')} to="/app/reception">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M12 2v20M2 12h20" />
@@ -400,14 +459,20 @@ function ShellSidebar({
   isReturns,
   isAlerts,
   isCatalog,
+  isLocations,
   handleLogout,
 }: ShellSidebarProps) {
   const location = useLocation()
   const [catalogOpen, setCatalogOpen] = React.useState(isCatalog)
+  const [locationsOpen, setLocationsOpen] = React.useState(isLocations)
 
   React.useEffect(() => {
     if (isCatalog) setCatalogOpen(true)
   }, [isCatalog])
+
+  React.useEffect(() => {
+    if (isLocations) setLocationsOpen(true)
+  }, [isLocations])
 
   return (
     <aside className="sidebar">
@@ -454,6 +519,21 @@ function ShellSidebar({
           isCatalog={isCatalog}
           catalogOpen={catalogOpen}
           setCatalogOpen={setCatalogOpen}
+        />
+        <SidebarLocationsSection
+          t={t}
+          locationPathname={location.pathname}
+          canManageInventory={canManageInventory}
+          canManageAdmin={canManageAdmin}
+          isDashboard={isDashboard}
+          isInventory={isInventory}
+          isReception={isReception}
+          isDispatch={isDispatch}
+          isReturns={isReturns}
+          isAlerts={isAlerts}
+          isLocations={isLocations}
+          locationsOpen={locationsOpen}
+          setLocationsOpen={setLocationsOpen}
         />
         <SidebarOperationsSection
           t={t}
@@ -544,6 +624,7 @@ function AppShellChrome({
   isReturns,
   isAlerts,
   isCatalog,
+  isLocations,
   handleLanguageChange,
   handleLogout,
 }: AppShellChromeProps) {
@@ -560,6 +641,7 @@ function AppShellChrome({
         isReturns={isReturns}
         isAlerts={isAlerts}
         isCatalog={isCatalog}
+        isLocations={isLocations}
       />
 
       <ShellSidebar
@@ -576,6 +658,7 @@ function AppShellChrome({
         isReturns={isReturns}
         isAlerts={isAlerts}
         isCatalog={isCatalog}
+        isLocations={isLocations}
         handleLogout={handleLogout}
       />
 
@@ -631,6 +714,8 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
 
   const isCatalog = location.pathname.startsWith('/app/catalog')
 
+  const isLocations = location.pathname.startsWith('/app/locations')
+
   const handleLanguageChange = (next: 'es' | 'en') => {
     if (next !== language) {
       i18n.changeLanguage(next)
@@ -661,6 +746,7 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
       isReturns={isReturns}
       isAlerts={isAlerts}
       isCatalog={isCatalog}
+      isLocations={isLocations}
       handleLanguageChange={handleLanguageChange}
       handleLogout={handleLogout}
     >
