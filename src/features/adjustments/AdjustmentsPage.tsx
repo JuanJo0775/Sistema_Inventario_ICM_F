@@ -56,7 +56,7 @@ function AdjustmentsPage() {
       <div className="page-body">
             <div className="alert-bar alert-bar--err mb-24">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-              <span><strong>Módulo exclusivo del Almacenista — BR-07.</strong> Los ajustes son adiciones al historial; los registros originales son inmutables. BR-10.</span>
+              <span><strong>Módulo exclusivo del Almacenista.</strong> Los ajustes son adiciones al historial; los registros originales son inmutables.</span>
             </div>
 
             <div className="split split--2-1">
@@ -94,7 +94,9 @@ function AdjustmentsPage() {
                           <input id="adj-nuevo" className="f-input text-mono adjustments-new-qty" type="number" value={newQuantity === '' ? '' : String(newQuantity)} onChange={(e: ChangeEvent<HTMLInputElement>) => setNewQuantity(Number(e.target.value) || '')} />
                         </div>
                       </div>
-                      <div className="adjustments-delta-strip">Delta: {delta}</div>
+                      <div className={`adjustments-delta-strip adjustments-delta-strip--${delta < 0 ? 'negative' : delta > 0 ? 'positive' : 'neutral'}`}>
+                        Delta: {delta > 0 ? `+${delta}` : delta}
+                      </div>
                     </fieldset>
                     <fieldset className="adjustments-fieldset--spaced">
                       <legend>Justificación</legend>
