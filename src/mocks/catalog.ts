@@ -269,18 +269,19 @@ export const mockGetBrands = (includeInactive = false) => {
   return mockCatalogBrands.filter(b => includeInactive || b.is_active)
 }
 
-export const mockCreateBrand = (data: { category_id: string; name: string }) => {
+export const mockCreateBrand = (data: { category_id?: string; name: string; description?: string }) => {
   const name = data.name?.trim() || ''
   if (!name) throw new Error('El nombre de la marca es obligatorio.')
-  if (!data.category_id) throw new Error('La categoría asociada es obligatoria.')
-  if (mockCatalogBrands.some(b => b.category === data.category_id && b.name.toLowerCase() === name.toLowerCase())) {
-    throw new Error('Ya existe una marca con este nombre en esta categoría.')
+  const catId = data.category_id || '1'
+  if (mockCatalogBrands.some(b => b.category === catId && b.name.toLowerCase() === name.toLowerCase())) {
+    throw new Error('Ya existe una marca con este nombre.')
   }
   const id = `brand-${Date.now()}`
   const newBrand: CatalogBrand = {
     id,
-    category: data.category_id,
+    category: catId,
     name,
+    description: data.description,
     slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     is_active: true,
     created_at: new Date().toISOString(),
@@ -290,19 +291,21 @@ export const mockCreateBrand = (data: { category_id: string; name: string }) => 
   return newBrand
 }
 
-export const mockUpdateBrand = (id: string, data: { category_id?: string; name?: string }) => {
+export const mockUpdateBrand = (id: string, data: { category_id?: string; name?: string; description?: string; is_active?: boolean }) => {
   const brandIndex = mockCatalogBrands.findIndex(b => b.id === id)
   if (brandIndex === -1) throw new Error('Marca no encontrada.')
   const name = data.name?.trim()
   const catId = data.category_id ?? mockCatalogBrands[brandIndex].category
   if (name) {
     if (mockCatalogBrands.some(b => b.id !== id && b.category === catId && b.name.toLowerCase() === name.toLowerCase())) {
-      throw new Error('Ya existe otra marca con este nombre en esta categoría.')
+      throw new Error('Ya existe otra marca con este nombre.')
     }
     mockCatalogBrands[brandIndex].name = name
     mockCatalogBrands[brandIndex].slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
   }
   if (data.category_id) mockCatalogBrands[brandIndex].category = data.category_id
+  if (data.description !== undefined) mockCatalogBrands[brandIndex].description = data.description
+  if (data.is_active !== undefined) mockCatalogBrands[brandIndex].is_active = data.is_active
   mockCatalogBrands[brandIndex].updated_at = new Date().toISOString()
   return mockCatalogBrands[brandIndex]
 }

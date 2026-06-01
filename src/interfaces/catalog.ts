@@ -13,13 +13,14 @@ export interface CatalogCategory {
 
 export interface CatalogBrand {
   id: string
-  category: string // Category UUID
+  category?: string // Category UUID (optional)
   name: string
+  description?: string
   slug: string
   is_active: boolean
   created_at?: string
   updated_at?: string
-  product_count?: number // Computed on frontend
+  product_count?: number
 }
 
 export interface CatalogProduct {

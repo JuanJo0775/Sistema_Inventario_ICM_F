@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { 
   fetchCatalogProducts, 
   fetchCategories as fetchCategoriesService, 
-  fetchBrands, 
+  fetchBrands as fetchBrandsService, 
   createCatalogProduct, 
   updateCatalogProduct,
   deactivateCatalogProduct,
@@ -10,7 +10,11 @@ import {
   createCategory as createCategoryService,
   updateCategory as updateCategoryService,
   deactivateCategory as deactivateCategoryService,
-  restoreCategory as restoreCategoryService
+  restoreCategory as restoreCategoryService,
+  createBrand as createBrandService,
+  updateBrand as updateBrandService,
+  deactivateBrand as deactivateBrandService,
+  restoreBrand as restoreBrandService
 } from '../services/catalog'
 import type { CatalogProduct as Product, CatalogCategory as Category, CatalogBrand as Brand } from '../interfaces/catalog'
 
@@ -23,7 +27,7 @@ interface CatalogState {
   
   fetchProducts: () => Promise<void>
   fetchCategories: (includeInactive?: boolean) => Promise<void>
-  fetchBrands: () => Promise<void>
+  fetchBrands: (includeInactive?: boolean) => Promise<void>
   
   createProduct: (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => Promise<void>
   updateProduct: (id: string | number, product: Partial<Product>) => Promise<void>
@@ -34,6 +38,11 @@ interface CatalogState {
   updateCategory: (id: string, category: Partial<Category>) => Promise<void>
   deactivateCategory: (id: string) => Promise<void>
   restoreCategory: (id: string) => Promise<void>
+
+  createBrand: (brand: { name: string; description?: string }) => Promise<void>
+  updateBrand: (id: string, brand: { name?: string; description?: string; is_active?: boolean }) => Promise<void>
+  deactivateBrand: (id: string) => Promise<void>
+  restoreBrand: (id: string) => Promise<void>
 }
 
 const useCatalogStore = create<CatalogState>((set) => ({
@@ -63,10 +72,10 @@ const useCatalogStore = create<CatalogState>((set) => ({
     }
   },
 
-  fetchBrands: async () => {
+  fetchBrands: async (includeInactive = true) => {
     set({ loading: true, error: null })
     try {
-      const brands = await fetchBrands()
+      const brands = await fetchBrandsService(includeInactive)
       set({ brands: brands as any, loading: false })
     } catch (err: any) {
       set({ error: err.message, loading: false })
@@ -163,6 +172,54 @@ const useCatalogStore = create<CatalogState>((set) => ({
       await restoreCategoryService(id)
       const categories = await fetchCategoriesService(true)
       set({ categories: categories as any, loading: false })
+    } catch (err: any) {
+      set({ error: err.message, loading: false })
+      throw err
+    }
+  },
+
+  createBrand: async (brandData) => {
+    set({ loading: true, error: null })
+    try {
+      await createBrandService({ name: brandData.name, description: brandData.description })
+      const brands = await fetchBrandsService(true)
+      set({ brands: brands as any, loading: false })
+    } catch (err: any) {
+      set({ error: err.message, loading: false })
+      throw err
+    }
+  },
+
+  updateBrand: async (id, brandData) => {
+    set({ loading: true, error: null })
+    try {
+      await updateBrandService(id, brandData as any)
+      const brands = await fetchBrandsService(true)
+      set({ brands: brands as any, loading: false })
+    } catch (err: any) {
+      set({ error: err.message, loading: false })
+      throw err
+    }
+  },
+
+  deactivateBrand: async (id) => {
+    set({ loading: true, error: null })
+    try {
+      await deactivateBrandService(id)
+      const brands = await fetchBrandsService(true)
+      set({ brands: brands as any, loading: false })
+    } catch (err: any) {
+      set({ error: err.message, loading: false })
+      throw err
+    }
+  },
+
+  restoreBrand: async (id) => {
+    set({ loading: true, error: null })
+    try {
+      await restoreBrandService(id)
+      const brands = await fetchBrandsService(true)
+      set({ brands: brands as any, loading: false })
     } catch (err: any) {
       set({ error: err.message, loading: false })
       throw err

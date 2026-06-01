@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { AlertTriangle, X } from 'lucide-react';
 import AppShell from '../../components/layout/AppShell';
 import useCatalogStore from '../../store/useCatalogStore';
 
 const CatalogProductsPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { products, loading, fetchProducts, categories, brands, fetchCategories, fetchBrands } = useCatalogStore();
+  const { products, loading, error: storeError, fetchProducts, categories, brands, fetchCategories, fetchBrands } = useCatalogStore();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [brandFilter, setBrandFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -21,6 +23,7 @@ const CatalogProductsPage: React.FC = () => {
   }, [fetchProducts, fetchCategories, fetchBrands]);
 
   const handleRefresh = () => {
+    setLocalError(null);
     fetchProducts();
     fetchCategories();
     fetchBrands();
@@ -78,6 +81,17 @@ const CatalogProductsPage: React.FC = () => {
             {t('catalog.products.new')}
           </button>
         </div>
+
+        {/* Error Alert Bar */}
+        {(localError || storeError) && (
+          <div className="alert-bar alert-bar--warn" role="alert" style={{ marginBottom: '1.5rem' }}>
+            <AlertTriangle style={{ marginRight: '0.5rem', width: '18px', height: '18px' }} />
+            <span>{localError || storeError}</span>
+            <button className="alert-bar__close" onClick={() => setLocalError(null)}>
+              <X style={{ width: '16px', height: '16px' }} />
+            </button>
+          </div>
+        )}
 
         {/* Toolbar - single row */}
         <div style={{ background: '#fff', padding: '1.25rem 1.5rem', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>

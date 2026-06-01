@@ -41,15 +41,10 @@ export const fetchCategories = async (includeInactive = false): Promise<CatalogC
   if (useMocks) {
     return mockGetCategories(includeInactive)
   }
-  try {
-    const response = await api.get<BackendListResponse<CatalogCategory>>('/catalog/categories/', {
-      params: { include_inactive: includeInactive ? 'true' : undefined },
-    })
-    return normalizeList(response.data)
-  } catch (error) {
-    console.error('Real API error in fetchCategories, using fallback mocks', error)
-    return mockGetCategories(includeInactive)
-  }
+  const response = await api.get<BackendListResponse<CatalogCategory>>('/catalog/categories/', {
+    params: { include_inactive: includeInactive ? 'true' : undefined },
+  })
+  return normalizeList(response.data)
 }
 
 export const createCategory = async (data: {
@@ -106,27 +101,19 @@ export const fetchBrands = async (
     }
     return list
   }
-  try {
-    const response = await api.get<BackendListResponse<CatalogBrand>>('/catalog/subcategories/', {
-      params: {
-        include_inactive: includeInactive ? 'true' : undefined,
-        category: categoryId || undefined,
-      },
-    })
-    return normalizeList(response.data)
-  } catch (error) {
-    console.error('Real API error in fetchBrands, using fallback mocks', error)
-    let list = mockGetBrands(includeInactive)
-    if (categoryId) {
-      list = list.filter((b) => String(b.category) === String(categoryId))
-    }
-    return list
-  }
+  const response = await api.get<BackendListResponse<CatalogBrand>>('/catalog/subcategories/', {
+    params: {
+      include_inactive: includeInactive ? 'true' : undefined,
+      category: categoryId || undefined,
+    },
+  })
+  return normalizeList(response.data)
 }
 
 export const createBrand = async (data: {
-  category_id: string
+  category_id?: string
   name: string
+  description?: string
 }): Promise<CatalogBrand> => {
   if (useMocks) {
     return mockCreateBrand(data)
@@ -137,7 +124,7 @@ export const createBrand = async (data: {
 
 export const updateBrand = async (
   id: string,
-  data: { category_id?: string; name?: string },
+  data: { category_id?: string; name?: string; description?: string; is_active?: boolean },
 ): Promise<CatalogBrand> => {
   if (useMocks) {
     return mockUpdateBrand(id, data)
@@ -179,20 +166,15 @@ export const fetchCatalogProducts = async (
   if (useMocks) {
     return mockGetProducts(params)
   }
-  try {
-    const response = await api.get<BackendListResponse<CatalogProduct>>('/catalog/products/', {
-      params: {
-        search: params?.search || undefined,
-        category: params?.category || undefined,
-        include_inactive: params?.include_inactive ? 'true' : undefined,
-        page: params?.page || undefined,
-      },
-    })
-    return normalizeList(response.data)
-  } catch (error) {
-    console.error('Real API error in fetchCatalogProducts, using fallback mocks', error)
-    return mockGetProducts(params)
-  }
+  const response = await api.get<BackendListResponse<CatalogProduct>>('/catalog/products/', {
+    params: {
+      search: params?.search || undefined,
+      category: params?.category || undefined,
+      include_inactive: params?.include_inactive ? 'true' : undefined,
+      page: params?.page || undefined,
+    },
+  })
+  return normalizeList(response.data)
 }
 
 export const fetchCatalogProductDetail = async (id: string): Promise<CatalogProduct> => {
@@ -209,13 +191,8 @@ export const createCatalogProduct = async (
   if (useMocks) {
     return mockCreateProduct(data as Partial<CatalogProduct>)
   }
-  try {
-    const response = await api.post<CatalogProduct>('/catalog/products/', data)
-    return response.data
-  } catch (error) {
-    console.error('Real API error in createCatalogProduct, using fallback mocks', error)
-    return mockCreateProduct(data as Partial<CatalogProduct>)
-  }
+  const response = await api.post<CatalogProduct>('/catalog/products/', data)
+  return response.data
 }
 
 export const updateCatalogProduct = async (
@@ -225,38 +202,23 @@ export const updateCatalogProduct = async (
   if (useMocks) {
     return mockUpdateProduct(id, data as Partial<CatalogProduct>)
   }
-  try {
-    const response = await api.patch<CatalogProduct>(`/catalog/products/${id}/`, data)
-    return response.data
-  } catch (error) {
-    console.error('Real API error in updateCatalogProduct, using fallback mocks', error)
-    return mockUpdateProduct(id, data as Partial<CatalogProduct>)
-  }
+  const response = await api.patch<CatalogProduct>(`/catalog/products/${id}/`, data)
+  return response.data
 }
 
 export const deactivateCatalogProduct = async (id: string): Promise<void> => {
   if (useMocks) {
     return mockDeactivateProduct(id)
   }
-  try {
-    await api.delete(`/catalog/products/${id}/`)
-  } catch (error) {
-    console.error('Real API error in deactivateCatalogProduct, using fallback mocks', error)
-    return mockDeactivateProduct(id)
-  }
+  await api.delete(`/catalog/products/${id}/`)
 }
 
 export const restoreCatalogProduct = async (id: string): Promise<CatalogProduct> => {
   if (useMocks) {
     return mockRestoreProduct(id)
   }
-  try {
-    const response = await api.post<CatalogProduct>(`/catalog/products/${id}/restore/`)
-    return response.data
-  } catch (error) {
-    console.error('Real API error in restoreCatalogProduct, using fallback mocks', error)
-    return mockRestoreProduct(id)
-  }
+  const response = await api.post<CatalogProduct>(`/catalog/products/${id}/restore/`)
+  return response.data
 }
 
 // Fetch Barcode Payload
