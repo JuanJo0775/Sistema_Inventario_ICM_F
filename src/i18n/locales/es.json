@@ -471,7 +471,9 @@
       "expectedEmpty": "Selecciona una orden para ver la cantidad esperada.",
       "discrepancyNote": "Nota de discrepancia (obligatoria)",
       "confirm": "Confirmar entrada",
-      "saving": "Guardando..."
+      "saving": "Guardando...",
+      "coldChainAck": "Confirmo cumplimiento de cadena de frío para esta recepción",
+      "electricalSafetyAck": "Confirmo protocolo de seguridad eléctrica revisado"
     },
     "movements": {
       "ariaLabel": "Movimientos de entrada recientes",
@@ -487,7 +489,9 @@
       "location": "Selecciona una ubicación destino",
       "serials": "Debes ingresar exactamente {{count}} número(s) de serie",
       "discrepancyNote": "Debes agregar una nota explicando la discrepancia",
-      "scanNotFound": "No se encontró ninguna orden con ese código"
+      "scanNotFound": "No se encontró ninguna orden con ese código",
+      "coldChain": "Debes confirmar la cadena de frío para continuar",
+      "electricalSafety": "Debes confirmar la seguridad eléctrica para continuar"
     },
     "success": {
       "confirmed": "Entrada registrada correctamente para SKU {{sku}}"

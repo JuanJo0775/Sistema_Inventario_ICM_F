@@ -471,7 +471,9 @@
       "expectedEmpty": "Select an order to see the expected quantity.",
       "discrepancyNote": "Discrepancy note (required)",
       "confirm": "Confirm intake",
-      "saving": "Saving..."
+      "saving": "Saving...",
+      "coldChainAck": "I confirm cold chain compliance for this reception",
+      "electricalSafetyAck": "I confirm electrical safety protocol has been reviewed"
     },
     "movements": {
       "ariaLabel": "Recent intake movements",
@@ -487,7 +489,9 @@
       "location": "Select a destination location",
       "serials": "You must enter exactly {{count}} serial number(s)",
       "discrepancyNote": "You must add a note explaining the discrepancy",
-      "scanNotFound": "No order found with that code"
+      "scanNotFound": "No order found with that code",
+      "coldChain": "You must confirm the cold chain to continue",
+      "electricalSafety": "You must confirm electrical safety to continue"
     },
     "success": {
       "confirmed": "Intake registered successfully for SKU {{sku}}"
