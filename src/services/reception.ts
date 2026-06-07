@@ -1,181 +1,136 @@
-import { api } from './api'
-import { useMocks } from '../mocks/config'
-import { mockReceptionOverview } from '../mocks/reception'
+import { api } from "./api";
+import { useMocks } from "../mocks/config";
+import { mockReceptionOverview } from "../mocks/reception";
 import type {
   ReceptionMovement,
+  ReceptionMovementResponse,
   ReceptionOverview,
   ReceptionSubmitPayload,
-} from '../interfaces/reception'
+} from "../interfaces/reception";
 
-/**
- * Recepción — carga el overview (mock o API).
- *
- * En producción el backend no tiene un endpoint `/movements/reception/overview/`
- * dedicado. Obtenemos las ubicaciones desde `/inventory/locations/`,
- * los movimientos recientes (tipo ENTRY) desde `/movements/entries/` y
- * construimos la lista de pedidos esperados a partir de los productos reales.
- */
+// Convierte la respuesta del backend al formato que usa el frontend en la UI
+const mapMovementResponse = (
+  mov: ReceptionMovementResponse,
+  locationCode: string,
+  productName: string,
+): ReceptionMovement => ({
+  id: mov.id,
+  productName: productName || mov.product_sku,
+  sku: mov.product_sku,
+  quantity: mov.quantity,
+  locationCode,
+  operator: mov.executed_by, // UUID — se muestra como identificador
+  confirmedAt: new Intl.DateTimeFormat("es-CO", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(mov.created_at)),
+  discrepancyNote: mov.discrepancy_note ?? undefined,
+});
+
 export const fetchReceptionOverview = async (): Promise<ReceptionOverview> => {
   if (useMocks) {
-    return mockReceptionOverview
+    return mockReceptionOverview;
   }
 
-  // Llamadas paralelas al backend real
-  const [locationsRes, movementsRes, productsRes, categoriesRes] = await Promise.all([
+  const [locationsRes, movementsRes] = await Promise.all([
     api.get<{ results: Array<{ id: string; code: string; name: string }> }>(
-      '/inventory/locations/',
+      "/inventory/locations/",
     ),
-    api.get<{
-      results: Array<{
-        id: string
-        product_sku: string
-        quantity: number
-        destination_location: string | null
-        executed_by: string
-        created_at: string
-        discrepancy_note: string | null
-      }>
-    }>('/movements/entries/', { params: { page_size: 10, ordering: '-created_at' } }),
-    api.get<any>('/catalog/products/'),
-    api.get<any>('/catalog/categories/'),
-  ])
+    api.get<{ results: ReceptionMovementResponse[] }>("/movements/entries/", {
+      params: { page_size: 10, ordering: "-created_at" },
+    }),
+  ]);
 
-  const getList = <T,>(data: any): T[] => {
-    if (Array.isArray(data)) return data
-    return data.results ?? []
-  }
-
-  const locations = getList<{ id: string; code: string; name: string }>(locationsRes.data).map((loc) => ({
+  const locations = locationsRes.data.results.map((loc) => ({
     id: loc.id,
     code: loc.code,
     name: loc.name,
-    capacityLabel: '',
-  }))
+    capacityLabel: "",
+  }));
 
-  const recentMovements: ReceptionMovement[] = getList<any>(movementsRes.data).map((mov) => ({
-    id: mov.id,
-    productName: mov.product_sku,
-    sku: mov.product_sku,
-    quantity: mov.quantity,
-    locationCode: mov.destination_location ?? '-',
-    operator: mov.executed_by,
-    confirmedAt: new Intl.DateTimeFormat('es-CO', {
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(mov.created_at)),
-    discrepancyNote: mov.discrepancy_note ?? undefined,
-  }))
+  // Mapa de UUID -> código de ubicación para mostrar en UI
+  const locationCodeById = new Map(
+    locationsRes.data.results.map((loc) => [loc.id, loc.code]),
+  );
 
-  const products = getList<any>(productsRes.data)
-  const categories = getList<any>(categoriesRes.data)
-
-  const expectedOrders = products.map((product, index) => {
-    const category = categories.find((cat) => cat.id === product.category)
-    const requiresSerial = category ? !!category.requires_serial_number : false
-
-    return {
-      id: product.id,
-      purchaseOrder: `OC-2026-${product.sku.toUpperCase()}`,
-      supplier: 'Proveedor ICM',
-      invoice: `IMP-88${421 + index}`,
-      productId: product.id,
-      productName: product.name,
-      sku: product.sku,
-      barcode: product.barcode || '',
-      category: category?.name || 'Medicamentos',
-      expectedQuantity: 50,
-      receivedQuantity: 0,
-      locationId: locations[0]?.id || '',
-      dueDate: '2026-06-30',
-      status: 'pending' as const,
-      requiresSerial,
-      requiresColdChain: !!product.requires_cold_chain,
-    }
-  })
+  const recentMovements: ReceptionMovement[] = movementsRes.data.results.map(
+    (mov) => {
+      const locationCode = mov.destination_location
+        ? (locationCodeById.get(mov.destination_location) ??
+          mov.destination_location)
+        : "-";
+      return mapMovementResponse(mov, locationCode, mov.product_sku);
+    },
+  );
 
   return {
     locations,
-    expectedOrders,
+    // Las órdenes de compra no tienen endpoint en el backend todavía
+    // Se mantienen desde el mock hasta que el backend las exponga
+    expectedOrders: mockReceptionOverview.expectedOrders,
     recentMovements,
-  }
-}
+  };
+};
 
-/**
- * Registra una entrada de mercancía.
- *
- * Payload del backend (EntryCreateRequest):
- *   product_id        UUID      — requerido
- *   location_id       UUID      — requerido
- *   quantity          int ≥ 1   — requerido
- *   serial_number     string?   — nullable (se envía solo el primero de la lista)
- *   qty_invoiced      int?      — nullable (cantidad facturada esperada)
- *   discrepancy_note  string?   — nullable
- *   cold_chain_acknowledged       bool  — default false
- *   electrical_safety_acknowledged bool  — default false
- *   lot_code          string?
- *   lot_expiration_date string?
- */
 export const submitReception = async (
   payload: ReceptionSubmitPayload,
 ): Promise<ReceptionMovement> => {
   if (useMocks) {
-    const order = mockReceptionOverview.expectedOrders.find((item) => item.id === payload.orderId)
-    const location = mockReceptionOverview.locations.find((item) => item.id === payload.locationId)
+    // Busca la orden en el mock para construir la respuesta visual
+    const order = mockReceptionOverview.expectedOrders.find(
+      (item) => item.productId === payload.productId,
+    );
+    const location = mockReceptionOverview.locations.find(
+      (item) => item.id === payload.locationId,
+    );
 
     return {
       id: `mov-in-${Date.now()}`,
-      productName: order?.productName ?? payload.orderId,
-      sku: order?.sku ?? '-',
-      quantity: payload.receivedQuantity,
-      locationCode: location?.code ?? '-',
-      operator: 'Usuario ICM',
-      confirmedAt: new Intl.DateTimeFormat('es-CO', {
-        hour: '2-digit',
-        minute: '2-digit',
+      productName: order?.productName ?? payload.productId,
+      sku: order?.sku ?? "-",
+      quantity: payload.quantity,
+      locationCode: location?.code ?? "-",
+      operator: "Usuario ICM",
+      confirmedAt: new Intl.DateTimeFormat("es-CO", {
+        hour: "2-digit",
+        minute: "2-digit",
       }).format(new Date()),
       discrepancyNote: payload.discrepancyNote,
-    }
+    };
   }
 
-  const productRes = await api.get<any>(`/catalog/products/${payload.orderId}/`)
-  const product = productRes.data
-
+  // Construye el body exacto que espera EntryCreateSerializer
   const requestBody = {
-    product_id: product.id,
+    product_id: payload.productId,
     location_id: payload.locationId,
-    quantity: payload.receivedQuantity,
-    // Solo enviamos el primer serial si hay varios (backend acepta uno por movimiento)
-    serial_number: payload.serialNumbers?.length ? payload.serialNumbers[0] : null,
-    qty_invoiced: 50,
+    quantity: payload.quantity,
+    serial_number: payload.serialNumber ?? null,
+    qty_invoiced: payload.qtyInvoiced ?? null,
     discrepancy_note: payload.discrepancyNote ?? null,
-    cold_chain_acknowledged: !!product.requires_cold_chain,
-    electrical_safety_acknowledged: false,
-    lot_code: payload.lot ?? null,
-    lot_expiration_date: payload.expirationDate ?? null,
-  }
+    cold_chain_acknowledged: payload.coldChainAcknowledged,
+    electrical_safety_acknowledged: payload.electricalSafetyAcknowledged,
+  };
 
-  const response = await api.post<{
-    id: string
-    product_sku: string
-    quantity: number
-    destination_location: string | null
-    executed_by: string
-    created_at: string
-    discrepancy_note: string | null
-  }>('/movements/entries/', requestBody)
+  const response = await api.post<ReceptionMovementResponse>(
+    "/movements/entries/",
+    requestBody,
+  );
 
-  const mov = response.data
+  const mov = response.data;
+
+  // Necesitamos el código de ubicación para mostrarlo en la UI
+  // Lo obtenemos de los locations que ya tenemos en el store o hacemos una llamada
   return {
     id: mov.id,
-    productName: product.name,
+    productName: mov.product_sku,
     sku: mov.product_sku,
     quantity: mov.quantity,
-    locationCode: mov.destination_location ?? '-',
+    locationCode: mov.destination_location ?? "-",
     operator: mov.executed_by,
-    confirmedAt: new Intl.DateTimeFormat('es-CO', {
-      hour: '2-digit',
-      minute: '2-digit',
+    confirmedAt: new Intl.DateTimeFormat("es-CO", {
+      hour: "2-digit",
+      minute: "2-digit",
     }).format(new Date(mov.created_at)),
     discrepancyNote: mov.discrepancy_note ?? undefined,
-  }
-}
+  };
+};
