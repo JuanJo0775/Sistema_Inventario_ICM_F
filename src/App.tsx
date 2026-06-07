@@ -5,6 +5,7 @@ import ForgotPasswordPage from './features/auth/ForgotPasswordPage'
 import DashboardPage from './features/dashboard/DashboardPage'
 import InventoryPage from './features/inventory/InventoryPage'
 import ReceptionPage from './features/reception/ReceptionPage'
+import ReceptionOrderDetailPage from './features/reception/ReceptionOrderDetailPage'
 import DispatchPage from './features/dispatch/DispatchPage'
 import ReturnsPage from './features/returns/ReturnsPage'
 import AdjustmentsPage from './features/adjustments/AdjustmentsPage'
@@ -16,6 +17,7 @@ import CatalogProductFormPage from './features/catalog/CatalogProductFormPage'
 import CatalogCategoriesPage from './features/catalog/CatalogCategoriesPage'
 import CatalogBrandsPage from './features/catalog/CatalogBrandsPage'
 import LocationsPage from './features/locations/LocationsPage'
+import TransfersPage from './features/locations/TransfersPage'
 import SuppliersPage from './features/purchasing/SuppliersPage'
 import PurchaseOrdersPage from './features/purchasing/PurchaseOrdersPage'
 
@@ -48,6 +50,14 @@ function App() {
           element={
             <ProtectedRoute>
               <ReceptionPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/reception/:orderId"
+          element={
+            <ProtectedRoute>
+              <ReceptionOrderDetailPage />
             </ProtectedRoute>
           }
         />
@@ -139,6 +149,14 @@ function App() {
           element={
             <ProtectedRoute>
               <LocationsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/locations/transfers"
+          element={
+            <ProtectedRoute>
+              <TransfersPage />
             </ProtectedRoute>
           }
         />

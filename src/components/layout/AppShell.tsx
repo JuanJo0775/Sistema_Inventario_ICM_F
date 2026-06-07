@@ -323,14 +323,26 @@ function SidebarLocationsSection({ t, locationPathname, isLocations, locationsOp
       {locationsOpen ? (
         <div className="nav__submenu">
           <Link
-            className={`nav__sublink${locationPathname.startsWith('/app/locations') ? ' active' : ''}`}
+            className={`nav__sublink${locationPathname === '/app/locations' ? ' active' : ''}`}
             to="/app/locations"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
               <polyline points="9 22 9 12 15 12 15 22" />
             </svg>
-            {t('dashboard.nav.warehouse', 'Bodega')}
+            {t('dashboard.nav.warehouse', 'Bodegas')}
+          </Link>
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/locations/transfers') ? ' active' : ''}`}
+            to="/app/locations/transfers"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 3l4 4l-4 4" />
+              <path d="M3 7h18" />
+              <path d="M7 21l-4-4l4-4" />
+              <path d="M21 17H3" />
+            </svg>
+            {t('dashboard.nav.transfers', 'Transferencias')}
           </Link>
         </div>
       ) : null}
@@ -454,7 +466,7 @@ function ShellRail({
           <path d="M4 6h16M4 10h16M4 14h16M4 18h16" />
         </svg>
       </Link>
-      <Link className={`rail__btn${isPurchasing ? ' active' : ''}`} title={t('dashboard.nav.purchasing', 'Compras')} to="/app/purchasing/suppliers">
+      <Link className={`rail__btn${isPurchasing ? ' active' : ''}`} title={t('dashboard.nav.purchasing')} to="/app/purchasing/suppliers">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
           <line x1="3" y1="6" x2="21" y2="6" />
@@ -820,10 +832,10 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
     }
   }
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   return (
     <AppShellChrome
