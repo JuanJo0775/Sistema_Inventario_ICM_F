@@ -537,11 +537,6 @@
     },
     "search": {
       "label": "Search invoice / customer",
-    "scan": {
-      "label": "Scan / manual code",
-      "placeholder": "Scan or type the SKU / barcode...",
-      "helper": "If the scanner fails, type the SKU or barcode manually and validate anyway."
-    },
       "placeholder": "Invoice number or customer name..."
     },
     "orders": {
@@ -592,7 +587,10 @@
       "saving": "Dispatching...",
       "invoiceGenerated": "Invoice generated: {{invoice}}",
       "downloadInvoice": "Download Invoice PDF",
-      "close": "Close"
+      "close": "Close",
+      "customerEmail": "Email address",
+      "customerPhone": "Phone number",
+      "customerAddress": "Delivery address"
     },
     "movements": {
       "ariaLabel": "Recent dispatch movements",
@@ -614,7 +612,10 @@
       "coldChain": "You must confirm cold chain compliance to continue",
       "electricalSafety": "You must confirm electrical safety to continue",
       "scanMismatch": "Cross validation error! Scanned code ({{scanned}}) does not match expected SKU ({{expected}})",
-      "scanSuccess": "✓ Cross validation successful. SKU matches."
+      "scanSuccess": "✓ Cross validation successful. SKU matches.",
+      "customerEmail": "Enter the customer email address",
+      "customerPhone": "Enter the customer phone number",
+      "customerAddress": "Enter the customer delivery address"
     },
     "success": {
       "confirmed": "Outbound registered successfully for SKU {{sku}}"

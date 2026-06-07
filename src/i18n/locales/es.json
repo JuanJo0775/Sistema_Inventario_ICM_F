@@ -531,17 +531,12 @@
       "coldChain": "Cadena de frío"
     },
     "scan": {
-      "label": "Escanear SKU / Barcode esperado",
-      "placeholder": "Escanea el código de barras del producto...",
-      "action": "Validar"
-    },
-    "search": {
-      "label": "Buscar orden / factura",
-    "scan": {
       "label": "Escaneo / código manual",
       "placeholder": "Escanea o escribe el SKU / código de barras...",
       "helper": "Si el lector falla, escribe el SKU o el código de barras manualmente y valida igual."
     },
+    "search": {
+      "label": "Buscar orden / factura",
       "placeholder": "Número de factura o cliente..."
     },
     "orders": {
@@ -592,7 +587,10 @@
       "saving": "Despachando...",
       "invoiceGenerated": "Factura generada: {{invoice}}",
       "downloadInvoice": "Descargar PDF Factura",
-      "close": "Cerrar"
+      "close": "Cerrar",
+      "customerEmail": "Correo electrónico",
+      "customerPhone": "Teléfono",
+      "customerAddress": "Dirección de entrega"
     },
     "movements": {
       "ariaLabel": "Despachos recientes",
@@ -614,7 +612,10 @@
       "coldChain": "Debes confirmar la cadena de frío para continuar",
       "electricalSafety": "Debes confirmar la seguridad eléctrica para continuar",
       "scanMismatch": "¡Error de validación cruzada! El código escaneado ({{scanned}}) no coincide con el SKU esperado ({{expected}})",
-      "scanSuccess": "✓ Validación cruzada exitosa. El SKU coincide."
+      "scanSuccess": "✓ Validación cruzada exitosa. El SKU coincide.",
+      "customerEmail": "Ingresa el correo electrónico del cliente",
+      "customerPhone": "Ingresa el teléfono del cliente",
+      "customerAddress": "Ingresa la dirección de entrega del cliente"
     },
     "success": {
       "confirmed": "Salida registrada correctamente para SKU {{sku}}"
