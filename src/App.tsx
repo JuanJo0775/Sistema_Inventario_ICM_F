@@ -17,6 +17,7 @@ import CatalogProductFormPage from './features/catalog/CatalogProductFormPage'
 import CatalogCategoriesPage from './features/catalog/CatalogCategoriesPage'
 import CatalogBrandsPage from './features/catalog/CatalogBrandsPage'
 import LocationsPage from './features/locations/LocationsPage'
+import TransfersPage from './features/locations/TransfersPage'
 import SuppliersPage from './features/purchasing/SuppliersPage'
 import PurchaseOrdersPage from './features/purchasing/PurchaseOrdersPage'
 
@@ -148,6 +149,14 @@ function App() {
           element={
             <ProtectedRoute>
               <LocationsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/locations/transfers"
+          element={
+            <ProtectedRoute>
+              <TransfersPage />
             </ProtectedRoute>
           }
         />

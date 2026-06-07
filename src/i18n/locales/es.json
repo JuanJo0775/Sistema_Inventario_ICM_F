@@ -167,12 +167,13 @@
       "users": "Usuarios",
       "catalog": "Catalogo",
       "locations": "Locación",
-      "warehouse": "Bodega",
+      "warehouse": "Bodegas",
       "purchasingSection": "COMPRAS",
       "purchasing": "Compras",
       "suppliers": "Proveedores",
       "purchaseOrders": "Órdenes de Compra",
-      "logout": "Cerrar sesion"
+      "logout": "Cerrar sesion",
+      "transfers": "Transferencias"
     },
     "sidebar": {
       "brandName": "Import Corporal Medical",
@@ -537,11 +538,11 @@
     },
     "search": {
       "label": "Buscar orden / factura",
-    "scan": {
-      "label": "Escaneo / código manual",
-      "placeholder": "Escanea o escribe el SKU / código de barras...",
-      "helper": "Si el lector falla, escribe el SKU o el código de barras manualmente y valida igual."
-    },
+      "scan": {
+        "label": "Escaneo / código manual",
+        "placeholder": "Escanea o escribe el SKU / código de barras...",
+        "helper": "Si el lector falla, escribe el SKU o el código de barras manualmente y valida igual."
+      },
       "placeholder": "Número de factura o cliente..."
     },
     "orders": {
