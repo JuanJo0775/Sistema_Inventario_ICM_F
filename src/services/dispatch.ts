@@ -1,28 +1,41 @@
-import { api } from './api'
-import { useMocks } from '../mocks/config'
+import { api } from "./api";
+import { useMocks } from "../mocks/config";
 import {
   mockDispatchLocations,
   mockDispatchItems,
   mockDispatchMovements,
-} from '../mocks/dispatch'
+} from "../mocks/dispatch";
 import type {
   DispatchItem,
   DispatchLocation,
   DispatchMovement,
+  DispatchMovementResponse,
   DispatchSubmitPayload,
-} from '../interfaces/dispatch'
-
-type BackendListResponse<T> = T[] | { results?: T[]; count?: number }
-const normalizeList = <T,>(payload: BackendListResponse<T>): T[] => {
-  if (Array.isArray(payload)) return payload
-  return payload.results ?? []
-}
+} from "../interfaces/dispatch";
 
 export interface DispatchOverview {
-  locations: DispatchLocation[]
-  expectedOrders: DispatchItem[]
-  recentMovements: DispatchMovement[]
+  locations: DispatchLocation[];
+  expectedOrders: DispatchItem[];
+  recentMovements: DispatchMovement[];
 }
+
+const mapMovementResponse = (
+  mov: DispatchMovementResponse,
+  locationCode: string,
+): DispatchMovement => ({
+  id: mov.id,
+  productName: mov.product_sku,
+  sku: mov.product_sku,
+  quantity: mov.quantity,
+  locationCode,
+  operator: mov.executed_by,
+  confirmedAt: new Intl.DateTimeFormat("es-CO", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(mov.created_at)),
+  invoiceNumber: mov.invoice_number ?? undefined,
+  note: mov.note ?? undefined,
+});
 
 export const fetchDispatchOverview = async (): Promise<DispatchOverview> => {
   if (useMocks) {
@@ -30,189 +43,139 @@ export const fetchDispatchOverview = async (): Promise<DispatchOverview> => {
       locations: mockDispatchLocations,
       expectedOrders: mockDispatchItems,
       recentMovements: mockDispatchMovements,
-    }
+    };
   }
 
-  // Use allSettled so one failing endpoint doesn't block the whole page
-  const [locationsResult, movementsResult, productsResult] = await Promise.allSettled([
-    api.get<BackendListResponse<{ id: string; code: string; name: string }>>(
-      '/inventory/locations/',
-    ),
-    api.get<BackendListResponse<{
-      id: string
-      product_sku: string
-      quantity: number
-      origin_location: string | null
-      executed_by: string
-      created_at: string
-      invoice_number: string | null
-      note: string | null
-    }>>('/movements/dispatches/', { params: { page_size: 10, ordering: '-created_at' } }),
-    api.get<BackendListResponse<{
-      id: string
-      name: string
-      sku: string
-      barcode: string | null
-      category: string | null
-      category_slug: string | null
-      requires_cold_chain: boolean
-      is_active: boolean
-    }>>('/catalog/products/'),
-  ])
+  try {
+    const [locationsRes, movementsRes] = await Promise.all([
+      api.get<{ results: Array<{ id: string; code: string; name: string }> }>(
+        "/inventory/locations/",
+      ),
+      api.get<{ results: DispatchMovementResponse[] }>(
+        "/movements/dispatches/",
+        { params: { page_size: 10, ordering: "-created_at" } },
+      ),
+    ]);
 
-  // Locations – critical, throw if failed
-  if (locationsResult.status === 'rejected') {
-    throw locationsResult.reason
-  }
-  const locations = normalizeList(locationsResult.value.data).map((loc) => ({
-    id: loc.id,
-    code: loc.code,
-    name: loc.name,
-    capacityLabel: '',
-  }))
+    const locations = locationsRes.data.results.map((loc) => ({
+      id: loc.id,
+      code: loc.code,
+      name: loc.name,
+      capacityLabel: "",
+    }));
 
-  // Recent dispatch movements – optional, default to empty
-  let recentMovements: DispatchMovement[] = []
-  if (movementsResult.status === 'fulfilled') {
-    recentMovements = normalizeList(movementsResult.value.data).map((mov) => ({
-      id: mov.id,
-      productName: mov.product_sku,
-      sku: mov.product_sku,
-      quantity: mov.quantity,
-      locationCode: mov.origin_location ?? '-',
-      operator: mov.executed_by,
-      confirmedAt: new Intl.DateTimeFormat('es-CO', {
-        hour: '2-digit',
-        minute: '2-digit',
-      }).format(new Date(mov.created_at)),
-      invoiceNumber: mov.invoice_number ?? undefined,
-      note: mov.note ?? undefined,
-    }))
-  }
+    const locationCodeById = new Map(
+      locationsRes.data.results.map((loc) => [loc.id, loc.code]),
+    );
 
-  // Products from catalog – build the dispatch item list from real products
-  let expectedOrders: DispatchItem[] = []
-  if (productsResult.status === 'fulfilled') {
-    const products = normalizeList(productsResult.value.data)
-    expectedOrders = products
-      .filter((p) => p.is_active)
-      .map((prod) => ({
-        id: prod.id,
-        invoiceNumber: '',
-        customerName: '',
-        productId: prod.id,
-        productName: prod.name,
-        sku: prod.sku,
-        barcode: prod.barcode || '',
-        category: prod.category_slug || '',
-        expectedQuantity: 0,
-        dispatchedQuantity: 0,
-        status: 'pending' as const,
-        requiresSerial: false,
-        requiresColdChain: prod.requires_cold_chain ?? false,
-      }))
-  }
+    const recentMovements: DispatchMovement[] = movementsRes.data.results.map(
+      (mov) => {
+        const locationCode = mov.origin_location
+          ? (locationCodeById.get(mov.origin_location) ?? mov.origin_location)
+          : "-";
+        return mapMovementResponse(mov, locationCode);
+      },
+    );
 
-  return {
-    locations,
-    expectedOrders,
-    recentMovements,
+    return {
+      locations,
+      // Las órdenes de picking no tienen endpoint en el backend todavía
+      expectedOrders: mockDispatchItems,
+      recentMovements,
+    };
+  } catch (err) {
+    console.error("Error cargando overview de despacho:", err);
+    throw err;
   }
-}
+};
 
 export const submitDispatch = async (
   payload: DispatchSubmitPayload,
 ): Promise<DispatchMovement> => {
   if (useMocks) {
-    const location = mockDispatchLocations.find((item) => item.id === payload.locationId)
-    const order = mockDispatchItems.find((item) => item.productId === payload.productId)
+    const location = mockDispatchLocations.find(
+      (l) => l.id === payload.locationId,
+    );
+    const order = mockDispatchItems.find(
+      (o) => o.productId === payload.productId,
+    );
 
     return {
       id: `mov-out-${Date.now()}`,
-      productName: order?.productName ?? 'Producto',
-      sku: order?.sku ?? 'SKU',
+      productName: order?.productName ?? "Producto",
+      sku: order?.sku ?? "SKU",
       quantity: payload.quantity,
-      locationCode: location?.code ?? '-',
-      operator: 'Auxiliar Despacho',
-      confirmedAt: new Intl.DateTimeFormat('es-CO', {
-        hour: '2-digit',
-        minute: '2-digit',
+      locationCode: location?.code ?? "-",
+      operator: "Auxiliar Despacho",
+      confirmedAt: new Intl.DateTimeFormat("es-CO", {
+        hour: "2-digit",
+        minute: "2-digit",
       }).format(new Date()),
-      invoiceNumber: order?.invoiceNumber ?? 'ICM-0055',
-      customerName: payload.customerData?.name ?? 'Cliente',
+      invoiceNumber: order?.invoiceNumber ?? "ICM-MOCK",
+      customerName: payload.customerData?.customer_name,
       note: payload.note,
-    }
+    };
   }
 
+  // Construye el body exacto que espera DispatchCreateSerializer
   const requestBody = {
     product_id: payload.productId,
     location_id: payload.locationId,
     quantity: payload.quantity,
     movement_type: payload.movementType,
-    lot_id: payload.lotId ?? null,
-    scanned_code: payload.scannedCode ?? null,
-    order_sku: payload.orderSku ?? null,
-    serial_number: payload.serialNumber ?? null,
+    // BR-08: ambos o ninguno, nunca solo uno
+    scanned_code: payload.scannedCode || null,
+    order_sku: payload.orderSku || null,
+    serial_number: payload.serialNumber || null,
     customer_data: payload.customerData ?? null,
-    note: payload.note ?? null,
+    note: payload.note || null,
     cold_chain_acknowledged: payload.coldChainAcknowledged ?? false,
-    electrical_safety_acknowledged: payload.electricalSafetyAcknowledged ?? false,
+    electrical_safety_acknowledged:
+      payload.electricalSafetyAcknowledged ?? false,
     privacy_notice_acknowledged: payload.privacyNoticeAcknowledged ?? false,
-  }
+  };
 
-  const response = await api.post<{
-    id: string
-    product_sku: string
-    quantity: number
-    origin_location: string | null
-    executed_by: string
-    created_at: string
-    invoice_number: string | null
-    note: string | null
-  }>('/movements/dispatches/', requestBody)
+  const response = await api.post<DispatchMovementResponse>(
+    "/movements/dispatches/",
+    requestBody,
+  );
 
-  const mov = response.data
-  return {
-    id: mov.id,
-    productName: mov.product_sku,
-    sku: mov.product_sku,
-    quantity: mov.quantity,
-    locationCode: mov.origin_location ?? '-',
-    operator: mov.executed_by,
-    confirmedAt: new Intl.DateTimeFormat('es-CO', {
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(mov.created_at)),
-    invoiceNumber: mov.invoice_number ?? undefined,
-    note: mov.note ?? undefined,
-  }
-}
+  const mov = response.data;
+  const locationCode = mov.origin_location ?? "-";
 
-export const downloadInvoicePdf = async (movementId: string, invoiceNumber: string) => {
+  return mapMovementResponse(mov, locationCode);
+};
+
+export const downloadInvoicePdf = async (
+  movementId: string,
+  invoiceNumber: string,
+): Promise<void> => {
   if (useMocks) {
-    // Generar archivo dummy de texto para probar la descarga en modo mock
-    const dummyContent = `%PDF-1.4\n% MOCK INVOICE ${invoiceNumber}\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF`
-    const blob = new Blob([dummyContent], { type: 'application/pdf' })
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', `factura_${invoiceNumber}.pdf`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    return
+    const dummyContent = `%PDF-1.4\n% MOCK INVOICE ${invoiceNumber}\n%%EOF`;
+    const blob = new Blob([dummyContent], { type: "application/pdf" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `factura_${invoiceNumber}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    return;
   }
 
-  const response = await api.get(`/movements/dispatches/${movementId}/invoice/`, {
-    responseType: 'blob',
-  })
-  
-  const blob = new Blob([response.data], { type: 'application/pdf' })
-  const url = window.URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.setAttribute('download', `factura_${invoiceNumber}.pdf`)
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-}
+  const response = await api.get(
+    `/movements/dispatches/${movementId}/invoice/`,
+    { responseType: "blob" },
+  );
+
+  const blob = new Blob([response.data], { type: "application/pdf" });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", `factura_${invoiceNumber}.pdf`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
