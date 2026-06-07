@@ -5,6 +5,7 @@ import ForgotPasswordPage from './features/auth/ForgotPasswordPage'
 import DashboardPage from './features/dashboard/DashboardPage'
 import InventoryPage from './features/inventory/InventoryPage'
 import ReceptionPage from './features/reception/ReceptionPage'
+import ReceptionOrderDetailPage from './features/reception/ReceptionOrderDetailPage'
 import DispatchPage from './features/dispatch/DispatchPage'
 import ReturnsPage from './features/returns/ReturnsPage'
 import AdjustmentsPage from './features/adjustments/AdjustmentsPage'
@@ -48,6 +49,14 @@ function App() {
           element={
             <ProtectedRoute>
               <ReceptionPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/reception/:orderId"
+          element={
+            <ProtectedRoute>
+              <ReceptionOrderDetailPage />
             </ProtectedRoute>
           }
         />

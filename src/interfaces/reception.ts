@@ -1,56 +1,52 @@
-export type ReceptionStatus = 'pending' | 'partial' | 'ready' | 'received' | 'blocked'
+export type ReceptionStatus = 'borrador' | 'confirmada' | 'cancelada'
 
-export interface ReceptionLocation {
+export interface ReceptionItem {
   id: string
-  code: string
-  name: string
-  capacityLabel: string
+  purchase_order_item: string // PurchaseOrderItem UUID
+  product_name: string
+  product_sku: string
+  quantity_expected: number
+  quantity_received: number
+  lot_code: string
+  lot_expiration_date: string | null
+  discrepancy_note: string
+  movement_id: string | null
 }
 
-export interface ReceptionExpectedOrder {
+export interface Reception {
   id: string
-  purchaseOrder: string
-  supplier: string
-  invoice: string
-  productId: string
-  productName: string
-  sku: string
-  barcode: string
-  category: string
-  expectedQuantity: number
-  receivedQuantity: number
-  locationId: string
-  dueDate: string
+  purchase_order: string // PurchaseOrder UUID
+  po_number: string
+  supplier_nombre: string
   status: ReceptionStatus
-  requiresSerial: boolean
-  requiresColdChain: boolean
-  lot?: string
-  expirationDate?: string
+  destination_location: string // Location UUID
+  location_name: string
+  received_by: string // Username or User UUID
+  confirmed_at: string | null
+  notes: string
+  items: ReceptionItem[]
+  created_at: string
+  updated_at: string
 }
 
-export interface ReceptionMovement {
-  id: string
-  productName: string
-  sku: string
-  quantity: number
-  locationCode: string
-  operator: string
-  confirmedAt: string
-  discrepancyNote?: string
+export interface ReceptionItemCreatePayload {
+  purchase_order_item_id: string
+  quantity_received: number
+  lot_code?: string
+  lot_expiration_date?: string | null
+  discrepancy_note?: string
+}
+
+export interface ReceptionCreatePayload {
+  po_id: string
+  destination_location_id: string
+  notes?: string
+  items: ReceptionItemCreatePayload[]
 }
 
 export interface ReceptionOverview {
-  locations: ReceptionLocation[]
-  expectedOrders: ReceptionExpectedOrder[]
-  recentMovements: ReceptionMovement[]
+  locations: any[]
+  expectedOrders: any[]
+  recentMovements: any[]
 }
 
-export interface ReceptionSubmitPayload {
-  orderId: string
-  receivedQuantity: number
-  locationId: string
-  lot?: string
-  expirationDate?: string
-  serialNumbers?: string[]
-  discrepancyNote?: string
-}

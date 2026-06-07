@@ -1,591 +1,645 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import React, { useEffect, useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
-  AlertTriangle,
-  Barcode,
-  CheckCircle2,
-  ClipboardCheck,
-  PackagePlus,
   Search,
-  ShieldCheck,
-  Snowflake,
+  AlertTriangle,
+  Clock,
+  CheckCircle2,
+  FileText,
+  TrendingUp,
+  X,
+  RefreshCw,
 } from 'lucide-react'
 import AppShell from '../../components/layout/AppShell'
-import { Badge } from '../../components/ui/badge'
-import { Button } from '../../components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '../../components/ui/card'
-import { Input } from '../../components/ui/input'
-import { Select } from '../../components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../../components/ui/table'
-import type {
-  ReceptionExpectedOrder,
-  ReceptionMovement,
-  ReceptionOverview,
-  ReceptionStatus,
-} from '../../interfaces/reception'
-import { fetchReceptionOverview, submitReception } from '../../services/reception'
+import useReceptionStore from '../../store/useReceptionStore'
 
-type ReceptionForm = {
-  receivedQuantity: string
-  locationId: string
-  lot: string
-  expirationDate: string
-  serialNumbers: string
-  discrepancyNote: string
+const statusTranslation: Record<string, string> = {
+  pendiente: 'Pendiente',
+  parcialmente_recibida: 'Parcial',
+  completada: 'Completada',
+  cancelada: 'Cancelada',
+  borrador: 'Borrador',
 }
 
-const statusVariant: Record<ReceptionStatus, 'success' | 'warning' | 'destructive' | 'secondary'> = {
-  pending: 'secondary',
-  partial: 'warning',
-  ready: 'success',
-  received: 'success',
-  blocked: 'destructive',
+const statusColorMap: Record<string, { bg: string; color: string; border: string }> = {
+  pendiente: { bg: '#e8f2ff', color: '#1971c2', border: '#a5d8ff' },
+  parcialmente_recibida: { bg: '#fff9db', color: '#f59f00', border: '#ffe066' },
+  completada: { bg: '#ebfbee', color: '#099268', border: '#b2f2bb' },
+  cancelada: { bg: '#fff5f5', color: '#e03131', border: '#ffc9c9' },
+  borrador: { bg: '#f1f3f5', color: '#495057', border: '#dee2e6' },
 }
 
-const toForm = (order?: ReceptionExpectedOrder): ReceptionForm => ({
-  receivedQuantity: order?.receivedQuantity.toString() ?? '',
-  locationId: order?.locationId ?? '',
-  lot: order?.lot ?? '',
-  expirationDate: order?.expirationDate ?? '',
-  serialNumbers: '',
-  discrepancyNote: '',
-})
+export const ReceptionPage: React.FC = () => {
+  const navigate = useNavigate()
+  const {
+    pendingOrders,
+    completedOrders,
+    loading,
+    error,
+    fetchPendingOrders,
+    fetchCompletedOrders,
+    clearError,
+  } = useReceptionStore()
 
-function ReceptionPage() {
-  const { t } = useTranslation()
-  const [overview, setOverview] = useState<ReceptionOverview | null>(null)
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
-  const [search, setSearch] = useState('')
-  const [scanValue, setScanValue] = useState('')
-  const [form, setForm] = useState<ReceptionForm>(toForm())
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  const [localMovements, setLocalMovements] = useState<ReceptionMovement[]>([])
-  const [receivedIds, setReceivedIds] = useState<Set<string>>(() => new Set())
-
-  const loadOverview = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await fetchReceptionOverview()
-      setOverview(data)
-      setLocalMovements(data.recentMovements)
-      const firstReceivable = data.expectedOrders.find((order) => order.status !== 'received')
-      setSelectedOrderId((current) => current ?? firstReceivable?.id ?? data.expectedOrders[0]?.id ?? null)
-    } catch {
-      setError(t('reception.errors.load'))
-    } finally {
-      setLoading(false)
-    }
-  }, [t])
+  const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadOverview()
-  }, [loadOverview])
+    fetchPendingOrders()
+    fetchCompletedOrders()
+  }, [fetchPendingOrders, fetchCompletedOrders])
 
-  const orders = overview?.expectedOrders ?? []
-  const locations = overview?.locations ?? []
+  // Refresh helper
+  const handleRefresh = async () => {
+    await Promise.all([fetchPendingOrders(), fetchCompletedOrders()])
+  }
 
+  // Filter logic
   const filteredOrders = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase()
-    if (!normalizedSearch) {
-      return orders
-    }
+    const list = activeTab === 'pending' ? pendingOrders : completedOrders
+    return list.filter((order) => {
+      const matchSearch =
+        order.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.supplier_nombre.toLowerCase().includes(searchTerm.toLowerCase())
+      
+      const matchStatus = statusFilter === 'all' || order.status === statusFilter
+      return matchSearch && matchStatus
+    })
+  }, [activeTab, pendingOrders, completedOrders, searchTerm, statusFilter])
 
-    return orders.filter((order) =>
-      [
-        order.purchaseOrder,
-        order.invoice,
-        order.productName,
-        order.sku,
-        order.barcode,
-        order.supplier,
-      ]
-        .join(' ')
-        .toLowerCase()
-        .includes(normalizedSearch),
-    )
-  }, [orders, search])
+  // KPIs
+  const kpis = useMemo(() => {
+    const totalPending = pendingOrders.filter((o) => o.status === 'pendiente').length
+    const totalPartial = pendingOrders.filter((o) => o.status === 'parcialmente_recibida').length
+    const totalCompleted = completedOrders.length
+    const totalCount = pendingOrders.length + completedOrders.length
 
-  const selectedOrder = useMemo(() => {
-    return orders.find((order) => order.id === selectedOrderId) ?? filteredOrders[0]
-  }, [filteredOrders, orders, selectedOrderId])
-
-  useEffect(() => {
-    setForm(toForm(selectedOrder))
-    setSuccessMessage(null)
-  }, [selectedOrder])
-
-  const stats = useMemo(() => {
-    const pending = orders.filter((order) => !receivedIds.has(order.id)).length
-    const discrepancies = orders.filter(
-      (order) => order.receivedQuantity !== order.expectedQuantity,
-    ).length
-    const serialRequired = orders.filter((order) => order.requiresSerial).length
-    const coldChain = orders.filter((order) => order.requiresColdChain).length
-    return { pending, discrepancies, serialRequired, coldChain }
-  }, [orders, receivedIds])
-
-  const receivedQuantity = Number(form.receivedQuantity)
-  const hasDiscrepancy =
-    selectedOrder && Number.isFinite(receivedQuantity)
-      ? receivedQuantity !== selectedOrder.expectedQuantity
-      : false
-  const serialNumbers = form.serialNumbers
-    .split('\n')
-    .map((serial) => serial.trim())
-    .filter(Boolean)
-
-  const validationMessage = useMemo(() => {
-    if (!selectedOrder) {
-      return t('reception.errors.noOrder')
+    return {
+      totalPending,
+      totalPartial,
+      totalCompleted,
+      totalCount,
     }
-    if (receivedIds.has(selectedOrder.id)) {
-      return t('reception.errors.alreadyReceived')
-    }
-    if (!Number.isFinite(receivedQuantity) || receivedQuantity <= 0) {
-      return t('reception.errors.quantity')
-    }
-    if (!form.locationId) {
-      return t('reception.errors.location')
-    }
-    if (selectedOrder.requiresSerial && serialNumbers.length !== receivedQuantity) {
-      return t('reception.errors.serials', { count: receivedQuantity })
-    }
-    if (hasDiscrepancy && !form.discrepancyNote.trim()) {
-      return t('reception.errors.discrepancyNote')
-    }
-    return null
-  }, [
-    form.discrepancyNote,
-    form.locationId,
-    hasDiscrepancy,
-    receivedIds,
-    receivedQuantity,
-    selectedOrder,
-    serialNumbers.length,
-    t,
-  ])
-
-  const handleSelectOrder = (order: ReceptionExpectedOrder) => {
-    setSelectedOrderId(order.id)
-    setScanValue(order.barcode)
-  }
-
-  const handleScan = () => {
-    const normalizedScan = scanValue.trim().toLowerCase()
-    const order = orders.find(
-      (item) =>
-        item.barcode.toLowerCase() === normalizedScan ||
-        item.sku.toLowerCase() === normalizedScan ||
-        item.purchaseOrder.toLowerCase() === normalizedScan,
-    )
-    if (order) {
-      handleSelectOrder(order)
-      setError(null)
-      return
-    }
-    setError(t('reception.errors.scanNotFound'))
-  }
-
-  const handleConfirm = async () => {
-    if (!selectedOrder || validationMessage) {
-      return
-    }
-
-    setSaving(true)
-    setError(null)
-    try {
-      const movement = await submitReception({
-        orderId: selectedOrder.id,
-        receivedQuantity,
-        locationId: form.locationId,
-        lot: form.lot.trim() || undefined,
-        expirationDate: form.expirationDate || undefined,
-        serialNumbers,
-        discrepancyNote: form.discrepancyNote.trim() || undefined,
-      })
-      setLocalMovements((current) => [movement, ...current])
-      setReceivedIds((current) => new Set(current).add(selectedOrder.id))
-      setSuccessMessage(t('reception.success.confirmed', { sku: selectedOrder.sku }))
-    } catch {
-      setError(t('reception.errors.save'))
-    } finally {
-      setSaving(false)
-    }
-  }
+  }, [pendingOrders, completedOrders])
 
   return (
     <AppShell
-      title={t('reception.title')}
-      subtitle={t('reception.subtitle')}
+      title="Recepción de Mercancía"
+      subtitle="Recibe órdenes de compra y registra ingresos en el inventario"
       actions={
-        <Button variant="ghost" size="sm" onClick={loadOverview}>
-          {t('common.actions.refresh')}
-        </Button>
+        <button
+          className="btn btn--secondary"
+          type="button"
+          onClick={handleRefresh}
+          disabled={loading}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '8px', height: '42px' }}
+        >
+          <RefreshCw style={{ width: '16px', height: '16px', animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+          Actualizar
+        </button>
       }
     >
-      <div className="page-body reception-page">
-        <section className="reception-stats" aria-label={t('reception.stats.ariaLabel')}>
-          <Card className="reception-stat rounded-lg">
-            <PackagePlus />
-            <div>
-              <span>{stats.pending}</span>
-              <p>{t('reception.stats.pending')}</p>
+      <div className="catalog-page fade-slide-up" style={{ paddingBottom: '2rem' }}>
+        {/* KPI Cards */}
+        <section
+          className="catalog-stats"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '1.25rem',
+            marginBottom: '1.5rem',
+          }}
+        >
+          {/* KPI: Pendientes */}
+          <div
+            className="stat-card"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1.25rem',
+              backgroundColor: '#fff',
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: '1.25rem',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#e8f2ff',
+                color: '#1971c2',
+                width: '48px',
+                height: '48px',
+                borderRadius: '10px',
+              }}
+            >
+              <Clock style={{ width: '22px', height: '22px', strokeWidth: 2 }} />
             </div>
-          </Card>
-          <Card className="reception-stat rounded-lg">
-            <AlertTriangle />
             <div>
-              <span>{stats.discrepancies}</span>
-              <p>{t('reception.stats.discrepancies')}</p>
+              <span
+                style={{
+                  fontSize: '1.85rem',
+                  fontWeight: 700,
+                  color: '#111827',
+                  lineHeight: 1,
+                  display: 'block',
+                }}
+              >
+                {kpis.totalPending}
+              </span>
+              <p
+                style={{
+                  fontSize: '0.875rem',
+                  color: '#6b7280',
+                  margin: '0.25rem 0 0 0',
+                  fontWeight: 500,
+                }}
+              >
+                Órdenes Pendientes
+              </p>
             </div>
-          </Card>
-          <Card className="reception-stat rounded-lg">
-            <ShieldCheck />
+          </div>
+
+          {/* KPI: Parciales */}
+          <div
+            className="stat-card"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1.25rem',
+              backgroundColor: '#fff',
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: '1.25rem',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#fff9db',
+                color: '#f59f00',
+                width: '48px',
+                height: '48px',
+                borderRadius: '10px',
+              }}
+            >
+              <TrendingUp style={{ width: '22px', height: '22px', strokeWidth: 2 }} />
+            </div>
             <div>
-              <span>{stats.serialRequired}</span>
-              <p>{t('reception.stats.serialRequired')}</p>
+              <span
+                style={{
+                  fontSize: '1.85rem',
+                  fontWeight: 700,
+                  color: '#111827',
+                  lineHeight: 1,
+                  display: 'block',
+                }}
+              >
+                {kpis.totalPartial}
+              </span>
+              <p
+                style={{
+                  fontSize: '0.875rem',
+                  color: '#6b7280',
+                  margin: '0.25rem 0 0 0',
+                  fontWeight: 500,
+                }}
+              >
+                Recepciones Parciales
+              </p>
             </div>
-          </Card>
-          <Card className="reception-stat rounded-lg">
-            <Snowflake />
+          </div>
+
+          {/* KPI: Completadas */}
+          <div
+            className="stat-card"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1.25rem',
+              backgroundColor: '#fff',
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: '1.25rem',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#ebfbee',
+                color: '#099268',
+                width: '48px',
+                height: '48px',
+                borderRadius: '10px',
+              }}
+            >
+              <CheckCircle2 style={{ width: '22px', height: '22px', strokeWidth: 2 }} />
+            </div>
             <div>
-              <span>{stats.coldChain}</span>
-              <p>{t('reception.stats.coldChain')}</p>
+              <span
+                style={{
+                  fontSize: '1.85rem',
+                  fontWeight: 700,
+                  color: '#111827',
+                  lineHeight: 1,
+                  display: 'block',
+                }}
+              >
+                {kpis.totalCompleted}
+              </span>
+              <p
+                style={{
+                  fontSize: '0.875rem',
+                  color: '#6b7280',
+                  margin: '0.25rem 0 0 0',
+                  fontWeight: 500,
+                }}
+              >
+                Completadas
+              </p>
             </div>
-          </Card>
+          </div>
+
+          {/* KPI: Total */}
+          <div
+            className="stat-card"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1.25rem',
+              backgroundColor: '#fff',
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: '1.25rem',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#f3f0ff',
+                color: '#7048e8',
+                width: '48px',
+                height: '48px',
+                borderRadius: '10px',
+              }}
+            >
+              <FileText style={{ width: '22px', height: '22px', strokeWidth: 2 }} />
+            </div>
+            <div>
+              <span
+                style={{
+                  fontSize: '1.85rem',
+                  fontWeight: 700,
+                  color: '#111827',
+                  lineHeight: 1,
+                  display: 'block',
+                }}
+              >
+                {kpis.totalCount}
+              </span>
+              <p
+                style={{
+                  fontSize: '0.875rem',
+                  color: '#6b7280',
+                  margin: '0.25rem 0 0 0',
+                  fontWeight: 500,
+                }}
+              >
+                Total de Órdenes
+              </p>
+            </div>
+          </div>
         </section>
 
-        <div className="reception-scanbar">
-          <div className="reception-scanbar__field">
-            <label className="inventory-label" htmlFor="reception-scan">
-              {t('reception.scan.label')}
-            </label>
-            <div className="reception-scanbar__input">
-              <Barcode />
-              <Input
-                id="reception-scan"
-                value={scanValue}
-                placeholder={t('reception.scan.placeholder')}
-                onChange={(event) => setScanValue(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    handleScan()
-                  }
+        {/* Error Alert */}
+        {error && (
+          <div
+            className="alert-bar alert-bar--warn"
+            role="alert"
+            style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center' }}
+          >
+            <AlertTriangle style={{ marginRight: '0.5rem', width: '18px', height: '18px' }} />
+            <span>{error}</span>
+            <button className="alert-bar__close" onClick={clearError}>
+              <X style={{ width: '16px', height: '16px' }} />
+            </button>
+          </div>
+        )}
+
+        {/* Tabs and White Search/Filter Box */}
+        <div
+          style={{
+            backgroundColor: '#fff',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            padding: '1.25rem',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+            marginBottom: '1.5rem',
+          }}
+        >
+          {/* Tab Selector */}
+          <div
+            style={{
+              display: 'flex',
+              gap: '1rem',
+              borderBottom: '1px solid #f3f4f6',
+              paddingBottom: '1rem',
+              marginBottom: '1rem',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('pending')
+                setStatusFilter('all')
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                borderBottom: activeTab === 'pending' ? '2px solid #1971c2' : '2px solid transparent',
+                color: activeTab === 'pending' ? '#1971c2' : '#6b7280',
+                padding: '0.5rem 1rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+            >
+              Pendientes de recibir
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('history')
+                setStatusFilter('all')
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                borderBottom: activeTab === 'history' ? '2px solid #1971c2' : '2px solid transparent',
+                color: activeTab === 'history' ? '#1971c2' : '#6b7280',
+                padding: '0.5rem 1rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+            >
+              Historial completado
+            </button>
+          </div>
+
+          {/* Search and Filter Box */}
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '1rem',
+              alignItems: 'center',
+            }}
+          >
+            <div style={{ position: 'relative', flex: '1 1 300px' }}>
+              <Search
+                style={{
+                  position: 'absolute',
+                  left: '0.75rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: '16px',
+                  height: '16px',
+                  color: '#9ca3af',
                 }}
               />
-              <Button type="button" onClick={handleScan}>
-                {t('reception.scan.action')}
-              </Button>
-            </div>
-          </div>
-          <div className="reception-scanbar__field">
-            <label className="inventory-label" htmlFor="reception-search">
-              {t('reception.search.label')}
-            </label>
-            <div className="reception-search">
-              <Search />
-              <Input
-                id="reception-search"
-                type="search"
-                value={search}
-                placeholder={t('reception.search.placeholder')}
-                onChange={(event) => setSearch(event.target.value)}
+              <input
+                type="text"
+                placeholder="Buscar por número de orden o proveedor..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  width: '100%',
+                  paddingLeft: '2.5rem',
+                  height: '42px',
+                  borderRadius: '8px',
+                  border: '1px solid #d1d5db',
+                  outline: 'none',
+                  fontSize: '0.875rem',
+                }}
               />
             </div>
+
+            {/* Filter by state */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <label
+                htmlFor="state-filter"
+                style={{ fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}
+              >
+                Filtrar por estado:
+              </label>
+              <select
+                id="state-filter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={{
+                  height: '42px',
+                  padding: '0 2.5rem 0 1rem',
+                  borderRadius: '8px',
+                  border: '1px solid #d1d5db',
+                  outline: 'none',
+                  backgroundColor: '#fff',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="all">Todos los estados</option>
+                {activeTab === 'pending' ? (
+                  <>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="parcialmente_recibida">Parcialmente recibida</option>
+                  </>
+                ) : (
+                  <option value="completada">Completada</option>
+                )}
+              </select>
+            </div>
+
+            {/* Clear filter */}
+            {(searchTerm || statusFilter !== 'all') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchTerm('')
+                  setStatusFilter('all')
+                }}
+                className="btn btn--secondary"
+                style={{ height: '42px', borderRadius: '8px', padding: '0 1rem' }}
+              >
+                Limpiar filtros
+              </button>
+            )}
           </div>
         </div>
 
-        {error ? (
-          <div className="alert-bar alert-bar--warn" role="alert">
-            <AlertTriangle />
-            <span>{error}</span>
+        {/* Table Surface */}
+        {loading ? (
+          <div className="empty-state" style={{ padding: '3rem' }}>
+            <RefreshCw style={{ width: '32px', height: '32px', animation: 'spin 1.5s linear infinite', color: '#9ca3af', marginBottom: '1rem' }} />
+            <p>Cargando órdenes de compra...</p>
           </div>
-        ) : null}
-        {successMessage ? (
-          <div className="alert-bar alert-bar--ok" role="status">
-            <CheckCircle2 />
-            <span>{successMessage}</span>
+        ) : filteredOrders.length === 0 ? (
+          <div className="empty-state" style={{ padding: '4rem 2rem', textAlign: 'center', backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px' }}>
+            <FileText
+              style={{
+                width: '48px',
+                height: '48px',
+                strokeWidth: 1,
+                color: '#9ca3af',
+                marginBottom: '1rem',
+              }}
+            />
+            <p style={{ color: '#4b5563', fontSize: '1rem', fontWeight: 500 }}>
+              No se encontraron órdenes de compra
+            </p>
+            <p style={{ color: '#9ca3af', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+              Intenta cambiar la búsqueda o los filtros aplicados.
+            </p>
           </div>
-        ) : null}
-
-        <div className="reception-layout">
-          <section aria-label={t('reception.orders.ariaLabel')}>
-            <div className="s-head">
-              <span className="s-head__label">{t('reception.orders.title')}</span>
-              <div className="s-head__rule" />
-            </div>
-            <div className="table-surface">
-              <div className="table-wrap">
-                <Table className="data-table reception-table">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('reception.orders.columns.order')}</TableHead>
-                      <TableHead>{t('reception.orders.columns.product')}</TableHead>
-                      <TableHead>{t('reception.orders.columns.expected')}</TableHead>
-                      <TableHead>{t('reception.orders.columns.status')}</TableHead>
-                      <TableHead>
-                        <span className="sr-only">{t('reception.orders.columns.action')}</span>
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {loading ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="inventory-empty">
-                          {t('common.loading')}
-                        </TableCell>
-                      </TableRow>
-                    ) : null}
-                    {!loading && filteredOrders.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="inventory-empty">
-                          {t('common.empty')}
-                        </TableCell>
-                      </TableRow>
-                    ) : null}
-                    {filteredOrders.map((order) => {
-                      const isReceived = receivedIds.has(order.id)
-                      const status = isReceived ? 'received' : order.status
-                      return (
-                        <TableRow
-                          key={order.id}
-                          className={order.id === selectedOrder?.id ? 'is-selected' : undefined}
-                        >
-                          <TableCell>
-                            <p className="prod-name">{order.purchaseOrder}</p>
-                            <p className="prod-sub">{order.invoice}</p>
-                          </TableCell>
-                          <TableCell>
-                            <p className="prod-name">{order.productName}</p>
-                            <div className="mov-meta">
-                              <span className="sku">{order.sku}</span>
-                              {order.requiresSerial ? (
-                                <Badge variant="warning">{t('reception.flags.serial')}</Badge>
-                              ) : null}
-                              {order.requiresColdChain ? (
-                                <Badge variant="secondary">{t('reception.flags.coldChain')}</Badge>
-                              ) : null}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-mono">
-                            {order.receivedQuantity}/{order.expectedQuantity}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={statusVariant[status]}>
-                              {t(`reception.status.${status}`)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="sm" onClick={() => handleSelectOrder(order)}>
-                              {t('reception.orders.select')}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          </section>
-
-          <aside aria-label={t('reception.form.ariaLabel')}>
-            <Card className="reception-form-card rounded-lg">
-              <CardHeader>
-                <CardTitle className="reception-form-card__title">
-                  {selectedOrder?.productName ?? t('reception.form.emptyTitle')}
-                </CardTitle>
-                <CardDescription>
-                  {selectedOrder
-                    ? t('reception.form.description', {
-                        sku: selectedOrder.sku,
-                        invoice: selectedOrder.invoice,
-                      })
-                    : t('reception.form.emptyDescription')}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="reception-form">
-                <div className="reception-form__grid">
-                  <div className="inventory-field">
-                    <label className="inventory-label" htmlFor="received-quantity">
-                      {t('reception.form.receivedQuantity')}
-                    </label>
-                    <Input
-                      id="received-quantity"
-                      type="number"
-                      min="1"
-                      value={form.receivedQuantity}
-                      onChange={(event) =>
-                        setForm((current) => ({ ...current, receivedQuantity: event.target.value }))
-                      }
-                    />
-                  </div>
-                  <div className="inventory-field">
-                    <label className="inventory-label" htmlFor="reception-location">
-                      {t('reception.form.location')}
-                    </label>
-                    <Select
-                      id="reception-location"
-                      value={form.locationId}
-                      onChange={(event) =>
-                        setForm((current) => ({ ...current, locationId: event.target.value }))
-                      }
+        ) : (
+          <div
+            className="table-surface"
+            style={{
+              borderRadius: '12px',
+              overflow: 'hidden',
+              border: '1px solid #e5e7eb',
+              background: '#fff',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+            }}
+          >
+            <table
+              className="data-table"
+              style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}
+            >
+              <thead>
+                <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
+                    Orden de Compra
+                  </th>
+                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
+                    Proveedor
+                  </th>
+                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem', textAlign: 'center' }}>
+                    Productos
+                  </th>
+                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem', textAlign: 'center' }}>
+                    Estado
+                  </th>
+                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
+                    Fecha de Solicitud
+                  </th>
+                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem', textAlign: 'center' }}>
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOrders.map((order) => {
+                  const styleProps = statusColorMap[order.status] || { bg: '#f3f4f6', color: '#374151', border: '#e5e7eb' }
+                  return (
+                    <tr
+                      key={order.id}
+                      style={{
+                        borderBottom: '1px solid #f3f4f6',
+                        transition: 'background-color 0.2s',
+                      }}
+                      className="hover-row"
                     >
-                      <option value="">{t('reception.form.locationPlaceholder')}</option>
-                      {locations.map((location) => (
-                        <option key={location.id} value={location.id}>
-                          {location.code} - {location.name}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-                  <div className="inventory-field">
-                    <label className="inventory-label" htmlFor="reception-lot">
-                      {t('reception.form.lot')}
-                    </label>
-                    <Input
-                      id="reception-lot"
-                      value={form.lot}
-                      onChange={(event) =>
-                        setForm((current) => ({ ...current, lot: event.target.value }))
-                      }
-                    />
-                  </div>
-                  <div className="inventory-field">
-                    <label className="inventory-label" htmlFor="reception-expiration">
-                      {t('reception.form.expirationDate')}
-                    </label>
-                    <Input
-                      id="reception-expiration"
-                      type="date"
-                      value={form.expirationDate}
-                      onChange={(event) =>
-                        setForm((current) => ({ ...current, expirationDate: event.target.value }))
-                      }
-                    />
-                  </div>
-                </div>
-
-                {selectedOrder?.requiresSerial ? (
-                  <div className="inventory-field">
-                    <label className="inventory-label" htmlFor="reception-serials">
-                      {t('reception.form.serialNumbers')}
-                    </label>
-                    <textarea
-                      id="reception-serials"
-                      className="f-textarea"
-                      value={form.serialNumbers}
-                      placeholder={t('reception.form.serialPlaceholder')}
-                      onChange={(event) =>
-                        setForm((current) => ({ ...current, serialNumbers: event.target.value }))
-                      }
-                    />
-                  </div>
-                ) : null}
-
-                <div className={`reception-discrepancy${hasDiscrepancy ? ' is-active' : ''}`}>
-                  <div>
-                    <strong>
-                      {hasDiscrepancy
-                        ? t('reception.form.discrepancyDetected')
-                        : t('reception.form.noDiscrepancy')}
-                    </strong>
-                    <span>
-                      {selectedOrder
-                        ? t('reception.form.expectedHelp', {
-                            count: selectedOrder.expectedQuantity,
-                          })
-                        : t('reception.form.expectedEmpty')}
-                    </span>
-                  </div>
-                </div>
-
-                {hasDiscrepancy ? (
-                  <div className="inventory-field">
-                    <label className="inventory-label" htmlFor="reception-note">
-                      {t('reception.form.discrepancyNote')}
-                    </label>
-                    <textarea
-                      id="reception-note"
-                      className="f-textarea"
-                      value={form.discrepancyNote}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          discrepancyNote: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                ) : null}
-
-                {validationMessage ? (
-                  <div className="notice notice--warn">
-                    <AlertTriangle />
-                    <div className="notice__body">{validationMessage}</div>
-                  </div>
-                ) : null}
-
-                <Button
-                  type="button"
-                  onClick={handleConfirm}
-                  disabled={Boolean(validationMessage) || saving}
-                >
-                  <ClipboardCheck />
-                  {saving ? t('reception.form.saving') : t('reception.form.confirm')}
-                </Button>
-              </CardContent>
-            </Card>
-          </aside>
-        </div>
-
-        <section aria-label={t('reception.movements.ariaLabel')}>
-          <div className="s-head">
-            <span className="s-head__label">{t('reception.movements.title')}</span>
-            <div className="s-head__rule" />
+                      <td style={{ padding: '1rem 1.25rem', fontWeight: 500, color: '#111827' }}>
+                        {order.number}
+                      </td>
+                      <td style={{ padding: '1rem 1.25rem', color: '#4b5563' }}>
+                        {order.supplier_nombre}
+                      </td>
+                      <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            backgroundColor: '#f3f0ff',
+                            color: '#7048e8',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            padding: '0.25rem 0.6rem',
+                            borderRadius: '12px',
+                          }}
+                        >
+                          {order.items.length} {order.items.length === 1 ? 'Producto' : 'Productos'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            backgroundColor: styleProps.bg,
+                            color: styleProps.color,
+                            border: `1px solid ${styleProps.border}`,
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            padding: '0.25rem 0.6rem',
+                            borderRadius: '12px',
+                          }}
+                        >
+                          {statusTranslation[order.status] || order.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '1rem 1.25rem', color: '#6b7280', fontSize: '0.875rem' }}>
+                        {new Date(order.created_at).toLocaleDateString('es-CO', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </td>
+                      <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
+                        <button
+                          type="button"
+                          className={activeTab === 'pending' ? 'btn btn--primary' : 'btn btn--secondary'}
+                          style={{
+                            fontSize: '0.825rem',
+                            padding: '0.375rem 0.75rem',
+                            borderRadius: '6px',
+                            fontWeight: 500,
+                            height: '32px',
+                          }}
+                          onClick={() => navigate(`/app/reception/${order.id}`)}
+                        >
+                          {activeTab === 'pending' ? 'Recibir' : 'Ver Detalle'}
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
-          <div className="reception-movement-grid">
-            {localMovements.map((movement) => (
-              <Card key={movement.id} className="reception-movement rounded-lg">
-                <CardContent>
-                  <div>
-                    <p className="prod-name">{movement.productName}</p>
-                    <p className="prod-sub">
-                      <span className="sku">{movement.sku}</span> · {movement.locationCode}
-                    </p>
-                  </div>
-                  <strong className="text-mono">
-                    {t('reception.movements.units', { count: movement.quantity })}
-                  </strong>
-                  <span>{movement.operator}</span>
-                  <time>{movement.confirmedAt}</time>
-                  {movement.discrepancyNote ? (
-                    <p className="reception-movement__note">{movement.discrepancyNote}</p>
-                  ) : null}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
+        )}
       </div>
+      <style>{`
+        .hover-row:hover {
+          background-color: #f9fafb;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </AppShell>
   )
 }
