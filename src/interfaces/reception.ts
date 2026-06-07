@@ -77,3 +77,4 @@ export interface ReceptionMovementResponse {
   executed_by: string;
   created_at: string;
 }
+

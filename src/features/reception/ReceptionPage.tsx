@@ -1,42 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import React, { useEffect, useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
-  AlertTriangle,
-  Barcode,
-  CheckCircle2,
-  ClipboardCheck,
-  PackagePlus,
   Search,
-  ShieldCheck,
-  Snowflake,
+  AlertTriangle,
+  Clock,
+  CheckCircle2,
+  FileText,
+  TrendingUp,
+  X,
+  RefreshCw,
 } from 'lucide-react'
 import AppShell from '../../components/layout/AppShell'
-import { Badge } from '../../components/ui/badge'
-import { Button } from '../../components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '../../components/ui/card'
-import { Input } from '../../components/ui/input'
-import { Select } from '../../components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../../components/ui/table'
-import type {
-  ReceptionExpectedOrder,
-  ReceptionMovement,
-  ReceptionOverview,
-  ReceptionStatus,
-} from '../../interfaces/reception'
-import { fetchReceptionOverview, submitReception } from '../../services/reception'
+import useReceptionStore from '../../store/useReceptionStore'
 
 type ReceptionForm = {
   receivedQuantity: string
@@ -49,12 +24,12 @@ type ReceptionForm = {
   electricalSafetyConfirmed: boolean
 }
 
-const statusVariant: Record<ReceptionStatus, 'success' | 'warning' | 'destructive' | 'secondary'> = {
-  pending: 'secondary',
-  partial: 'warning',
-  ready: 'success',
-  received: 'success',
-  blocked: 'destructive',
+const statusColorMap: Record<string, { bg: string; color: string; border: string }> = {
+  pendiente: { bg: '#e8f2ff', color: '#1971c2', border: '#a5d8ff' },
+  parcialmente_recibida: { bg: '#fff9db', color: '#f59f00', border: '#ffe066' },
+  completada: { bg: '#ebfbee', color: '#099268', border: '#b2f2bb' },
+  cancelada: { bg: '#fff5f5', color: '#e03131', border: '#ffc9c9' },
+  borrador: { bg: '#f1f3f5', color: '#495057', border: '#dee2e6' },
 }
 
 const toForm = (order?: ReceptionExpectedOrder): ReceptionForm => ({
@@ -127,9 +102,9 @@ function ReceptionPage() {
     )
   }, [orders, search])
 
-  const selectedOrder = useMemo(() => {
-    return orders.find((order) => order.id === selectedOrderId) ?? filteredOrders[0]
-  }, [filteredOrders, orders, selectedOrderId])
+  const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
 
   useEffect(() => {
     setForm(toForm(selectedOrder))
@@ -185,26 +160,23 @@ function ReceptionPage() {
     t,
   ]);
 
-  const handleSelectOrder = (order: ReceptionExpectedOrder) => {
-    setSelectedOrderId(order.id)
-    setScanValue(order.barcode)
+  // Refresh helper
+  const handleRefresh = async () => {
+    await Promise.all([fetchPendingOrders(), fetchCompletedOrders()])
   }
 
-  const handleScan = () => {
-    const normalizedScan = scanValue.trim().toLowerCase()
-    const order = orders.find(
-      (item) =>
-        item.barcode.toLowerCase() === normalizedScan ||
-        item.sku.toLowerCase() === normalizedScan ||
-        item.purchaseOrder.toLowerCase() === normalizedScan,
-    )
-    if (order) {
-      handleSelectOrder(order)
-      setError(null)
-      return
-    }
-    setError(t('reception.errors.scanNotFound'))
-  }
+  // Filter logic
+  const filteredOrders = useMemo(() => {
+    const list = activeTab === 'pending' ? pendingOrders : completedOrders
+    return list.filter((order) => {
+      const matchSearch =
+        order.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.supplier_nombre.toLowerCase().includes(searchTerm.toLowerCase())
+      
+      const matchStatus = statusFilter === 'all' || order.status === statusFilter
+      return matchSearch && matchStatus
+    })
+  }, [activeTab, pendingOrders, completedOrders, searchTerm, statusFilter])
 
   const handleConfirm = async () => {
     if (!selectedOrder || validationMessage) return;
@@ -257,9 +229,6 @@ function ReceptionPage() {
               <span>{stats.pending}</span>
               <p>{t("reception.stats.pending")}</p>
             </div>
-          </Card>
-          <Card className="reception-stat rounded-lg">
-            <AlertTriangle />
             <div>
               <span>{stats.discrepancies}</span>
               <p>{t("reception.stats.discrepancies")}</p>
@@ -271,15 +240,11 @@ function ReceptionPage() {
               <span>{stats.serialRequired}</span>
               <p>{t("reception.stats.serialRequired")}</p>
             </div>
-          </Card>
-          <Card className="reception-stat rounded-lg">
-            <Snowflake />
             <div>
               <span>{stats.coldChain}</span>
               <p>{t("reception.stats.coldChain")}</p>
             </div>
-          </Card>
-        </section>
+          </div>
 
         <div className="reception-scanbar">
           <div className="reception-scanbar__field">
@@ -319,20 +284,83 @@ function ReceptionPage() {
               />
             </div>
           </div>
-        </div>
+        </section>
 
-        {error ? (
-          <div className="alert-bar alert-bar--warn" role="alert">
-            <AlertTriangle />
+        {/* Error Alert */}
+        {error && (
+          <div
+            className="alert-bar alert-bar--warn"
+            role="alert"
+            style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center' }}
+          >
+            <AlertTriangle style={{ marginRight: '0.5rem', width: '18px', height: '18px' }} />
             <span>{error}</span>
+            <button className="alert-bar__close" onClick={clearError}>
+              <X style={{ width: '16px', height: '16px' }} />
+            </button>
           </div>
-        ) : null}
-        {successMessage ? (
-          <div className="alert-bar alert-bar--ok" role="status">
-            <CheckCircle2 />
-            <span>{successMessage}</span>
+        )}
+
+        {/* Tabs and White Search/Filter Box */}
+        <div
+          style={{
+            backgroundColor: '#fff',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            padding: '1.25rem',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+            marginBottom: '1.5rem',
+          }}
+        >
+          {/* Tab Selector */}
+          <div
+            style={{
+              display: 'flex',
+              gap: '1rem',
+              borderBottom: '1px solid #f3f4f6',
+              paddingBottom: '1rem',
+              marginBottom: '1rem',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('pending')
+                setStatusFilter('all')
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                borderBottom: activeTab === 'pending' ? '2px solid #1971c2' : '2px solid transparent',
+                color: activeTab === 'pending' ? '#1971c2' : '#6b7280',
+                padding: '0.5rem 1rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+            >
+              Pendientes de recibir
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('history')
+                setStatusFilter('all')
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                borderBottom: activeTab === 'history' ? '2px solid #1971c2' : '2px solid transparent',
+                color: activeTab === 'history' ? '#1971c2' : '#6b7280',
+                padding: '0.5rem 1rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+            >
+              Historial completado
+            </button>
           </div>
-        ) : null}
 
         <div className="reception-layout">
           <section aria-label={t("reception.orders.ariaLabel")}>
@@ -695,8 +723,132 @@ function ReceptionPage() {
               </Card>
             ))}
           </div>
-        </section>
+        ) : (
+          <div
+            className="table-surface"
+            style={{
+              borderRadius: '12px',
+              overflow: 'hidden',
+              border: '1px solid #e5e7eb',
+              background: '#fff',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+            }}
+          >
+            <table
+              className="data-table"
+              style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}
+            >
+              <thead>
+                <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
+                    Orden de Compra
+                  </th>
+                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
+                    Proveedor
+                  </th>
+                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem', textAlign: 'center' }}>
+                    Productos
+                  </th>
+                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem', textAlign: 'center' }}>
+                    Estado
+                  </th>
+                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
+                    Fecha de Solicitud
+                  </th>
+                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem', textAlign: 'center' }}>
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOrders.map((order) => {
+                  const styleProps = statusColorMap[order.status] || { bg: '#f3f4f6', color: '#374151', border: '#e5e7eb' }
+                  return (
+                    <tr
+                      key={order.id}
+                      style={{
+                        borderBottom: '1px solid #f3f4f6',
+                        transition: 'background-color 0.2s',
+                      }}
+                      className="hover-row"
+                    >
+                      <td style={{ padding: '1rem 1.25rem', fontWeight: 500, color: '#111827' }}>
+                        {order.number}
+                      </td>
+                      <td style={{ padding: '1rem 1.25rem', color: '#4b5563' }}>
+                        {order.supplier_nombre}
+                      </td>
+                      <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            backgroundColor: '#f3f0ff',
+                            color: '#7048e8',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            padding: '0.25rem 0.6rem',
+                            borderRadius: '12px',
+                          }}
+                        >
+                          {order.items.length} {order.items.length === 1 ? 'Producto' : 'Productos'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            backgroundColor: styleProps.bg,
+                            color: styleProps.color,
+                            border: `1px solid ${styleProps.border}`,
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            padding: '0.25rem 0.6rem',
+                            borderRadius: '12px',
+                          }}
+                        >
+                          {statusTranslation[order.status] || order.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '1rem 1.25rem', color: '#6b7280', fontSize: '0.875rem' }}>
+                        {new Date(order.created_at).toLocaleDateString('es-CO', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </td>
+                      <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
+                        <button
+                          type="button"
+                          className={activeTab === 'pending' ? 'btn btn--primary' : 'btn btn--secondary'}
+                          style={{
+                            fontSize: '0.825rem',
+                            padding: '0.375rem 0.75rem',
+                            borderRadius: '6px',
+                            fontWeight: 500,
+                            height: '32px',
+                          }}
+                          onClick={() => navigate(`/app/reception/${order.id}`)}
+                        >
+                          {activeTab === 'pending' ? 'Recibir' : 'Ver Detalle'}
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+      <style>{`
+        .hover-row:hover {
+          background-color: #f9fafb;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </AppShell>
   );
 }

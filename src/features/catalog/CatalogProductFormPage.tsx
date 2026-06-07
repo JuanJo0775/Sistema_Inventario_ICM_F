@@ -201,7 +201,7 @@ const CatalogProductFormPage: React.FC = () => {
                 >
                   <option value="">{t('catalog.products.form.selectBrand', 'Selecciona una marca')}</option>
                   {brands
-                    .filter((b: any) => !formData.category_id || String(b.category) === String(formData.category_id))
+                    .filter((b: any) => b.is_active || String(b.id) === String(formData.subcategory_id))
                     .map((brand: any) => (
                       <option key={brand.id} value={brand.id}>
                         {brand.name}

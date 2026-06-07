@@ -167,12 +167,13 @@
       "users": "Users",
       "catalog": "Catalog",
       "locations": "Location",
-      "warehouse": "Warehouse",
+      "warehouse": "Warehouses",
       "purchasingSection": "PURCHASING",
       "purchasing": "Purchasing",
       "suppliers": "Suppliers",
       "purchaseOrders": "Purchase Orders",
-      "logout": "Sign out"
+      "logout": "Sign out",
+      "transfers": "Transfers"
     },
     "sidebar": {
       "brandName": "Import Corporal Medical",
@@ -541,11 +542,11 @@
     },
     "search": {
       "label": "Search invoice / customer",
-    "scan": {
-      "label": "Scan / manual code",
-      "placeholder": "Scan or type the SKU / barcode...",
-      "helper": "If the scanner fails, type the SKU or barcode manually and validate anyway."
-    },
+      "scan": {
+        "label": "Scan / manual code",
+        "placeholder": "Scan or type the SKU / barcode...",
+        "helper": "If the scanner fails, type the SKU or barcode manually and validate anyway."
+      },
       "placeholder": "Invoice number or customer name..."
     },
     "orders": {

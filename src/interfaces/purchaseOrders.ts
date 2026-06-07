@@ -54,4 +54,5 @@ export interface PurchaseOrderCreatePayload {
 export interface PurchaseOrderUpdatePayload {
   expected_delivery?: string | null
   notes?: string
+  items?: PurchaseOrderCreateItemPayload[]
 }
