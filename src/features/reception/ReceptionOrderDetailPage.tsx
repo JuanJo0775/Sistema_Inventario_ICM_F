@@ -7,6 +7,8 @@ import {
   Warehouse,
   Calendar,
   AlertCircle,
+  Plus,
+  Trash2,
 } from 'lucide-react'
 import AppShell from '../../components/layout/AppShell'
 import useReceptionStore from '../../store/useReceptionStore'
@@ -14,6 +16,24 @@ import useLocationStore from '../../store/useLocationStore'
 import useCatalogStore from '../../store/useCatalogStore'
 import type { PurchaseOrderItem } from '../../interfaces/purchaseOrders'
 
+/* ------------------------------------------------------------------ */
+/* Helpers for location splits                                        */
+/* ------------------------------------------------------------------ */
+interface LocationSplit {
+  id: string
+  locationId: string
+  quantity: string
+}
+
+const newSplit = (): LocationSplit => ({
+  id: crypto.randomUUID(),
+  locationId: '',
+  quantity: '',
+})
+
+/* ================================================================== */
+/*  Component                                                          */
+/* ================================================================== */
 export const ReceptionOrderDetailPage: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>()
   const navigate = useNavigate()
@@ -28,7 +48,10 @@ export const ReceptionOrderDetailPage: React.FC = () => {
   } = useReceptionStore()
 
   const { locations, fetchLocations } = useLocationStore()
-  const { products: catalogProducts, fetchProducts } = useCatalogStore()
+  const {
+    products: catalogProducts,
+    fetchProducts,
+  } = useCatalogStore()
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -40,6 +63,10 @@ export const ReceptionOrderDetailPage: React.FC = () => {
   const [lotCode, setLotCode] = useState<string>('')
   const [expirationDate, setExpirationDate] = useState<string>('')
   const [discrepancyNote, setDiscrepancyNote] = useState<string>('')
+
+  // Split location states
+  const [splitEnabled, setSplitEnabled] = useState(false)
+  const [splits, setSplits] = useState<LocationSplit[]>([])
 
   // Local feedback/saving state
   const [actionError, setActionError] = useState<string | null>(null)
@@ -62,22 +89,28 @@ export const ReceptionOrderDetailPage: React.FC = () => {
     )
   }, [locations])
 
-  // Find expiration/cold chain configuration of the selected item
+  // Find product configuration (requires_expiration, etc.)
   const productConfig = useMemo(() => {
     if (!selectedItem) return null
     return catalogProducts.find((p) => p.id === selectedItem.product)
   }, [selectedItem, catalogProducts])
 
+  // Derived flags
+  const requiresExpiration = productConfig?.requires_expiration ?? false
+  // Lot is mandatory when product has expiration date; optional otherwise
+  const lotRequired = requiresExpiration
+
   // Reset form when opening modal
   const handleOpenModal = (item: PurchaseOrderItem) => {
     setSelectedItem(item)
-    // Default to the full pending quantity
     const pendingQty = Number(item.quantity_ordered) - Number(item.quantity_received)
     setQuantityReceived(pendingQty.toString())
     setLocationId('')
     setLotCode('')
     setExpirationDate('')
     setDiscrepancyNote('')
+    setSplitEnabled(false)
+    setSplits([])
     setActionError(null)
     setIsModalOpen(true)
   }
@@ -92,11 +125,38 @@ export const ReceptionOrderDetailPage: React.FC = () => {
     ? Number(selectedItem.quantity_ordered) - Number(selectedItem.quantity_received)
     : 0
 
+  const enteredQty = Number(quantityReceived) || 0
+
   const hasDiscrepancy = useMemo(() => {
     if (!quantityReceived) return false
-    const entered = Number(quantityReceived)
-    return entered !== pendingQty
-  }, [quantityReceived, pendingQty])
+    return enteredQty !== pendingQty
+  }, [quantityReceived, enteredQty, pendingQty])
+
+  // Split location handlers
+  const handleAddSplit = () => {
+    setSplits((prev) => [...prev, newSplit()])
+  }
+  const handleRemoveSplit = (id: string) => {
+    setSplits((prev) => prev.filter((s) => s.id !== id))
+  }
+  const handleSplitChange = (id: string, field: 'locationId' | 'quantity', value: string) => {
+    setSplits((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, [field]: value } : s))
+    )
+  }
+
+  const totalSplitQty = splits.reduce((acc, s) => acc + (Number(s.quantity) || 0), 0)
+
+  // When enabling split, add an initial entry
+  const handleToggleSplit = (checked: boolean) => {
+    setSplitEnabled(checked)
+    if (checked && splits.length === 0) {
+      setSplits([newSplit(), newSplit()])
+    }
+    if (!checked) {
+      setSplits([])
+    }
+  }
 
   // Save the reception
   const handleSaveReception = async (e: React.FormEvent) => {
@@ -106,48 +166,107 @@ export const ReceptionOrderDetailPage: React.FC = () => {
     setActionError(null)
     setActionSuccess(null)
 
-    const enteredQty = Number(quantityReceived)
     if (isNaN(enteredQty) || enteredQty <= 0) {
       setActionError('La cantidad recibida debe ser un número entero mayor que 0.')
       return
     }
 
     if (enteredQty > pendingQty) {
-      setActionError(`No puede recibir más de la cantidad pendiente (${pendingQty} unidades).`)
+      setActionError(`No puede recibir más de la cantidad esperada restante (${pendingQty} unidades).`)
       return
     }
 
-    if (!locationId) {
-      setActionError('Debe seleccionar una ubicación de destino.')
+    // Lot validation
+    if (lotRequired && !lotCode.trim()) {
+      setActionError('Este producto requiere fecha de vencimiento, por lo tanto el lote es obligatorio.')
       return
     }
 
-    if (productConfig?.requires_expiration && !expirationDate) {
+    // Expiration date validation
+    if (requiresExpiration && !expirationDate) {
       setActionError('Este producto requiere fecha de vencimiento.')
       return
     }
 
+
+
+    // Discrepancy validation
     if (hasDiscrepancy && !discrepancyNote.trim()) {
       setActionError('Se ha detectado una discrepancia. Debe especificar el motivo/nota de discrepancia.')
       return
     }
 
+    // Split location validation
+    if (splitEnabled) {
+      if (splits.length < 2) {
+        setActionError('Debe agregar al menos 2 ubicaciones para dividir la cantidad.')
+        return
+      }
+      for (const s of splits) {
+        if (!s.locationId) {
+          setActionError('Todas las divisiones deben tener una ubicación seleccionada.')
+          return
+        }
+        if (!s.quantity || Number(s.quantity) <= 0) {
+          setActionError('Todas las divisiones deben tener una cantidad mayor a 0.')
+          return
+        }
+      }
+      if (totalSplitQty !== enteredQty) {
+        setActionError(
+          `La suma de las cantidades divididas (${totalSplitQty}) debe ser igual a la cantidad recibida (${enteredQty}).`
+        )
+        return
+      }
+      // Check for duplicate locations
+      const locIds = splits.map((s) => s.locationId)
+      if (new Set(locIds).size !== locIds.length) {
+        setActionError('No puede seleccionar la misma ubicación dos veces en las divisiones.')
+        return
+      }
+    } else {
+      if (!locationId) {
+        setActionError('Debe seleccionar una ubicación de destino.')
+        return
+      }
+    }
+
     setSaving(true)
     try {
-      await receiveItem({
-        po_id: orderId,
-        destination_location_id: locationId,
-        notes: `Recepción de ${selectedItem.product_name}`,
-        items: [
-          {
-            purchase_order_item_id: selectedItem.id,
-            quantity_received: enteredQty,
-            lot_code: lotCode.trim() || undefined,
-            lot_expiration_date: expirationDate || null,
-            discrepancy_note: hasDiscrepancy ? discrepancyNote.trim() : undefined,
-          },
-        ],
-      })
+      if (splitEnabled) {
+        // Create one reception per location split
+        for (const s of splits) {
+          await receiveItem({
+            po_id: orderId,
+            destination_location_id: s.locationId,
+            notes: `Recepción de ${selectedItem.product_name} (división de ubicación)`,
+            items: [
+              {
+                purchase_order_item_id: selectedItem.id,
+                quantity_received: Number(s.quantity),
+                lot_code: lotCode.trim() || undefined,
+                lot_expiration_date: expirationDate || null,
+                discrepancy_note: hasDiscrepancy ? discrepancyNote.trim() : undefined,
+              },
+            ],
+          })
+        }
+      } else {
+        await receiveItem({
+          po_id: orderId,
+          destination_location_id: locationId,
+          notes: `Recepción de ${selectedItem.product_name}`,
+          items: [
+            {
+              purchase_order_item_id: selectedItem.id,
+              quantity_received: enteredQty,
+              lot_code: lotCode.trim() || undefined,
+              lot_expiration_date: expirationDate || null,
+              discrepancy_note: hasDiscrepancy ? discrepancyNote.trim() : undefined,
+            },
+          ],
+        })
+      }
 
       setActionSuccess(`Se ha registrado la recepción de ${enteredQty} unidades de ${selectedItem.product_name}.`)
       setIsModalOpen(false)
@@ -413,7 +532,7 @@ export const ReceptionOrderDetailPage: React.FC = () => {
                 const isComplete = received >= ordered
 
                 // Compute product status badge
-                let itemStatusLabel = 'Pendiente'
+                let itemStatusLabel = 'Sin recibir'
                 let badgeStyle = { bg: '#f1f3f5', color: '#495057', border: '#dee2e6' }
 
                 if (received > 0 && received < ordered) {
@@ -423,9 +542,6 @@ export const ReceptionOrderDetailPage: React.FC = () => {
                   itemStatusLabel = 'Completo'
                   badgeStyle = { bg: '#ebfbee', color: '#099268', border: '#b2f2bb' }
                 }
-
-                // Check product configuration for cold chain or serial requirements
-                const matchProd = catalogProducts.find((p) => p.id === item.product)
 
                 return (
                   <tr
@@ -503,7 +619,9 @@ export const ReceptionOrderDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal: Recibir Producto */}
+      {/* ========================================================== */}
+      {/* Modal: Recibir Producto                                      */}
+      {/* ========================================================== */}
       {isModalOpen && selectedItem && (
         <div
           style={{
@@ -522,7 +640,9 @@ export const ReceptionOrderDetailPage: React.FC = () => {
               backgroundColor: '#fff',
               borderRadius: '12px',
               width: '100%',
-              maxWidth: '480px',
+              maxWidth: splitEnabled ? '580px' : '480px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
               padding: '1.5rem',
               boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
             }}
@@ -569,7 +689,7 @@ export const ReceptionOrderDetailPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Basic Info panel inside form */}
+              {/* Basic Info panel — only Esperado and Recibido */}
               <div
                 style={{
                   backgroundColor: '#f9fafb',
@@ -581,136 +701,314 @@ export const ReceptionOrderDetailPage: React.FC = () => {
                   justifyContent: 'space-around',
                 }}
               >
-                <span>Total esperado: <strong>{selectedItem.quantity_ordered}</strong></span>
-                <span>Total recibido: <strong style={{ color: '#099268' }}>{selectedItem.quantity_received}</strong></span>
+                <span>Cantidad esperada: <strong>{selectedItem.quantity_ordered}</strong></span>
+                <span>Cantidad recibida: <strong style={{ color: '#099268' }}>{Number(selectedItem.quantity_received) + (Number(quantityReceived) || 0)}</strong></span>
               </div>
 
-              {/* Quantity to receive input & Location */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {/* 1. PRODUCT & QUANTITY */}
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  <div style={{ flex: 1 }}>
-                    <label
-                      htmlFor="received-qty-input"
-                      style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '0.35rem' }}
-                    >
-                      Cantidad a recibir <span style={{ color: '#e03131' }}>*</span>
-                    </label>
-                    <input
-                      id="received-qty-input"
-                      type="number"
-                      min="1"
-                      max={pendingQty}
-                      value={quantityReceived}
-                      onChange={(e) => setQuantityReceived(e.target.value)}
-                      style={{
-                        width: '100%',
-                        height: '42px',
-                        padding: '0 0.75rem',
-                        borderRadius: '8px',
-                        border: '1px solid #d1d5db',
-                        outline: 'none',
-                        fontSize: '0.9rem',
-                      }}
-                      required
-                    />
-                  </div>
+              {/* Quantity input */}
+              <div>
+                <label
+                  htmlFor="received-qty-input"
+                  style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '0.35rem' }}
+                >
+                  Cantidad a recibir <span style={{ color: '#e03131' }}>*</span>
+                </label>
+                <input
+                  id="received-qty-input"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={quantityReceived}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '')
+                    setQuantityReceived(val)
+                  }}
+                  style={{
+                    width: '100%',
+                    height: '42px',
+                    padding: '0 0.75rem',
+                    borderRadius: '8px',
+                    border: '1px solid #d1d5db',
+                    outline: 'none',
+                    fontSize: '0.9rem',
+                    boxSizing: 'border-box',
+                  }}
+                  required
+                />
+              </div>
 
-                  <div style={{ flex: 1.5 }}>
-                    <label
-                      htmlFor="location-select"
-                      style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '0.35rem' }}
-                    >
-                      Ubicación destino <span style={{ color: '#e03131' }}>*</span>
-                    </label>
-                    <select
-                      id="location-select"
-                      value={locationId}
-                      onChange={(e) => setLocationId(e.target.value)}
-                      style={{
-                        width: '100%',
-                        height: '42px',
-                        padding: '0 0.75rem',
-                        borderRadius: '8px',
-                        border: '1px solid #d1d5db',
-                        outline: 'none',
-                        fontSize: '0.9rem',
-                        backgroundColor: '#fff',
-                        cursor: 'pointer',
-                      }}
-                      required
-                    >
-                      <option value="">Selecciona una ubicación</option>
-                      {filteredLocations.map((loc) => (
-                        <option key={loc.id} value={loc.id}>
-                          {loc.code} - {loc.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+              {/* ---------------------------------------------------------- */}
+              {/* Conditional fields based on product/category config         */}
+              {/* ---------------------------------------------------------- */}
 
-                {/* 2. LOT CODE & EXPIRATION DATE */}
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  <div style={{ flex: 1 }}>
-                    <label
-                      htmlFor="lot-code-input"
-                      style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '0.35rem' }}
-                    >
-                      Lote
-                    </label>
-                    <input
-                      id="lot-code-input"
-                      type="text"
-                      placeholder="Ej. LOT-2026"
-                      value={lotCode}
-                      onChange={(e) => setLotCode(e.target.value)}
-                      style={{
-                        width: '100%',
-                        height: '42px',
-                        padding: '0 0.75rem',
-                        borderRadius: '8px',
-                        border: '1px solid #d1d5db',
-                        outline: 'none',
-                        fontSize: '0.9rem',
-                      }}
-                    />
-                  </div>
 
-                  {productConfig?.requires_expiration && (
-                    <div style={{ flex: 1 }}>
-                      <label
-                        htmlFor="expiration-date-input"
-                        style={{
-                          fontSize: '0.85rem',
-                          fontWeight: 600,
-                          color: '#374151',
-                          display: 'block',
-                          marginBottom: '0.35rem',
-                        }}
-                      >
-                        Vencimiento <span style={{ color: '#e03131' }}>*</span>
-                      </label>
-                      <input
-                        id="expiration-date-input"
-                        type="date"
-                        value={expirationDate}
-                        onChange={(e) => setExpirationDate(e.target.value)}
-                        style={{
-                          width: '100%',
-                          height: '42px',
-                          padding: '0 0.75rem',
-                          borderRadius: '8px',
-                          border: '1px solid #d1d5db',
-                          outline: 'none',
-                          fontSize: '0.9rem',
-                        }}
-                        required
-                      />
-                    </div>
+
+              {/* Lot Code & Expiration Date */}
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <div style={{ flex: 1 }}>
+                  <label
+                    htmlFor="lot-code-input"
+                    style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '0.35rem' }}
+                  >
+                    Lote {lotRequired && <span style={{ color: '#e03131' }}>*</span>}
+                  </label>
+                  <input
+                    id="lot-code-input"
+                    type="text"
+                    placeholder="Ej. LOT-2026"
+                    value={lotCode}
+                    onChange={(e) => setLotCode(e.target.value)}
+                    style={{
+                      width: '100%',
+                      height: '42px',
+                      padding: '0 0.75rem',
+                      borderRadius: '8px',
+                      border: '1px solid #d1d5db',
+                      outline: 'none',
+                      fontSize: '0.9rem',
+                    }}
+                    required={lotRequired}
+                  />
+                  {lotRequired && (
+                    <p style={{ fontSize: '0.75rem', color: '#e03131', margin: '0.25rem 0 0 0' }}>
+                      Obligatorio porque el producto requiere fecha de vencimiento.
+                    </p>
                   )}
                 </div>
+
+                {/* Expiration Date — only if product.requires_expiration */}
+                {requiresExpiration && (
+                  <div style={{ flex: 1 }}>
+                    <label
+                      htmlFor="expiration-date-input"
+                      style={{
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        color: '#374151',
+                        display: 'block',
+                        marginBottom: '0.35rem',
+                      }}
+                    >
+                      Vencimiento <span style={{ color: '#e03131' }}>*</span>
+                    </label>
+                    <input
+                      id="expiration-date-input"
+                      type="date"
+                      value={expirationDate}
+                      onChange={(e) => setExpirationDate(e.target.value)}
+                      style={{
+                        width: '100%',
+                        height: '42px',
+                        padding: '0 0.75rem',
+                        borderRadius: '8px',
+                        border: '1px solid #d1d5db',
+                        outline: 'none',
+                        fontSize: '0.9rem',
+                      }}
+                      required
+                    />
+                  </div>
+                )}
               </div>
+
+              {/* ---------------------------------------------------------- */}
+              {/* Split location toggle                                       */}
+              {/* ---------------------------------------------------------- */}
+              <div
+                style={{
+                  backgroundColor: '#f0f4ff',
+                  border: '1px solid #d0d5dd',
+                  borderRadius: '8px',
+                  padding: '0.85rem 1rem',
+                  boxSizing: 'border-box',
+                  width: '100%',
+                }}
+              >
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.6rem',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    color: '#374151',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={splitEnabled}
+                    onChange={(e) => handleToggleSplit(e.target.checked)}
+                    style={{ width: '18px', height: '18px', accentColor: '#4f46e5', cursor: 'pointer' }}
+                  />
+                  ¿Desea dividir esta cantidad recibida en diferentes ubicaciones?
+                </label>
+
+                {splitEnabled && (
+                  <div style={{ marginTop: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', width: '100%', boxSizing: 'border-box' }}>
+                    {splits.map((s, idx) => (
+                      <div
+                        key={s.id}
+                        style={{
+                          display: 'flex',
+                          gap: '0.5rem',
+                          alignItems: 'center',
+                          backgroundColor: '#fff',
+                          padding: '0.5rem 0.75rem',
+                          borderRadius: '6px',
+                          border: '1px solid #e5e7eb',
+                          width: '100%',
+                          boxSizing: 'border-box',
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            color: '#6b7280',
+                            width: '20px',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {idx + 1}.
+                        </span>
+                        <select
+                          value={s.locationId}
+                          onChange={(e) => handleSplitChange(s.id, 'locationId', e.target.value)}
+                          style={{
+                            flex: '1 1 auto',
+                            minWidth: 0,
+                            height: '38px',
+                            padding: '0 0.5rem',
+                            borderRadius: '6px',
+                            border: '1px solid #d1d5db',
+                            fontSize: '0.85rem',
+                            backgroundColor: '#fff',
+                            cursor: 'pointer',
+                            boxSizing: 'border-box',
+                          }}
+                        >
+                          <option value="">Ubicación</option>
+                          {filteredLocations.map((loc) => (
+                            <option key={loc.id} value={loc.id}>
+                              {loc.code} - {loc.name}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          placeholder="Cant."
+                          value={s.quantity}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9]/g, '')
+                            handleSplitChange(s.id, 'quantity', val)
+                          }}
+                          style={{
+                            width: '80px',
+                            flexShrink: 0,
+                            height: '38px',
+                            padding: '0 0.5rem',
+                            borderRadius: '6px',
+                            border: '1px solid #d1d5db',
+                            fontSize: '0.85rem',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSplit(s.id)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#e03131',
+                            padding: '0.25rem',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '32px',
+                            height: '32px',
+                            flexShrink: 0,
+                          }}
+                          title="Eliminar"
+                        >
+                          <Trash2 style={{ width: '16px', height: '16px' }} />
+                        </button>
+                      </div>
+                    ))}
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.25rem' }}>
+                      <button
+                        type="button"
+                        onClick={handleAddSplit}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          background: 'none',
+                          border: 'none',
+                          color: '#4f46e5',
+                          fontWeight: 600,
+                          fontSize: '0.825rem',
+                          cursor: 'pointer',
+                          padding: 0,
+                        }}
+                      >
+                        <Plus style={{ width: '15px', height: '15px' }} />
+                        Agregar ubicación
+                      </button>
+
+                      <span
+                        style={{
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          color: totalSplitQty === enteredQty ? '#099268' : '#e03131',
+                        }}
+                      >
+                        Total: {totalSplitQty} / {enteredQty}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Single location — only when NOT splitting */}
+              {!splitEnabled && (
+                <div>
+                  <label
+                    htmlFor="location-select"
+                    style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '0.35rem' }}
+                  >
+                    Ubicación destino <span style={{ color: '#e03131' }}>*</span>
+                  </label>
+                  <select
+                    id="location-select"
+                    value={locationId}
+                    onChange={(e) => setLocationId(e.target.value)}
+                    style={{
+                      width: '100%',
+                      height: '42px',
+                      padding: '0 0.75rem',
+                      borderRadius: '8px',
+                      border: '1px solid #d1d5db',
+                      outline: 'none',
+                      fontSize: '0.9rem',
+                      backgroundColor: '#fff',
+                      cursor: 'pointer',
+                    }}
+                    required
+                  >
+                    <option value="">Selecciona una ubicación</option>
+                    {filteredLocations.map((loc) => (
+                      <option key={loc.id} value={loc.id}>
+                        {loc.code} - {loc.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Discrepancy warning and field */}
               {hasDiscrepancy && (
@@ -730,7 +1028,7 @@ export const ReceptionOrderDetailPage: React.FC = () => {
                     Diferencia detectada
                   </div>
                   <p style={{ fontSize: '0.8rem', color: '#665400', margin: 0 }}>
-                    La cantidad a registrar ({quantityReceived || 0}) es inferior a la cantidad esperada en esta entrega. Se registrará como recepción parcial. Escribe el motivo:
+                    La cantidad a registrar ({quantityReceived || 0}) difiere de la cantidad esperada en esta entrega. Escribe el motivo:
                   </p>
                   <textarea
                     placeholder="Escribe el motivo del faltante o retraso..."

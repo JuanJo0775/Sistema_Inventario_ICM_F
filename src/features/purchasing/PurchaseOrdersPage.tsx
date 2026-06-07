@@ -299,7 +299,7 @@ export const PurchaseOrdersPage: React.FC = () => {
 
   // Modal Sub-Form Product Add state
   const [addProductId, setAddProductId] = useState('')
-  const [addQty, setAddQty] = useState(1)
+  const [addQty, setAddQty] = useState('1')
   const [addCost, setAddCost] = useState(0)
 
   // Action Confirmations
@@ -366,7 +366,7 @@ export const PurchaseOrdersPage: React.FC = () => {
     setFormNotes('')
     setFormItems([])
     setAddProductId('')
-    setAddQty(1)
+    setAddQty('1')
     setAddCost(0)
     setValidationError(null)
     setIsFormOpen(true)
@@ -385,7 +385,7 @@ export const PurchaseOrdersPage: React.FC = () => {
       })),
     )
     setAddProductId('')
-    setAddQty(1)
+    setAddQty('1')
     setAddCost(0)
     setValidationError(null)
     setIsFormOpen(true)
@@ -397,7 +397,8 @@ export const PurchaseOrdersPage: React.FC = () => {
       setValidationError('Por favor seleccione un producto.')
       return
     }
-    if (addQty <= 0) {
+    const qtyParsed = parseInt(addQty) || 0
+    if (qtyParsed <= 0) {
       setValidationError('La cantidad debe ser mayor a 0.')
       return
     }
@@ -414,7 +415,7 @@ export const PurchaseOrdersPage: React.FC = () => {
       ...formItems,
       {
         productId: addProductId,
-        qtyOrdered: addQty,
+        qtyOrdered: qtyParsed,
         unitCost: addCost || 0,
         notes: '',
       },
@@ -422,7 +423,7 @@ export const PurchaseOrdersPage: React.FC = () => {
 
     // Reset subform
     setAddProductId('')
-    setAddQty(1)
+    setAddQty('1')
     setAddCost(0)
   }
 
@@ -439,18 +440,30 @@ export const PurchaseOrdersPage: React.FC = () => {
       return
     }
 
-    if (!editingOrder && formItems.length === 0) {
+    if ((!editingOrder || editingOrder.status === 'borrador') && formItems.length === 0) {
       setValidationError('Debe agregar al menos un producto a la orden.')
       return
     }
 
     try {
       if (editingOrder) {
-        // Edit order (backend only updates notes/delivery)
-        await updateOrder(editingOrder.id, {
+        const payload: any = {
           notes: formNotes.trim(),
-        })
-        setSuccessMsg('Observaciones de la orden actualizadas correctamente.')
+        }
+        if (editingOrder.status === 'borrador') {
+          payload.items = formItems.map((item) => ({
+            product_id: item.productId,
+            quantity_ordered: item.qtyOrdered,
+            unit_cost: item.unitCost,
+            notes: item.notes,
+          }))
+        }
+        await updateOrder(editingOrder.id, payload)
+        setSuccessMsg(
+          editingOrder.status === 'borrador'
+            ? 'Orden de compra borrador actualizada correctamente.'
+            : 'Observaciones de la orden actualizadas correctamente.'
+        )
       } else {
         // Create draft
         const payload = {
@@ -477,7 +490,7 @@ export const PurchaseOrdersPage: React.FC = () => {
       return
     }
 
-    if (!editingOrder && formItems.length === 0) {
+    if ((!editingOrder || editingOrder.status === 'borrador') && formItems.length === 0) {
       setValidationError('Debe agregar al menos un producto a la orden.')
       return
     }
@@ -485,9 +498,18 @@ export const PurchaseOrdersPage: React.FC = () => {
     try {
       if (editingOrder) {
         // Update first, then confirm
-        await updateOrder(editingOrder.id, {
+        const payload: any = {
           notes: formNotes.trim(),
-        })
+        }
+        if (editingOrder.status === 'borrador') {
+          payload.items = formItems.map((item) => ({
+            product_id: item.productId,
+            quantity_ordered: item.qtyOrdered,
+            unit_cost: item.unitCost,
+            notes: item.notes,
+          }))
+        }
+        await updateOrder(editingOrder.id, payload)
         await confirmOrder(editingOrder.id)
         setSuccessMsg(`Orden de compra ${editingOrder.number} emitida correctamente.`)
       } else {
@@ -1334,8 +1356,8 @@ export const PurchaseOrdersPage: React.FC = () => {
                     Productos de la Orden
                   </h4>
 
-                  {/* Add Product Block (Only visible when creating, items are immutable in django backend updates) */}
-                  {!editingOrder ? (
+                  {/* Add Product Block (Visible when creating or editing a draft order) */}
+                  {!editingOrder || editingOrder.status === 'borrador' ? (
                     <div
                       style={{
                         display: 'flex',
@@ -1367,8 +1389,8 @@ export const PurchaseOrdersPage: React.FC = () => {
                             min={1}
                             value={addQty}
                             onChange={(e) => {
-                              const val = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 1
-                              setAddQty(Math.max(1, val))
+                              const val = e.target.value.replace(/[^0-9]/g, '')
+                              setAddQty(val)
                             }}
                             style={{
                               padding: '0.5rem 0.75rem',
@@ -1431,7 +1453,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                             <th style={{ padding: '0.5rem 0.75rem', fontWeight: 600, color: '#4b5563' }}>Producto</th>
                             <th style={{ padding: '0.5rem 0.75rem', fontWeight: 600, color: '#4b5563', textAlign: 'center' }}>Cantidad</th>
                             <th style={{ padding: '0.5rem 0.75rem', fontWeight: 600, color: '#4b5563', textAlign: 'right' }}>Costo Unit.</th>
-                            {!editingOrder && <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center' }} />}
+                            {(!editingOrder || editingOrder.status === 'borrador') && <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center' }} />}
                           </tr>
                         </thead>
                         <tbody>
@@ -1451,7 +1473,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                                 <td style={{ padding: '0.5rem 0.75rem', textAlign: 'right', color: '#6b7280' }}>
                                   ${item.unitCost.toLocaleString('es-CO')}
                                 </td>
-                                {!editingOrder && (
+                                {(!editingOrder || editingOrder.status === 'borrador') && (
                                   <td style={{ padding: '0.5rem 0.75rem', textAlign: 'center' }}>
                                     <button
                                       type="button"
