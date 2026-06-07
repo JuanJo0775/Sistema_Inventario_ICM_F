@@ -798,7 +798,7 @@
     "errors": {
       "load": "No se pudo cargar la información de alertas",
       "resolve": "No se pudo resolver la alerta. Intenta de nuevo.",
-      "unauthorized": "No tienes privilegios para resolver esta alerta. Solo Almacenistas y Administradores pueden resolver alertas operativas.",
+      "unauthorized": "No tienes privilegios para resolver esta alerta. Solo los Almacenistas pueden resolver alertas operativas."
       "unauthorizedShort": "Sin permisos"
     },
     "success": {
