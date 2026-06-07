@@ -820,10 +820,10 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
     }
   }
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   return (
     <AppShellChrome
