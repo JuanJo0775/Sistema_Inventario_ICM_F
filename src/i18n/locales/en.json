@@ -799,7 +799,7 @@
     "errors": {
       "load": "Could not load alerts information",
       "resolve": "Could not resolve the alert. Please try again.",
-      "unauthorized": "You do not have privileges to resolve this alert. Only Stockkeepers and Administrators can resolve operational alerts.",
+      "unauthorized": "You do not have privileges to resolve this alert. Only Stockkeepers can resolve operational alerts.",
       "unauthorizedShort": "No permission"
     },
     "success": {

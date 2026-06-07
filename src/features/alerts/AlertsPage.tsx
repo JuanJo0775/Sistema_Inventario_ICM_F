@@ -58,10 +58,9 @@ function AlertsPage() {
   const [success, setSuccess] = useState<string | null>(null)
   const [alertTypeFilter, setAlertTypeFilter] = useState<string>('')
 
-  const canResolve = useMemo(
-    () => user?.role === 'almacenista',
-    [user?.role],
-  )
+  const canResolve = useMemo(() => {
+    return user?.role === "almacenista";
+  }, [user?.role]);
 
   const loadAlerts = useCallback(async () => {
     setLoading(true)
@@ -84,20 +83,23 @@ function AlertsPage() {
 
   const handleResolve = async (alertId: string) => {
     if (!canResolve) {
-      setError(t('alerts.errors.unauthorized'))
-      return
+      setError(t("alerts.errors.unauthorized"));
+      return;
     }
 
     try {
-      setError(null)
-      setSuccess(null)
-      const resolvedAlert = await resolveAlert(alertId)
-      setAlerts((current) => current.map((item) => (item.id === alertId ? resolvedAlert : item)))
-      setSuccess(t('alerts.success.resolved'))
+      setError(null);
+      setSuccess(null);
+      const resolved = await resolveAlert(alertId);
+      setSuccess(t("alerts.success.resolved"));
+      // Reemplazamos con la respuesta real del backend
+      setAlerts((current) =>
+        current.map((item) => (item.id === alertId ? resolved : item)),
+      );
     } catch {
-      setError(t('alerts.errors.resolve'))
+      setError(t("alerts.errors.resolve"));
     }
-  }
+  };
 
   const activeAlerts = useMemo(
     () => alerts.filter((alert) => !alert.is_resolved),
