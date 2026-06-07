@@ -31,6 +31,7 @@ type AppShellChromeProps = Readonly<{
   isAlerts: boolean
   isCatalog: boolean
   isLocations: boolean
+  isPurchasing: boolean
   handleLanguageChange: (next: 'es' | 'en') => void
   handleLogout: () => void
 }>
@@ -47,6 +48,7 @@ type ShellRailProps = Readonly<{
   isAlerts: boolean
   isCatalog: boolean
   isLocations: boolean
+  isPurchasing: boolean
 }>
 
 type ShellSidebarProps = Readonly<{
@@ -64,6 +66,7 @@ type ShellSidebarProps = Readonly<{
   isAlerts: boolean
   isCatalog: boolean
   isLocations: boolean
+  isPurchasing: boolean
   handleLogout: () => void
 }>
 
@@ -227,6 +230,54 @@ function SidebarCatalogSection({ t, locationPathname, isCatalog, catalogOpen, se
   )
 }
 
+type SidebarPurchasingSectionProps = Readonly<SidebarNavCommonProps & {
+  isPurchasing: boolean
+  purchasingOpen: boolean
+  setPurchasingOpen: React.Dispatch<React.SetStateAction<boolean>>
+}>
+
+function SidebarPurchasingSection({ t, locationPathname, isPurchasing, purchasingOpen, setPurchasingOpen }: SidebarPurchasingSectionProps) {
+  return (
+    <div className="nav__section">
+      <span className="nav__label">{t('dashboard.nav.purchasingSection', 'COMPRAS')}</span>
+      <button
+        type="button"
+        className={`nav__link nav__link--group${isPurchasing ? ' active' : ''}`}
+        onClick={() => setPurchasingOpen((open) => !open)}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <path d="M16 10a4 4 0 01-8 0" />
+        </svg>
+        {t('dashboard.nav.purchasing', 'Compras')}
+        <svg
+          className={`nav__chevron${purchasingOpen ? ' nav__chevron--open' : ''}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {purchasingOpen ? (
+        <div className="nav__submenu">
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/purchasing/suppliers') ? ' active' : ''}`}
+            to="/app/purchasing/suppliers"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+            </svg>
+            {t('dashboard.nav.suppliers', 'Proveedores')}
+          </Link>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 type SidebarLocationsSectionProps = Readonly<SidebarNavCommonProps & {
   isLocations: boolean
   locationsOpen: boolean
@@ -366,6 +417,7 @@ function ShellRail({
   isAlerts,
   isCatalog,
   isLocations,
+  isPurchasing,
 }: ShellRailProps) {
   return (
     <nav className="rail" aria-label={t('dashboard.nav.quickAccess')}>
@@ -387,6 +439,13 @@ function ShellRail({
       <Link className={`rail__btn${isCatalog ? ' active' : ''}`} title={t('dashboard.nav.catalog')} to="/app/catalog/products">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+        </svg>
+      </Link>
+      <Link className={`rail__btn${isPurchasing ? ' active' : ''}`} title={t('dashboard.nav.purchasing', 'Compras')} to="/app/purchasing/suppliers">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <path d="M16 10a4 4 0 01-8 0" />
         </svg>
       </Link>
       {canManageInventory ? (
@@ -460,11 +519,13 @@ function ShellSidebar({
   isAlerts,
   isCatalog,
   isLocations,
+  isPurchasing,
   handleLogout,
 }: ShellSidebarProps) {
   const location = useLocation()
   const [catalogOpen, setCatalogOpen] = React.useState(isCatalog)
   const [locationsOpen, setLocationsOpen] = React.useState(isLocations)
+  const [purchasingOpen, setPurchasingOpen] = React.useState(isPurchasing)
 
   React.useEffect(() => {
     if (isCatalog) setCatalogOpen(true)
@@ -473,6 +534,10 @@ function ShellSidebar({
   React.useEffect(() => {
     if (isLocations) setLocationsOpen(true)
   }, [isLocations])
+
+  React.useEffect(() => {
+    if (isPurchasing) setPurchasingOpen(true)
+  }, [isPurchasing])
 
   return (
     <aside className="sidebar">
@@ -519,6 +584,21 @@ function ShellSidebar({
           isCatalog={isCatalog}
           catalogOpen={catalogOpen}
           setCatalogOpen={setCatalogOpen}
+        />
+        <SidebarPurchasingSection
+          t={t}
+          locationPathname={location.pathname}
+          canManageInventory={canManageInventory}
+          canManageAdmin={canManageAdmin}
+          isDashboard={isDashboard}
+          isInventory={isInventory}
+          isReception={isReception}
+          isDispatch={isDispatch}
+          isReturns={isReturns}
+          isAlerts={isAlerts}
+          isPurchasing={isPurchasing}
+          purchasingOpen={purchasingOpen}
+          setPurchasingOpen={setPurchasingOpen}
         />
         <SidebarLocationsSection
           t={t}
@@ -625,6 +705,7 @@ function AppShellChrome({
   isAlerts,
   isCatalog,
   isLocations,
+  isPurchasing,
   handleLanguageChange,
   handleLogout,
 }: AppShellChromeProps) {
@@ -642,6 +723,7 @@ function AppShellChrome({
         isAlerts={isAlerts}
         isCatalog={isCatalog}
         isLocations={isLocations}
+        isPurchasing={isPurchasing}
       />
 
       <ShellSidebar
@@ -659,6 +741,7 @@ function AppShellChrome({
         isAlerts={isAlerts}
         isCatalog={isCatalog}
         isLocations={isLocations}
+        isPurchasing={isPurchasing}
         handleLogout={handleLogout}
       />
 
@@ -716,6 +799,8 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
 
   const isLocations = location.pathname.startsWith('/app/locations')
 
+  const isPurchasing = location.pathname.startsWith('/app/purchasing')
+
   const handleLanguageChange = (next: 'es' | 'en') => {
     if (next !== language) {
       i18n.changeLanguage(next)
@@ -747,6 +832,7 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
       isAlerts={isAlerts}
       isCatalog={isCatalog}
       isLocations={isLocations}
+      isPurchasing={isPurchasing}
       handleLanguageChange={handleLanguageChange}
       handleLogout={handleLogout}
     >

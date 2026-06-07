@@ -168,6 +168,9 @@
       "catalog": "Catalogo",
       "locations": "Locación",
       "warehouse": "Bodega",
+      "purchasingSection": "COMPRAS",
+      "purchasing": "Compras",
+      "suppliers": "Proveedores",
       "logout": "Cerrar sesion"
     },
     "sidebar": {

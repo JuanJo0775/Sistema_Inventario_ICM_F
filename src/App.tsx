@@ -16,6 +16,7 @@ import CatalogProductFormPage from './features/catalog/CatalogProductFormPage'
 import CatalogCategoriesPage from './features/catalog/CatalogCategoriesPage'
 import CatalogBrandsPage from './features/catalog/CatalogBrandsPage'
 import LocationsPage from './features/locations/LocationsPage'
+import SuppliersPage from './features/purchasing/SuppliersPage'
 
 function App() {
   return (
@@ -137,6 +138,15 @@ function App() {
           element={
             <ProtectedRoute>
               <LocationsPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Purchasing Module */}
+        <Route
+          path="/app/purchasing/suppliers"
+          element={
+            <ProtectedRoute>
+              <SuppliersPage />
             </ProtectedRoute>
           }
         />
