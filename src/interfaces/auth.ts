@@ -5,7 +5,7 @@ export interface User {
   first_name?: string
   last_name?: string
   phone?: string
-  role?: 'almacenista' | 'auxiliar_despacho' | 'administrador'
+  role: 'almacenista' | 'auxiliar_despacho' | 'administrador'  
   is_active?: boolean
 }
 
@@ -17,6 +17,6 @@ export interface LoginPayload {
 
 export interface LoginResponse {
   access: string
-  refresh: string
+  refresh: string 
   user: User
 }
