@@ -13,6 +13,7 @@ import {
   Calendar,
   Globe,
   FileText,
+  ChevronDown,
 } from 'lucide-react'
 import AppShell from '../../components/layout/AppShell'
 import useSupplierStore from '../../store/useSupplierStore'
@@ -255,12 +256,12 @@ export const SuppliersPage: React.FC = () => {
           className="catalog-header"
           style={{
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
             alignItems: 'center',
             marginBottom: '1.5rem',
+            marginTop: '0.75rem',
           }}
         >
-          <div className="catalog-header__info"></div>
           <button className="btn btn--primary" type="button" onClick={handleOpenCreateModal}>
             <Plus style={{ marginRight: '0.25rem', width: '18px', height: '18px', marginTop: '2px' }} />
             Nuevo Proveedor
@@ -456,137 +457,121 @@ export const SuppliersPage: React.FC = () => {
 
         {/* Filters Toolbar */}
         <div
-          className="catalog-toolbar"
           style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            gap: '1rem',
+            backgroundColor: '#fff',
+            border: '1px solid #e5e7eb',
+            borderRadius: '12px',
+            padding: '1.25rem',
             marginBottom: '1.5rem',
-            alignItems: 'center',
-            flexWrap: 'wrap',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
           }}
         >
-          {/* Left search */}
           <form
             onSubmit={handleSearchSubmit}
-            style={{ display: 'flex', width: '100%', maxWidth: '420px', gap: '0.5rem' }}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '3fr 1fr auto',
+              gap: '1rem',
+              alignItems: 'end',
+            }}
           >
-            <div className="catalog-toolbar__search" style={{ flexGrow: 1, position: 'relative' }}>
-              <Search
-                className="catalog-toolbar__search-icon"
+            {/* Buscar proveedor */}
+            <div>
+              <label
                 style={{
-                  position: 'absolute',
-                  left: '0.75rem',
-                  top: '48%',
-                  transform: 'translateY(-50%)',
-                  width: '16px',
-                  height: '16px',
-                  color: '#6b7280',
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  color: '#94a3b8',
+                  textTransform: 'uppercase',
                 }}
-              />
-              <input
-                type="text"
-                placeholder="Buscar proveedor..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+              >
+                Buscar proveedor
+              </label>
+
+              <div style={{ position: 'relative' }}>
+                <Search
+                  style={{
+                    position: 'absolute',
+                    left: '0.75rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: '16px',
+                    height: '16px',
+                    color: '#9ca3af',
+                  }}
+                />
+
+                <input
+                  type="text"
+                  placeholder="Nombre, país o correo..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{
+                    width: '100%',
+                    height: '46px',
+                    paddingLeft: '2.5rem',
+                    borderRadius: '8px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '0.95rem',
+                    backgroundColor: '#fff',
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Estado */}
+            <div>
+              <label
+                style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  color: '#94a3b8',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Estado
+              </label>
+
+              <select
+                value={statusFilter}
+                onChange={(e) =>
+                  setStatusFilter(
+                    e.target.value as 'all' | 'active' | 'inactive'
+                  )
+                }
                 style={{
                   width: '100%',
-                  paddingLeft: '2.5rem',
-                  height: '42px',
+                  height: '46px',
                   borderRadius: '8px',
                   border: '1px solid #d1d5db',
-                  outline: 'none',
-                  fontSize: '0.875rem',
+                  padding: '0 0.75rem',
+                  fontSize: '0.95rem',
+                  backgroundColor: '#fff',
                 }}
-              />
+              >
+                <option value="all">Todos</option>
+                <option value="active">Activos</option>
+                <option value="inactive">Inactivos</option>
+              </select>
             </div>
+
+            {/* Botón */}
             <button
               type="submit"
               className="btn btn--primary"
               style={{
-                height: '42px',
-                padding: '0 1.25rem',
-                whiteSpace: 'nowrap',
+                height: '46px',
+                minWidth: '120px',
                 borderRadius: '8px',
-                marginTop: '-1px',
               }}
             >
               Buscar
             </button>
-            {activeSearch && (
-              <button
-                type="button"
-                onClick={handleClearFilter}
-                className="btn btn--secondary"
-                style={{ height: '42px', borderRadius: '8px' }}
-              >
-                Limpiar
-              </button>
-            )}
           </form>
-
-          {/* Right state filter tabs */}
-          <div
-            style={{
-              display: 'inline-flex',
-              backgroundColor: '#f3f4f6',
-              padding: '0.25rem',
-              borderRadius: '8px',
-              border: '1px solid #e5e7eb',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setStatusFilter('all')}
-              style={{
-                padding: '0.375rem 1rem',
-                borderRadius: '6px',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                border: 'none',
-                cursor: 'pointer',
-                backgroundColor: statusFilter === 'all' ? '#fff' : 'transparent',
-                color: statusFilter === 'all' ? '#111827' : '#4b5563',
-                boxShadow: statusFilter === 'all' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
-              }}
-            >
-              Todos
-            </button>
-            <button
-              type="button"
-              onClick={() => setStatusFilter('active')}
-              style={{
-                padding: '0.375rem 1rem',
-                borderRadius: '6px',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                border: 'none',
-                cursor: 'pointer',
-                backgroundColor: statusFilter === 'active' ? '#fff' : 'transparent',
-                color: statusFilter === 'active' ? '#0caa68' : '#4b5563',
-                boxShadow: statusFilter === 'active' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
-              }}
-            >
-              Activos
-            </button>
-            <button
-              type="button"
-              onClick={() => setStatusFilter('inactive')}
-              style={{
-                padding: '0.375rem 1rem',
-                borderRadius: '6px',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                border: 'none',
-                cursor: 'pointer',
-                backgroundColor: statusFilter === 'inactive' ? '#fff' : 'transparent',
-                color: statusFilter === 'inactive' ? '#e03131' : '#4b5563',
-                boxShadow: statusFilter === 'inactive' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
-              }}
-            >
-              Inactivos
-            </button>
-          </div>
         </div>
 
         {/* Suppliers List Table */}

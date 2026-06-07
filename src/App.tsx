@@ -17,6 +17,7 @@ import CatalogCategoriesPage from './features/catalog/CatalogCategoriesPage'
 import CatalogBrandsPage from './features/catalog/CatalogBrandsPage'
 import LocationsPage from './features/locations/LocationsPage'
 import SuppliersPage from './features/purchasing/SuppliersPage'
+import PurchaseOrdersPage from './features/purchasing/PurchaseOrdersPage'
 
 function App() {
   return (
@@ -147,6 +148,14 @@ function App() {
           element={
             <ProtectedRoute>
               <SuppliersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/purchasing/purchase-orders"
+          element={
+            <ProtectedRoute>
+              <PurchaseOrdersPage />
             </ProtectedRoute>
           }
         />
