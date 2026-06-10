@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import AppShell from '../../components/layout/AppShell';
+import { BarcodeDisplay } from '../../components/ui/BarcodeDisplay';
 import useCatalogStore from '../../store/useCatalogStore';
 import { fetchProductStock } from '../../services/inventory';
 
@@ -197,31 +198,48 @@ const CatalogProductDetailPage = () => {
                 </div>
               </div>
 
-              <div className="catalog-detail__side bg-gray-50 p-4 rounded" style={{ backgroundColor: '#f7fafc', padding: '1.5rem', borderRadius: '8px' }}>
-                <div className="detail-section">
-                  <h3 className="text-lg font-semibold mb-3" style={{ fontSize: '1.1rem', fontWeight: 600, color: '#2d3748', borderBottom: '1px solid #edf2f7', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
-                    {t('catalog.products.detail.inventorySettings', 'Configuración de Inventario')}
-                  </h3>
-                  <div className="detail-row flex justify-between mb-2" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
-                    <span className="font-medium" style={{ fontWeight: 500, color: '#718096' }}>{t('catalog.products.detail.stock', 'Stock')}:</span>
-                    <span style={{ fontWeight: 600, color: '#2d3748' }}>{stockTotal !== null ? stockTotal : (product.stock ?? 0)}</span>
+              <div className="catalog-detail__side" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                {/* Barcode visual */}
+                {product.barcode && (
+                  <div>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#2d3748', borderBottom: '1px solid #edf2f7', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                      Código de barras
+                    </h3>
+                    <BarcodeDisplay
+                      productId={String(product.id)}
+                      productName={product.name}
+                      sku={product.sku}
+                    />
                   </div>
-                  {stockError && (
+                )}
+
+                {/* Inventory settings */}
+                <div className="bg-gray-50 p-4 rounded" style={{ backgroundColor: '#f7fafc', padding: '1.5rem', borderRadius: '8px' }}>
+                  <div className="detail-section">
+                    <h3 className="text-lg font-semibold mb-3" style={{ fontSize: '1.1rem', fontWeight: 600, color: '#2d3748', borderBottom: '1px solid #edf2f7', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                      {t('catalog.products.detail.inventorySettings', 'Configuración de Inventario')}
+                    </h3>
                     <div className="detail-row flex justify-between mb-2" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
-                      <span style={{ color: '#c53030', fontSize: '0.85rem' }}>{stockError}</span>
+                      <span className="font-medium" style={{ fontWeight: 500, color: '#718096' }}>{t('catalog.products.detail.stock', 'Stock')}:</span>
+                      <span style={{ fontWeight: 600, color: '#2d3748' }}>{stockTotal !== null ? stockTotal : (product.stock ?? 0)}</span>
                     </div>
-                  )}
-                  <div className="detail-row flex justify-between mb-2" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
-                    <span className="font-medium" style={{ fontWeight: 500, color: '#718096' }}>{t('catalog.products.detail.reorder', 'Punto Reorden')}:</span>
-                    <span style={{ color: '#2d3748' }}>{product.reorder_point || 0}</span>
-                  </div>
-                  <div className="detail-row flex justify-between mb-2" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
-                    <span className="font-medium" style={{ fontWeight: 500, color: '#718096' }}>{t('catalog.products.detail.serial', 'Control Serial')}:</span>
-                    <span style={{ color: '#2d3748' }}>{product.requires_serial ? t('catalog.products.detail.yes', 'Sí') : t('catalog.products.detail.no', 'No')}</span>
-                  </div>
-                  <div className="detail-row flex justify-between mb-2" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
-                    <span className="font-medium" style={{ fontWeight: 500, color: '#718096' }}>{t('catalog.products.detail.cold', 'Cadena Frío')}:</span>
-                    <span style={{ color: '#2d3748' }}>{(product.requires_cold_chain || product.cold_chain) ? t('catalog.products.detail.yes', 'Sí') : t('catalog.products.detail.no', 'No')}</span>
+                    {stockError && (
+                      <div className="detail-row flex justify-between mb-2" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
+                        <span style={{ color: '#c53030', fontSize: '0.85rem' }}>{stockError}</span>
+                      </div>
+                    )}
+                    <div className="detail-row flex justify-between mb-2" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
+                      <span className="font-medium" style={{ fontWeight: 500, color: '#718096' }}>{t('catalog.products.detail.reorder', 'Punto Reorden')}:</span>
+                      <span style={{ color: '#2d3748' }}>{product.reorder_point || 0}</span>
+                    </div>
+                    <div className="detail-row flex justify-between mb-2" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
+                      <span className="font-medium" style={{ fontWeight: 500, color: '#718096' }}>{t('catalog.products.detail.serial', 'Control Serial')}:</span>
+                      <span style={{ color: '#2d3748' }}>{product.requires_serial ? t('catalog.products.detail.yes', 'Sí') : t('catalog.products.detail.no', 'No')}</span>
+                    </div>
+                    <div className="detail-row flex justify-between mb-2" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
+                      <span className="font-medium" style={{ fontWeight: 500, color: '#718096' }}>{t('catalog.products.detail.cold', 'Cadena Frío')}:</span>
+                      <span style={{ color: '#2d3748' }}>{(product.requires_cold_chain || product.cold_chain) ? t('catalog.products.detail.yes', 'Sí') : t('catalog.products.detail.no', 'No')}</span>
+                    </div>
                   </div>
                 </div>
               </div>
