@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import AppShell from '../../components/layout/AppShell'
 import { Badge } from '../../components/ui/badge'
+import { BarcodeScannerButton } from '../../components/ui/BarcodeScannerButton'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Select } from '../../components/ui/select'
@@ -18,6 +19,7 @@ import type {
   InventoryProduct,
   InventorySubcategory,
 } from '../../interfaces/inventory'
+import type { BarcodeProductResult } from '../../services/barcodeScanner'
 import {
   fetchCategories,
   fetchProductStock,
@@ -110,36 +112,36 @@ function InventoryPage() {
   )
 
   const loadProducts = useCallback(async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
     try {
       const productData = await fetchProducts({
         search: search.trim() || undefined,
         category: categoryId || undefined,
         subcategory: subcategoryId || undefined,
-      })
+      });
       const stockResults = await Promise.allSettled(
-        productData.map((product) => fetchProductStock(product.id)),
-      )
+        productData.map((product) => fetchProductStock(String(product.id))),
+      );
       const productsWithStock = productData.map((product, index) => {
-        const stockResult = stockResults[index]
-        if (stockResult.status !== 'fulfilled') {
-          return product
+        const stockResult = stockResults[index];
+        if (stockResult.status !== "fulfilled") {
+          return product;
         }
-        const stock = stockResult.value
+        const stock = stockResult.value;
         return {
           ...product,
           stockTotal: stock.total,
           byLocation: stock.by_location ?? stock.per_location ?? [],
-        }
-      })
-      setProducts(productsWithStock)
+        };
+      });
+      setProducts(productsWithStock);
     } catch {
-      setError(t('inventory.errors.products'))
+      setError(t("inventory.errors.products"));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [categoryId, search, subcategoryId, t])
+  }, [categoryId, search, subcategoryId, t]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -163,26 +165,33 @@ function InventoryPage() {
   const inventoryRows = useMemo(() => {
     const categoryById = new Map(
       categories.map((category) => [String(category.id), category]),
-    )
+    );
     const subcategoryById = new Map(
       subcategories.map((subcategory) => [String(subcategory.id), subcategory]),
-    )
+    );
 
     return products.map((product) => {
-      const sku = product.sku ?? t('inventory.table.empty')
+      const sku = product.sku ?? t("inventory.table.empty");
+
       const categoryRecord = product.category
         ? categoryById.get(String(product.category))
-        : undefined
-      const category = categoryRecord?.name ?? product.category_slug ?? t('inventory.table.empty')
+        : undefined;
+      const category =
+        categoryRecord?.name ??
+        product.category_slug ??
+        t("inventory.table.empty");
+
       const subcategoryRecord = product.subcategory
         ? subcategoryById.get(String(product.subcategory))
-        : undefined
-      const subcategory = subcategoryRecord?.name ?? t('inventory.table.empty')
+        : undefined;
+      const subcategory = subcategoryRecord?.name ?? t("inventory.table.empty");
+
       const stock =
         product.stockTotal === null || product.stockTotal === undefined
-          ? t('inventory.table.empty')
-          : product.stockTotal.toString()
-      const status = stockMeta(product.stockTotal, product.reorder_point)
+          ? t("inventory.table.empty")
+          : product.stockTotal.toString();
+
+      const status = stockMeta(product.stockTotal, product.reorder_point);
 
       return {
         id: product.id,
@@ -194,15 +203,15 @@ function InventoryPage() {
         stockValue: product.stockTotal ?? null,
         reorderPoint:
           product.reorder_point === null || product.reorder_point === undefined
-            ? t('inventory.table.empty')
+            ? t("inventory.table.empty")
             : product.reorder_point.toString(),
         status,
         requiresSerial: Boolean(categoryRecord?.requires_serial_number),
         requiresColdChain: Boolean(product.requires_cold_chain),
         byLocation: product.byLocation ?? [],
-      }
-    })
-  }, [categories, products, stockMeta, subcategories, t])
+      };
+    });
+  }, [categories, products, stockMeta, subcategories, t]);
 
   const selectedRow = useMemo<InventoryRow | undefined>(() => {
     return inventoryRows.find((row) => row.id === selectedProductId) ?? inventoryRows[0]
@@ -398,13 +407,24 @@ function InventoryPage() {
             <label className="inventory-label" htmlFor="inventory-search">
               {t('inventory.filters.searchLabel')}
             </label>
-            <Input
-              id="inventory-search"
-              type="search"
-              placeholder={t('inventory.filters.searchPlaceholder')}
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <Input
+                id="inventory-search"
+                type="search"
+                placeholder={t('inventory.filters.searchPlaceholder')}
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+              <BarcodeScannerButton
+                label="Escanear"
+                onProductFound={(product: BarcodeProductResult) => {
+                  // Rellena el buscador con el SKU para filtrar la tabla
+                  setSearch(product.sku || product.name)
+                  // Selecciona el producto automáticamente para mostrar el detalle
+                  setSelectedProductId(product.id)
+                }}
+              />
+            </div>
           </div>
           <div className="inventory-field">
             <label className="inventory-label" htmlFor="inventory-category">
