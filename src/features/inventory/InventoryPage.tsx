@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import AppShell from '../../components/layout/AppShell'
 import { Badge } from '../../components/ui/badge'
+import { BarcodeScannerButton } from '../../components/ui/BarcodeScannerButton'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Select } from '../../components/ui/select'
@@ -18,6 +19,7 @@ import type {
   InventoryProduct,
   InventorySubcategory,
 } from '../../interfaces/inventory'
+import type { BarcodeProductResult } from '../../services/barcodeScanner'
 import {
   fetchCategories,
   fetchProductStock,
@@ -398,13 +400,24 @@ function InventoryPage() {
             <label className="inventory-label" htmlFor="inventory-search">
               {t('inventory.filters.searchLabel')}
             </label>
-            <Input
-              id="inventory-search"
-              type="search"
-              placeholder={t('inventory.filters.searchPlaceholder')}
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <Input
+                id="inventory-search"
+                type="search"
+                placeholder={t('inventory.filters.searchPlaceholder')}
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+              <BarcodeScannerButton
+                label="Escanear"
+                onProductFound={(product: BarcodeProductResult) => {
+                  // Rellena el buscador con el SKU para filtrar la tabla
+                  setSearch(product.sku || product.name)
+                  // Selecciona el producto automáticamente para mostrar el detalle
+                  setSelectedProductId(product.id)
+                }}
+              />
+            </div>
           </div>
           <div className="inventory-field">
             <label className="inventory-label" htmlFor="inventory-category">
