@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { BarcodeScannerButton } from '../../components/ui/BarcodeScannerButton'
+import type { BarcodeProductResult } from '../../services/barcodeScanner'
 
 import {
   AlertTriangle,
@@ -272,11 +274,11 @@ function toForm(order?: DispatchItem): DispatchForm {
       [customerDataRequired, dispatchedIds, form, quantity, selectedOrder, t],
     )
 
-    const handleVerifyScan = () => {
+    const handleVerifyScan = (codeOrValue?: string) => {
       if (!selectedOrder) return
 
-      const normalizedScan = scanValue.trim().toLowerCase()
-      const matches = normalizedScan === selectedOrder.sku.toLowerCase() || normalizedScan === selectedOrder.barcode.toLowerCase()
+      const raw = (codeOrValue ?? scanValue).trim().toLowerCase()
+      const matches = raw === selectedOrder.sku.toLowerCase() || raw === selectedOrder.barcode.toLowerCase()
 
       if (matches) {
         setValidationError(null)
@@ -287,11 +289,57 @@ function toForm(order?: DispatchItem): DispatchForm {
       setValidationSuccess(null)
       setValidationError(
         t('dispatch.errors.scanMismatch', {
-          scanned: scanValue,
+          scanned: codeOrValue ?? scanValue,
           expected: selectedOrder.sku,
         }),
       )
     }
+
+    /**
+     * Callback del lector HID:
+     * 1. Si el producto escaneado coincide con la orden activa → verificar.
+     * 2. Si corresponde a otra orden en la lista → autoseleccionar.
+     * 3. Rellena el campo manual para referencia.
+     */
+    const handleProductScanned = useCallback(
+      (product: BarcodeProductResult) => {
+        setScanValue(product.barcode || product.sku)
+        // Buscar la orden que corresponde al producto escaneado
+        const matchingOrder = orders.find(
+          (o) =>
+            o.productId === String(product.id) ||
+            o.sku.toLowerCase() === product.sku.toLowerCase() ||
+            o.barcode.toLowerCase() === (product.barcode ?? '').toLowerCase(),
+        )
+        if (matchingOrder) {
+          setSelectedOrderId(matchingOrder.id)
+          // Dar un tick para que el estado se actualice antes de verificar
+          setTimeout(() => {
+            const code = product.barcode || product.sku
+            const raw = code.toLowerCase()
+            const matches =
+              raw === matchingOrder.sku.toLowerCase() ||
+              raw === matchingOrder.barcode.toLowerCase()
+            if (matches) {
+              setValidationError(null)
+              setValidationSuccess(t('dispatch.errors.scanSuccess'))
+            } else {
+              setValidationSuccess(null)
+              setValidationError(
+                t('dispatch.errors.scanMismatch', { scanned: code, expected: matchingOrder.sku }),
+              )
+            }
+          }, 50)
+        } else {
+          // El producto existe pero no hay orden pendiente para él
+          setValidationSuccess(null)
+          setValidationError(
+            `Producto "${product.name}" (${product.sku}) no tiene una orden de despacho pendiente.`,
+          )
+        }
+      },
+      [orders, t],
+    )
 
     const handleSelectOrder = (order: DispatchItem) => {
       setSelectedOrderId(order.id)
@@ -420,17 +468,18 @@ function toForm(order?: DispatchItem): DispatchForm {
                     if (event.key === "Enter") handleVerifyScan();
                   }}
                 />
+                {/* Lector HID — escanea y verifica/autoselecciona automáticamente */}
+                <BarcodeScannerButton
+                  label="Escanear"
+                  onProductFound={handleProductScanned}
+                />
                 <Button
                   type="button"
-                  onClick={handleVerifyScan}
+                  onClick={() => handleVerifyScan()}
                   variant="default"
-                  className={
-                    validationSuccess
-                      ? "bg-green-600 hover:bg-green-700 text-white"
-                      : undefined
-                  }
+                  className={validationSuccess ? 'bg-green-600 hover:bg-green-700 text-white' : undefined}
                 >
-                  {t("dispatch.scan.action")}
+                  {t('dispatch.scan.action')}
                 </Button>
               </div>
               <p className="dispatch-scan-hint">{t("dispatch.scan.helper")}</p>
