@@ -1,121 +1,136 @@
-import { api } from './api'
-import { useMocks } from '../mocks/config'
-import type { Reception, ReceptionCreatePayload } from '../interfaces/reception'
-import type { PurchaseOrder } from '../interfaces/purchaseOrders'
-import { fetchPurchaseOrders, fetchPurchaseOrderDetail } from './purchaseOrders'
+import { api } from "./api";
+import { useMocks } from "../mocks/config";
+import { mockReceptionOverview } from "../mocks/reception";
+import type {
+  ReceptionMovement,
+  ReceptionMovementResponse,
+  ReceptionOverview,
+  ReceptionSubmitPayload,
+} from "../interfaces/reception";
 
-/**
- * Obtiene las órdenes de compra pendientes o parcialmente recibidas.
- */
-export const fetchPendingPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
+// Convierte la respuesta del backend al formato que usa el frontend en la UI
+const mapMovementResponse = (
+  mov: ReceptionMovementResponse,
+  locationCode: string,
+  productName: string,
+): ReceptionMovement => ({
+  id: mov.id,
+  productName: productName || mov.product_sku,
+  sku: mov.product_sku,
+  quantity: mov.quantity,
+  locationCode,
+  operator: mov.executed_by, // UUID — se muestra como identificador
+  confirmedAt: new Intl.DateTimeFormat("es-CO", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(mov.created_at)),
+  discrepancyNote: mov.discrepancy_note ?? undefined,
+});
+
+export const fetchReceptionOverview = async (): Promise<ReceptionOverview> => {
   if (useMocks) {
-    // Si estamos en modo mocks, obtenemos todas y filtramos por estado activo de recepción
-    const orders = await fetchPurchaseOrders()
-    return orders.filter(
-      (o) => o.status === 'pendiente' || o.status === 'parcialmente_recibida'
-    )
-  }
-  
-  const [pending, partial] = await Promise.all([
-    fetchPurchaseOrders('pendiente'),
-    fetchPurchaseOrders('parcialmente_recibida'),
-  ])
-  
-  return [...pending, ...partial]
-}
-
-/**
- * Obtiene las órdenes de compra ya completadas para el historial.
- */
-export const fetchCompletedPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
-  return fetchPurchaseOrders('completada')
-}
-
-/**
- * Obtiene el detalle de una orden de compra por su ID.
- */
-export const fetchPendingOrderDetail = async (id: string): Promise<PurchaseOrder> => {
-  return fetchPurchaseOrderDetail(id)
-}
-
-/**
- * Crea una recepción en borrador y luego la confirma en un solo paso.
- * Esto simplifica la UX y garantiza la trazabilidad con los movimientos de entrada.
- */
-export const createAndConfirmReception = async (
-  payload: ReceptionCreatePayload
-): Promise<Reception> => {
-  if (useMocks) {
-    // Simulación en modo mocks
-    const order = await fetchPurchaseOrderDetail(payload.po_id)
-    
-    // Simular recepción parcial o total en memoria
-    let allCompleted = true
-    order.items = order.items.map((item) => {
-      const receivedItem = payload.items.find(
-        (ri) => ri.purchase_order_item_id === item.id
-      )
-      if (receivedItem) {
-        const newQtyReceived = Number(item.quantity_received) + Number(receivedItem.quantity_received)
-        const newQtyPending = Math.max(0, Number(item.quantity_ordered) - newQtyReceived)
-        
-        if (newQtyPending > 0) {
-          allCompleted = false
-        }
-        
-        return {
-          ...item,
-          quantity_received: newQtyReceived,
-          quantity_pending: newQtyPending,
-        }
-      }
-      if (item.quantity_pending > 0) {
-        allCompleted = false
-      }
-      return item
-    })
-    
-    order.status = allCompleted ? 'completada' : 'parcialmente_recibida'
-    order.updated_at = new Date().toISOString()
-    
-    // Crear objeto de recepción mock para retornar
-    const mockReception: Reception = {
-      id: crypto.randomUUID(),
-      purchase_order: payload.po_id,
-      po_number: order.number,
-      supplier_nombre: order.supplier_nombre,
-      status: 'confirmada',
-      destination_location: payload.destination_location_id,
-      location_name: 'Ubicación Destino Mock',
-      received_by: 'almacenista_mock',
-      confirmed_at: new Date().toISOString(),
-      notes: payload.notes || '',
-      items: payload.items.map((ri, idx) => ({
-        id: crypto.randomUUID(),
-        purchase_order_item: ri.purchase_order_item_id,
-        product_name: `Producto Recibido Mock ${idx + 1}`,
-        product_sku: `SKU-${idx + 1}`,
-        quantity_expected: 100, // Dummy
-        quantity_received: ri.quantity_received,
-        lot_code: ri.lot_code || '',
-        lot_expiration_date: ri.lot_expiration_date || null,
-        discrepancy_note: ri.discrepancy_note || '',
-        movement_id: crypto.randomUUID(),
-      })),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
-    
-    return mockReception
+    return mockReceptionOverview;
   }
 
-  // 1. Crear recepción en borrador
-  const responseCreate = await api.post<Reception>('/purchasing/receptions/', payload)
-  const receptionDraft = responseCreate.data
+  const [locationsRes, movementsRes] = await Promise.all([
+    api.get<{ results: Array<{ id: string; code: string; name: string }> }>(
+      "/inventory/locations/",
+    ),
+    api.get<{ results: ReceptionMovementResponse[] }>("/movements/entries/", {
+      params: { page_size: 10, ordering: "-created_at" },
+    }),
+  ]);
 
-  // 2. Confirmar recepción para disparar movimientos de entrada y actualizar OC
-  const responseConfirm = await api.post<Reception>(
-    `/purchasing/receptions/${receptionDraft.id}/confirm/`
-  )
-  return responseConfirm.data
-}
+  const locations = locationsRes.data.results.map((loc) => ({
+    id: loc.id,
+    code: loc.code,
+    name: loc.name,
+    capacityLabel: "",
+  }));
+
+  // Mapa de UUID -> código de ubicación para mostrar en UI
+  const locationCodeById = new Map(
+    locationsRes.data.results.map((loc) => [loc.id, loc.code]),
+  );
+
+  const recentMovements: ReceptionMovement[] = movementsRes.data.results.map(
+    (mov) => {
+      const locationCode = mov.destination_location
+        ? (locationCodeById.get(mov.destination_location) ??
+          mov.destination_location)
+        : "-";
+      return mapMovementResponse(mov, locationCode, mov.product_sku);
+    },
+  );
+
+  return {
+    locations,
+    // Las órdenes de compra no tienen endpoint en el backend todavía
+    // Se mantienen desde el mock hasta que el backend las exponga
+    expectedOrders: mockReceptionOverview.expectedOrders,
+    recentMovements,
+  };
+};
+
+export const submitReception = async (
+  payload: ReceptionSubmitPayload,
+): Promise<ReceptionMovement> => {
+  if (useMocks) {
+    // Busca la orden en el mock para construir la respuesta visual
+    const order = mockReceptionOverview.expectedOrders.find(
+      (item) => item.productId === payload.productId,
+    );
+    const location = mockReceptionOverview.locations.find(
+      (item) => item.id === payload.locationId,
+    );
+
+    return {
+      id: `mov-in-${Date.now()}`,
+      productName: order?.productName ?? payload.productId,
+      sku: order?.sku ?? "-",
+      quantity: payload.quantity,
+      locationCode: location?.code ?? "-",
+      operator: "Usuario ICM",
+      confirmedAt: new Intl.DateTimeFormat("es-CO", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date()),
+      discrepancyNote: payload.discrepancyNote,
+    };
+  }
+
+  // Construye el body exacto que espera EntryCreateSerializer
+  const requestBody = {
+    product_id: payload.productId,
+    location_id: payload.locationId,
+    quantity: payload.quantity,
+    serial_number: payload.serialNumber ?? null,
+    qty_invoiced: payload.qtyInvoiced ?? null,
+    discrepancy_note: payload.discrepancyNote ?? null,
+    cold_chain_acknowledged: payload.coldChainAcknowledged,
+    electrical_safety_acknowledged: payload.electricalSafetyAcknowledged,
+  };
+
+  const response = await api.post<ReceptionMovementResponse>(
+    "/movements/entries/",
+    requestBody,
+  );
+
+  const mov = response.data;
+
+  // Necesitamos el código de ubicación para mostrarlo en la UI
+  // Lo obtenemos de los locations que ya tenemos en el store o hacemos una llamada
+  return {
+    id: mov.id,
+    productName: mov.product_sku,
+    sku: mov.product_sku,
+    quantity: mov.quantity,
+    locationCode: mov.destination_location ?? "-",
+    operator: mov.executed_by,
+    confirmedAt: new Intl.DateTimeFormat("es-CO", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(mov.created_at)),
+    discrepancyNote: mov.discrepancy_note ?? undefined,
+  };
+};

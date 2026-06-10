@@ -53,10 +53,13 @@ type DispatchForm = Readonly<{
   lotCode: string
   serialNumber: string
   customerName: string
-  customerDoc: string
+  customerEmail: string      // nuevo
+  customerPhone: string      // nuevo
+  customerAddress: string    // nuevo
   note: string
   coldChainConfirmed: boolean
   electricalSafetyConfirmed: boolean
+  privacyNoticeConfirmed: boolean  // requerido para venta mayor
 }>
 
   type DispatchMode = 'wholesale' | 'retail' | 'damage' | 'expiry'
@@ -127,36 +130,54 @@ type DispatchForm = Readonly<{
     customerDataRequired,
     t,
   }: Readonly<{
-    selectedOrder: DispatchItem | undefined
-    dispatchedIds: Set<string>
-    quantity: number
-    form: DispatchForm
-    customerDataRequired: boolean
-    t: (key: string, options?: Record<string, unknown>) => string
+    selectedOrder: DispatchItem | undefined;
+    dispatchedIds: Set<string>;
+    quantity: number;
+    form: DispatchForm;
+    customerDataRequired: boolean;
+    t: (key: string, options?: Record<string, unknown>) => string;
   }>) {
-    if (!selectedOrder) return t('dispatch.errors.noOrder')
-    if (dispatchedIds.has(selectedOrder.id)) return t('dispatch.errors.alreadyDispatched')
-    if (!Number.isFinite(quantity) || quantity <= 0) return t('dispatch.errors.quantity')
-    if (!form.locationId) return t('dispatch.errors.location')
-    if (selectedOrder.requiresSerial && !form.serialNumber.trim()) return t('dispatch.errors.serials')
-    if (selectedOrder.requiresColdChain && !form.coldChainConfirmed) return t('dispatch.errors.coldChain')
-    if (selectedOrder.requiresSerial && !form.electricalSafetyConfirmed) return t('dispatch.errors.electricalSafety')
-    if (customerDataRequired && (!form.customerName.trim() || !form.customerDoc.trim())) return t('dispatch.errors.customerData')
-    return null
+    if (!selectedOrder) return t("dispatch.errors.noOrder");
+    if (dispatchedIds.has(selectedOrder.id))
+      return t("dispatch.errors.alreadyDispatched");
+    if (!Number.isFinite(quantity) || quantity <= 0)
+      return t("dispatch.errors.quantity");
+    if (!form.locationId) return t("dispatch.errors.location");
+    if (!form.lotCode) return t("dispatch.errors.lot");
+    if (selectedOrder.requiresSerial && !form.serialNumber.trim())
+      return t("dispatch.errors.serials");
+    if (selectedOrder.requiresColdChain && !form.coldChainConfirmed)
+      return t("dispatch.errors.coldChain");
+    if (selectedOrder.requiresSerial && !form.electricalSafetyConfirmed)
+      return t("dispatch.errors.electricalSafety");
+    // Venta mayor requiere todos los datos del cliente y aviso de privacidad
+    if (customerDataRequired) {
+      if (!form.customerName.trim()) return t("dispatch.errors.customerData");
+      if (!form.customerEmail.trim()) return t("dispatch.errors.customerEmail");
+      if (!form.customerPhone.trim()) return t("dispatch.errors.customerPhone");
+      if (!form.customerAddress.trim())
+        return t("dispatch.errors.customerAddress");
+      if (!form.privacyNoticeConfirmed)
+        return t("dispatch.errors.privacyNotice");
+    }
+    return null;
   }
 
 function toForm(order?: DispatchItem): DispatchForm {
   return {
-    quantity: order?.expectedQuantity.toString() ?? '',
-    locationId: '',
-    lotCode: '',
-    serialNumber: '',
-    customerName: order?.customerName ?? '',
-    customerDoc: '',
-    note: '',
+    quantity: order?.expectedQuantity.toString() ?? "",
+    locationId: "",
+    lotCode: "",
+    serialNumber: "",
+    customerName: order?.customerName ?? "",
+    customerEmail: "",
+    customerPhone: "",
+    customerAddress: "",
+    note: "",
     coldChainConfirmed: false,
     electricalSafetyConfirmed: false,
-  }
+    privacyNoticeConfirmed: false,
+  };
 }
 
   const statusVariant: Record<DispatchStatus, 'success' | 'warning' | 'destructive' | 'secondary'> = {
@@ -278,42 +299,52 @@ function toForm(order?: DispatchItem): DispatchForm {
     }
 
     const handleConfirm = async () => {
-      if (!selectedOrder || validationMessage) return
+      if (!selectedOrder || validationMessage) return;
 
-      setSaving(true)
-      setError(null)
+      setSaving(true);
+      setError(null);
       try {
         const movement = await submitDispatch({
           productId: selectedOrder.productId,
           locationId: form.locationId,
           quantity,
-          movementType: 'SALIDA_VENTA_MAYOR',
-          lotId: form.lotCode,
-          scannedCode: scanValue,
-          orderSku: selectedOrder.sku,
-          serialNumber: selectedOrder.requiresSerial ? form.serialNumber : undefined,
-          customerData: customerDataRequired || Boolean(form.customerName.trim() || form.customerDoc.trim())
+          movementType: "SALIDA_VENTA_MAYOR",
+          // BR-08: solo enviamos ambos si el scan fue validado
+          scannedCode: scanValue.trim() || null,
+          orderSku: scanValue.trim() ? selectedOrder.sku : null,
+          serialNumber: selectedOrder.requiresSerial ? form.serialNumber : null,
+          // customer_data con campos exactos del backend
+          customerData: customerDataRequired
             ? {
-                name: form.customerName.trim(),
-                doc: form.customerDoc.trim(),
+                customer_name: form.customerName.trim(),
+                customer_email: form.customerEmail.trim(),
+                customer_phone: form.customerPhone.trim(),
+                customer_address: form.customerAddress.trim(),
+                privacy_notice_acknowledged: form.privacyNoticeConfirmed,
               }
             : null,
           note: form.note.trim() || undefined,
-          coldChainAcknowledged: selectedOrder.requiresColdChain ? form.coldChainConfirmed : undefined,
-          electricalSafetyAcknowledged: selectedOrder.requiresSerial ? form.electricalSafetyConfirmed : undefined,
-          privacyNoticeAcknowledged: true,
-        })
+          coldChainAcknowledged: selectedOrder.requiresColdChain
+            ? form.coldChainConfirmed
+            : false,
+          electricalSafetyAcknowledged: selectedOrder.requiresSerial
+            ? form.electricalSafetyConfirmed
+            : false,
+          privacyNoticeAcknowledged: form.privacyNoticeConfirmed,
+        });
 
-        setRecentMovements((current) => [movement, ...current])
-        setDispatchedIds((current) => new Set(current).add(selectedOrder.id))
-        setSuccessMessage(t('dispatch.success.confirmed', { sku: selectedOrder.sku }))
-        setLastSavedMovement(movement)
+        setRecentMovements((current) => [movement, ...current]);
+        setDispatchedIds((current) => new Set(current).add(selectedOrder.id));
+        setSuccessMessage(
+          t("dispatch.success.confirmed", { sku: selectedOrder.sku }),
+        );
+        setLastSavedMovement(movement);
       } catch {
-        setError(t('dispatch.errors.save'))
+        setError(t("dispatch.errors.save"));
       } finally {
-        setSaving(false)
+        setSaving(false);
       }
-    }
+    };
 
     const handleDownloadPdf = async () => {
       if (!lastSavedMovement) return
@@ -326,72 +357,96 @@ function toForm(order?: DispatchItem): DispatchForm {
 
     return (
       <AppShell
-        title={t('dispatch.title')}
-        subtitle={t('dispatch.subtitle')}
-        actions={<Button variant="ghost" size="sm" onClick={loadOverview}>{t('common.actions.refresh')}</Button>}
+        title={t("dispatch.title")}
+        subtitle={t("dispatch.subtitle")}
+        actions={
+          <Button variant="ghost" size="sm" onClick={loadOverview}>
+            {t("common.actions.refresh")}
+          </Button>
+        }
       >
         <div className="page-body reception-page">
           <div className="s-head">
-            <span className="s-head__label">{t('dispatch.flow.title')}</span>
+            <span className="s-head__label">{t("dispatch.flow.title")}</span>
             <div className="s-head__rule" />
           </div>
 
-          <DispatchTypeSelector options={dispatchModes} value={dispatchMode} onChange={setDispatchMode} />
+          <DispatchTypeSelector
+            options={dispatchModes}
+            value={dispatchMode}
+            onChange={setDispatchMode}
+          />
 
-          <section className="reception-stats" aria-label={t('dispatch.stats.ariaLabel')}>
+          <section
+            className="reception-stats"
+            aria-label={t("dispatch.stats.ariaLabel")}
+          >
             <Card className="reception-stat rounded-lg">
               <Truck />
               <div>
                 <span>{stats.pending}</span>
-                <p>{t('dispatch.stats.pending')}</p>
+                <p>{t("dispatch.stats.pending")}</p>
               </div>
             </Card>
             <Card className="reception-stat rounded-lg">
               <ShieldCheck />
               <div>
                 <span>{stats.serialRequired}</span>
-                <p>{t('dispatch.stats.serialRequired')}</p>
+                <p>{t("dispatch.stats.serialRequired")}</p>
               </div>
             </Card>
             <Card className="reception-stat rounded-lg">
               <Snowflake />
               <div>
                 <span>{stats.coldChain}</span>
-                <p>{t('dispatch.stats.coldChain')}</p>
+                <p>{t("dispatch.stats.coldChain")}</p>
               </div>
             </Card>
           </section>
 
           <div className="reception-scanbar">
             <div className="reception-scanbar__field reception-scanbar__field--grow">
-              <label className="inventory-label" htmlFor="dispatch-scan">{t('dispatch.scan.label')}</label>
+              <label className="inventory-label" htmlFor="dispatch-scan">
+                {t("dispatch.scan.label")}
+              </label>
               <div className="reception-scanbar__input">
                 <Barcode />
                 <Input
                   id="dispatch-scan"
                   value={scanValue}
-                  placeholder={t('dispatch.scan.placeholder')}
+                  placeholder={t("dispatch.scan.placeholder")}
                   onChange={(event) => setScanValue(event.target.value)}
                   onKeyDown={(event) => {
-                    if (event.key === 'Enter') handleVerifyScan()
+                    if (event.key === "Enter") handleVerifyScan();
                   }}
                 />
-                <Button type="button" onClick={handleVerifyScan} variant="default" className={validationSuccess ? 'bg-green-600 hover:bg-green-700 text-white' : undefined}>
-                  {t('dispatch.scan.action')}
+                <Button
+                  type="button"
+                  onClick={handleVerifyScan}
+                  variant="default"
+                  className={
+                    validationSuccess
+                      ? "bg-green-600 hover:bg-green-700 text-white"
+                      : undefined
+                  }
+                >
+                  {t("dispatch.scan.action")}
                 </Button>
               </div>
-              <p className="dispatch-scan-hint">{t('dispatch.scan.helper')}</p>
+              <p className="dispatch-scan-hint">{t("dispatch.scan.helper")}</p>
             </div>
 
             <div className="reception-scanbar__field">
-              <label className="inventory-label" htmlFor="dispatch-search">{t('dispatch.search.label')}</label>
+              <label className="inventory-label" htmlFor="dispatch-search">
+                {t("dispatch.search.label")}
+              </label>
               <div className="reception-search">
                 <Search />
                 <Input
                   id="dispatch-search"
                   type="search"
                   value={search}
-                  placeholder={t('dispatch.search.placeholder')}
+                  placeholder={t("dispatch.search.placeholder")}
                   onChange={(event) => setSearch(event.target.value)}
                 />
               </div>
@@ -426,9 +481,14 @@ function toForm(order?: DispatchItem): DispatchForm {
                 <span>{successMessage}</span>
                 {lastSavedMovement ? (
                   <div className="reception-success__download">
-                    <Button size="sm" onClick={handleDownloadPdf} variant="outline" className="text-white border-white hover:bg-teal-700">
+                    <Button
+                      size="sm"
+                      onClick={handleDownloadPdf}
+                      variant="outline"
+                      className="text-white border-white hover:bg-teal-700"
+                    >
                       <FileDown className="reception-success__icon" />
-                      {t('dispatch.form.downloadInvoice')}
+                      {t("dispatch.form.downloadInvoice")}
                     </Button>
                   </div>
                 ) : null}
@@ -437,9 +497,11 @@ function toForm(order?: DispatchItem): DispatchForm {
           ) : null}
 
           <div className="reception-layout dispatch-layout">
-            <section aria-label={t('dispatch.orders.ariaLabel')}>
+            <section aria-label={t("dispatch.orders.ariaLabel")}>
               <div className="s-head">
-                <span className="s-head__label">{t('dispatch.orders.title')}</span>
+                <span className="s-head__label">
+                  {t("dispatch.orders.title")}
+                </span>
                 <div className="s-head__rule" />
               </div>
               <div className="table-surface">
@@ -447,45 +509,100 @@ function toForm(order?: DispatchItem): DispatchForm {
                   <Table className="data-table reception-table">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('dispatch.orders.columns.invoice')}</TableHead>
-                        <TableHead>{t('dispatch.orders.columns.customer')}</TableHead>
-                        <TableHead>{t('dispatch.orders.columns.product')}</TableHead>
-                        <TableHead>{t('dispatch.orders.columns.expected')}</TableHead>
-                        <TableHead>{t('dispatch.orders.columns.status')}</TableHead>
-                        <TableHead><span className="sr-only">{t('dispatch.orders.columns.action')}</span></TableHead>
+                        <TableHead>
+                          {t("dispatch.orders.columns.invoice")}
+                        </TableHead>
+                        <TableHead>
+                          {t("dispatch.orders.columns.customer")}
+                        </TableHead>
+                        <TableHead>
+                          {t("dispatch.orders.columns.product")}
+                        </TableHead>
+                        <TableHead>
+                          {t("dispatch.orders.columns.expected")}
+                        </TableHead>
+                        <TableHead>
+                          {t("dispatch.orders.columns.status")}
+                        </TableHead>
+                        <TableHead>
+                          <span className="sr-only">
+                            {t("dispatch.orders.columns.action")}
+                          </span>
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {loading ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="inventory-empty">{t('common.loading')}</TableCell>
+                          <TableCell colSpan={6} className="inventory-empty">
+                            {t("common.loading")}
+                          </TableCell>
                         </TableRow>
                       ) : null}
                       {!loading && filteredOrders.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="inventory-empty">{t('common.empty')}</TableCell>
+                          <TableCell colSpan={6} className="inventory-empty">
+                            {t("common.empty")}
+                          </TableCell>
                         </TableRow>
                       ) : null}
                       {filteredOrders.map((order) => {
-                        const isDispatched = dispatchedIds.has(order.id)
-                        const status = isDispatched ? 'dispatched' : order.status
+                        const isDispatched = dispatchedIds.has(order.id);
+                        const status = isDispatched
+                          ? "dispatched"
+                          : order.status;
                         return (
-                          <TableRow key={order.id} className={order.id === selectedOrder?.id ? 'is-selected' : undefined}>
-                            <TableCell><p className="prod-name">{order.invoiceNumber}</p></TableCell>
-                            <TableCell><p className="prod-name">{order.customerName || '-'}</p></TableCell>
+                          <TableRow
+                            key={order.id}
+                            className={
+                              order.id === selectedOrder?.id
+                                ? "is-selected"
+                                : undefined
+                            }
+                          >
+                            <TableCell>
+                              <p className="prod-name">{order.invoiceNumber}</p>
+                            </TableCell>
+                            <TableCell>
+                              <p className="prod-name">
+                                {order.customerName || "-"}
+                              </p>
+                            </TableCell>
                             <TableCell>
                               <p className="prod-name">{order.productName}</p>
                               <div className="mov-meta">
                                 <span className="sku">{order.sku}</span>
-                                {order.requiresSerial ? <Badge variant="warning">{t('reception.flags.serial')}</Badge> : null}
-                                {order.requiresColdChain ? <Badge variant="secondary">{t('reception.flags.coldChain')}</Badge> : null}
+                                {order.requiresSerial ? (
+                                  <Badge variant="warning">
+                                    {t("reception.flags.serial")}
+                                  </Badge>
+                                ) : null}
+                                {order.requiresColdChain ? (
+                                  <Badge variant="secondary">
+                                    {t("reception.flags.coldChain")}
+                                  </Badge>
+                                ) : null}
                               </div>
                             </TableCell>
-                            <TableCell className="text-mono">{order.expectedQuantity}</TableCell>
-                            <TableCell><Badge variant={statusVariant[status]}>{t(`dispatch.status.${status}`)}</Badge></TableCell>
-                            <TableCell><Button variant="ghost" size="sm" onClick={() => handleSelectOrder(order)}>{t('dispatch.orders.select')}</Button></TableCell>
+                            <TableCell className="text-mono">
+                              {order.expectedQuantity}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={statusVariant[status]}>
+                                {t(`dispatch.status.${status}`)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleSelectOrder(order)}
+                              >
+                                {t("dispatch.orders.select")}
+                              </Button>
+                            </TableCell>
                           </TableRow>
-                        )
+                        );
                       })}
                     </TableBody>
                   </Table>
@@ -493,90 +610,289 @@ function toForm(order?: DispatchItem): DispatchForm {
               </div>
             </section>
 
-            <aside aria-label={t('dispatch.form.ariaLabel')}>
+            <aside aria-label={t("dispatch.form.ariaLabel")}>
               <Card className="reception-form-card rounded-lg">
                 <CardHeader>
-                  <CardTitle className="reception-form-card__title">{selectedOrder?.productName ?? t('dispatch.form.emptyTitle')}</CardTitle>
+                  <CardTitle className="reception-form-card__title">
+                    {selectedOrder?.productName ??
+                      t("dispatch.form.emptyTitle")}
+                  </CardTitle>
                   <CardDescription>
                     {selectedOrder
-                      ? t('dispatch.form.description', { sku: selectedOrder.sku, invoice: selectedOrder.invoiceNumber })
-                      : t('dispatch.form.emptyDescription')}
+                      ? t("dispatch.form.description", {
+                          sku: selectedOrder.sku,
+                          invoice: selectedOrder.invoiceNumber,
+                        })
+                      : t("dispatch.form.emptyDescription")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="reception-form">
                   <div className="reception-form__grid">
                     <div className="inventory-field">
-                      <label className="inventory-label" htmlFor="dispatch-quantity">{t('dispatch.form.quantity')}</label>
-                      <Input id="dispatch-quantity" type="number" min="1" value={form.quantity} onChange={(event) => setForm((current) => ({ ...current, quantity: event.target.value }))} />
+                      <label
+                        className="inventory-label"
+                        htmlFor="dispatch-quantity"
+                      >
+                        {t("dispatch.form.quantity")}
+                      </label>
+                      <Input
+                        id="dispatch-quantity"
+                        type="number"
+                        min="1"
+                        value={form.quantity}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            quantity: event.target.value,
+                          }))
+                        }
+                      />
                     </div>
                     <div className="inventory-field">
-                      <label className="inventory-label" htmlFor="dispatch-location">{t('dispatch.form.location')}</label>
-                      <Select id="dispatch-location" value={form.locationId} onChange={(event) => setForm((current) => ({ ...current, locationId: event.target.value }))}>
-                        <option value="">{t('dispatch.form.locationPlaceholder')}</option>
+                      <label
+                        className="inventory-label"
+                        htmlFor="dispatch-location"
+                      >
+                        {t("dispatch.form.location")}
+                      </label>
+                      <Select
+                        id="dispatch-location"
+                        value={form.locationId}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            locationId: event.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">
+                          {t("dispatch.form.locationPlaceholder")}
+                        </option>
                         {locations.map((location) => (
-                          <option key={location.id} value={location.id}>{location.code} - {location.name}</option>
+                          <option key={location.id} value={location.id}>
+                            {location.code} - {location.name}
+                          </option>
                         ))}
                       </Select>
                     </div>
                     <div className="inventory-field">
-                      <label className="inventory-label" htmlFor="dispatch-lot">{t('dispatch.form.lot')}</label>
-                      <Select id="dispatch-lot" value={form.lotCode} onChange={(event) => setForm((current) => ({ ...current, lotCode: event.target.value }))}>
-                        <option value="">{t('dispatch.form.lotPlaceholder')}</option>
-                        <option value="LOT-2026-A">LOT-2026-A (Exp: 2028-05-30)</option>
-                        <option value="LOT-2026-B">LOT-2026-B (Exp: 2027-11-15)</option>
+                      <label className="inventory-label" htmlFor="dispatch-lot">
+                        {t("dispatch.form.lot")}
+                      </label>
+                      <Select
+                        id="dispatch-lot"
+                        value={form.lotCode}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            lotCode: event.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">
+                          {t("dispatch.form.lotPlaceholder")}
+                        </option>
+                        <option value="LOT-2026-A">
+                          LOT-2026-A (Exp: 2028-05-30)
+                        </option>
+                        <option value="LOT-2026-B">
+                          LOT-2026-B (Exp: 2027-11-15)
+                        </option>
                       </Select>
                     </div>
                     {selectedOrder?.requiresSerial ? (
                       <div className="inventory-field">
-                        <label className="inventory-label" htmlFor="dispatch-serial">{t('dispatch.form.serialNumber')}</label>
-                        <Input id="dispatch-serial" value={form.serialNumber} placeholder={t('dispatch.form.serialPlaceholder')} onChange={(event) => setForm((current) => ({ ...current, serialNumber: event.target.value }))} />
+                        <label
+                          className="inventory-label"
+                          htmlFor="dispatch-serial"
+                        >
+                          {t("dispatch.form.serialNumber")}
+                        </label>
+                        <Input
+                          id="dispatch-serial"
+                          value={form.serialNumber}
+                          placeholder={t("dispatch.form.serialPlaceholder")}
+                          onChange={(event) =>
+                            setForm((current) => ({
+                              ...current,
+                              serialNumber: event.target.value,
+                            }))
+                          }
+                        />
                       </div>
                     ) : null}
                   </div>
 
                   <div className="s-head reception-section--spaced">
-                    <span className="s-head__label">{t('dispatch.form.customerData')}</span>
+                    <span className="s-head__label">
+                      {t("dispatch.form.customerData")}
+                    </span>
                   </div>
 
                   <div className="reception-form__grid reception-form__grid--spaced">
                     <div className="inventory-field">
-                      <label className="inventory-label" htmlFor="dispatch-cust-name">{t('dispatch.form.customerName')}</label>
-                      <Input id="dispatch-cust-name" value={form.customerName} placeholder={customerDataRequired ? undefined : t('dispatch.form.customerOptionalPlaceholder')} onChange={(event) => setForm((current) => ({ ...current, customerName: event.target.value }))} />
+                      <label
+                        className="inventory-label"
+                        htmlFor="dispatch-cust-name"
+                      >
+                        {t("dispatch.form.customerName")}
+                      </label>
+                      <Input
+                        id="dispatch-cust-name"
+                        value={form.customerName}
+                        placeholder={
+                          customerDataRequired
+                            ? ""
+                            : t("dispatch.form.customerOptionalPlaceholder")
+                        }
+                        onChange={(e) =>
+                          setForm((c) => ({
+                            ...c,
+                            customerName: e.target.value,
+                          }))
+                        }
+                      />
                     </div>
                     <div className="inventory-field">
-                      <label className="inventory-label" htmlFor="dispatch-cust-nit">{t('dispatch.form.customerDoc')}</label>
-                      <Input id="dispatch-cust-nit" value={form.customerDoc} placeholder={customerDataRequired ? 'e.g. 900.123.456-1' : t('dispatch.form.customerOptionalIdPlaceholder')} onChange={(event) => setForm((current) => ({ ...current, customerDoc: event.target.value }))} />
+                      <label
+                        className="inventory-label"
+                        htmlFor="dispatch-cust-email"
+                      >
+                        {t("dispatch.form.customerEmail")}
+                      </label>
+                      <Input
+                        id="dispatch-cust-email"
+                        type="email"
+                        value={form.customerEmail}
+                        placeholder={
+                          customerDataRequired
+                            ? "cliente@empresa.com"
+                            : t("dispatch.form.customerOptionalPlaceholder")
+                        }
+                        onChange={(e) =>
+                          setForm((c) => ({
+                            ...c,
+                            customerEmail: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="inventory-field">
+                      <label
+                        className="inventory-label"
+                        htmlFor="dispatch-cust-phone"
+                      >
+                        {t("dispatch.form.customerPhone")}
+                      </label>
+                      <Input
+                        id="dispatch-cust-phone"
+                        value={form.customerPhone}
+                        placeholder={
+                          customerDataRequired
+                            ? "300 123 4567"
+                            : t("dispatch.form.customerOptionalPlaceholder")
+                        }
+                        onChange={(e) =>
+                          setForm((c) => ({
+                            ...c,
+                            customerPhone: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="inventory-field">
+                      <label
+                        className="inventory-label"
+                        htmlFor="dispatch-cust-address"
+                      >
+                        {t("dispatch.form.customerAddress")}
+                      </label>
+                      <Input
+                        id="dispatch-cust-address"
+                        value={form.customerAddress}
+                        placeholder={
+                          customerDataRequired
+                            ? "Calle 123 #45-67, Ciudad"
+                            : t("dispatch.form.customerOptionalPlaceholder")
+                        }
+                        onChange={(e) =>
+                          setForm((c) => ({
+                            ...c,
+                            customerAddress: e.target.value,
+                          }))
+                        }
+                      />
                     </div>
                   </div>
 
                   <div className="notice notice--info reception-notice--spaced">
                     <AlertTriangle />
                     <div>
-                      <div className="notice__title">{t('dispatch.form.customerData')}</div>
-                      <div className="notice__body">{customerDataRequired ? t('dispatch.form.customerRequiredHelp') : t('dispatch.form.customerOptionalHelp')}</div>
+                      <div className="notice__title">
+                        {t("dispatch.form.customerData")}
+                      </div>
+                      <div className="notice__body">
+                        {customerDataRequired
+                          ? t("dispatch.form.customerRequiredHelp")
+                          : t("dispatch.form.customerOptionalHelp")}
+                      </div>
                     </div>
                   </div>
 
                   <div className="reception-actions">
                     {selectedOrder?.requiresColdChain ? (
                       <label className="toggle-switch">
-                        <input type="checkbox" checked={form.coldChainConfirmed} onChange={(e) => setForm((current) => ({ ...current, coldChainConfirmed: e.target.checked }))} />
-                        <span className="toggle-switch__track"><span className="toggle-switch__thumb" /></span>
-                        <span className="toggle-switch__label">{t('dispatch.form.coldChain')}</span>
+                        <input
+                          type="checkbox"
+                          checked={form.coldChainConfirmed}
+                          onChange={(e) =>
+                            setForm((current) => ({
+                              ...current,
+                              coldChainConfirmed: e.target.checked,
+                            }))
+                          }
+                        />
+                        <span className="toggle-switch__track">
+                          <span className="toggle-switch__thumb" />
+                        </span>
+                        <span className="toggle-switch__label">
+                          {t("dispatch.form.coldChain")}
+                        </span>
                       </label>
                     ) : null}
 
                     {selectedOrder?.requiresSerial ? (
                       <label className="reception-actions__label">
-                        <input type="checkbox" checked={form.electricalSafetyConfirmed} onChange={(e) => setForm((current) => ({ ...current, electricalSafetyConfirmed: e.target.checked }))} />
-                        <span>{t('dispatch.form.electricalSafety')}</span>
+                        <input
+                          type="checkbox"
+                          checked={form.electricalSafetyConfirmed}
+                          onChange={(e) =>
+                            setForm((current) => ({
+                              ...current,
+                              electricalSafetyConfirmed: e.target.checked,
+                            }))
+                          }
+                        />
+                        <span>{t("dispatch.form.electricalSafety")}</span>
                       </label>
                     ) : null}
                   </div>
 
                   <div className="inventory-field">
-                    <label className="inventory-label" htmlFor="dispatch-note">{t('dispatch.form.note')}</label>
-                    <textarea id="dispatch-note" className="f-textarea" value={form.note} onChange={(event) => setForm((current) => ({ ...current, note: event.target.value }))} />
+                    <label className="inventory-label" htmlFor="dispatch-note">
+                      {t("dispatch.form.note")}
+                    </label>
+                    <textarea
+                      id="dispatch-note"
+                      className="f-textarea"
+                      value={form.note}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          note: event.target.value,
+                        }))
+                      }
+                    />
                   </div>
 
                   {validationMessage ? (
@@ -586,33 +902,78 @@ function toForm(order?: DispatchItem): DispatchForm {
                     </div>
                   ) : null}
 
-                  <Button type="button" onClick={handleConfirm} disabled={Boolean(validationMessage) || saving}>
+                  {customerDataRequired ? (
+                    <label className="reception-actions__label">
+                      <input
+                        type="checkbox"
+                        checked={form.privacyNoticeConfirmed}
+                        onChange={(e) =>
+                          setForm((c) => ({
+                            ...c,
+                            privacyNoticeConfirmed: e.target.checked,
+                          }))
+                        }
+                      />
+                      <span>{t("dispatch.form.privacyNotice")}</span>
+                    </label>
+                  ) : null}
+
+                  <Button
+                    type="button"
+                    onClick={handleConfirm}
+                    disabled={Boolean(validationMessage) || saving}
+                  >
                     <ClipboardCheck />
-                    {saving ? t('dispatch.form.saving') : t('dispatch.form.confirmAndGenerate')}
+                    {saving
+                      ? t("dispatch.form.saving")
+                      : t("dispatch.form.confirmAndGenerate")}
                   </Button>
                 </CardContent>
               </Card>
             </aside>
           </div>
 
-          <section aria-label={t('dispatch.movements.ariaLabel')}>
+          <section aria-label={t("dispatch.movements.ariaLabel")}>
             <div className="s-head">
-              <span className="s-head__label">{t('dispatch.movements.title')}</span>
+              <span className="s-head__label">
+                {t("dispatch.movements.title")}
+              </span>
               <div className="s-head__rule" />
             </div>
             <div className="reception-movement-grid">
               {recentMovements.map((movement) => (
-                <Card key={movement.id} className="reception-movement rounded-lg">
+                <Card
+                  key={movement.id}
+                  className="reception-movement rounded-lg"
+                >
                   <CardContent>
                     <div>
                       <p className="prod-name">{movement.productName}</p>
-                      <p className="prod-sub"><span className="sku">{movement.sku}</span> · {movement.locationCode}</p>
+                      <p className="prod-sub">
+                        <span className="sku">{movement.sku}</span> ·{" "}
+                        {movement.locationCode}
+                      </p>
                     </div>
-                    <strong className="text-mono">{t('dispatch.movements.units', { count: movement.quantity })}</strong>
+                    <strong className="text-mono">
+                      {t("dispatch.movements.units", {
+                        count: movement.quantity,
+                      })}
+                    </strong>
                     <span>{movement.operator}</span>
                     <time>{movement.confirmedAt}</time>
-                    {movement.invoiceNumber ? <p className="reception-movement__note reception-movement__note--invoice">Factura: {movement.invoiceNumber} {movement.customerName ? `· ${movement.customerName}` : ''}</p> : null}
-                    {movement.note ? <p className="reception-movement__note">{movement.note}</p> : null}
+                    {movement.invoiceNumber ? (
+                      <p className="reception-movement__note reception-movement__note--invoice">
+                        Factura: {movement.invoiceNumber}{" "}
+                        {movement.customerName
+                          ? `· ${movement.customerName}`
+                          : ""}
+                      </p>
+                    ) : null}
+                    {movement.note ? (
+                      <p className="reception-movement__note">
+                        {movement.note}
+                      </p>
+                    ) : null}
                   </CardContent>
                 </Card>
               ))}
@@ -620,7 +981,7 @@ function toForm(order?: DispatchItem): DispatchForm {
           </section>
         </div>
       </AppShell>
-    )
+    );
   }
 
 

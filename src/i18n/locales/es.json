@@ -471,7 +471,9 @@
       "expectedEmpty": "Selecciona una orden para ver la cantidad esperada.",
       "discrepancyNote": "Nota de discrepancia (obligatoria)",
       "confirm": "Confirmar entrada",
-      "saving": "Guardando..."
+      "saving": "Guardando...",
+      "coldChainAck": "Confirmo cumplimiento de cadena de frío para esta recepción",
+      "electricalSafetyAck": "Confirmo protocolo de seguridad eléctrica revisado"
     },
     "movements": {
       "ariaLabel": "Movimientos de entrada recientes",
@@ -487,7 +489,9 @@
       "location": "Selecciona una ubicación destino",
       "serials": "Debes ingresar exactamente {{count}} número(s) de serie",
       "discrepancyNote": "Debes agregar una nota explicando la discrepancia",
-      "scanNotFound": "No se encontró ninguna orden con ese código"
+      "scanNotFound": "No se encontró ninguna orden con ese código",
+      "coldChain": "Debes confirmar la cadena de frío para continuar",
+      "electricalSafety": "Debes confirmar la seguridad eléctrica para continuar"
     },
     "success": {
       "confirmed": "Entrada registrada correctamente para SKU {{sku}}"
@@ -532,17 +536,12 @@
       "coldChain": "Cadena de frío"
     },
     "scan": {
-      "label": "Escanear SKU / Barcode esperado",
-      "placeholder": "Escanea el código de barras del producto...",
-      "action": "Validar"
+      "label": "Escaneo / código manual",
+      "placeholder": "Escanea o escribe el SKU / código de barras...",
+      "helper": "Si el lector falla, escribe el SKU o el código de barras manualmente y valida igual."
     },
     "search": {
       "label": "Buscar orden / factura",
-      "scan": {
-        "label": "Escaneo / código manual",
-        "placeholder": "Escanea o escribe el SKU / código de barras...",
-        "helper": "Si el lector falla, escribe el SKU o el código de barras manualmente y valida igual."
-      },
       "placeholder": "Número de factura o cliente..."
     },
     "orders": {
@@ -593,7 +592,10 @@
       "saving": "Despachando...",
       "invoiceGenerated": "Factura generada: {{invoice}}",
       "downloadInvoice": "Descargar PDF Factura",
-      "close": "Cerrar"
+      "close": "Cerrar",
+      "customerEmail": "Correo electrónico",
+      "customerPhone": "Teléfono",
+      "customerAddress": "Dirección de entrega"
     },
     "movements": {
       "ariaLabel": "Despachos recientes",
@@ -615,7 +617,10 @@
       "coldChain": "Debes confirmar la cadena de frío para continuar",
       "electricalSafety": "Debes confirmar la seguridad eléctrica para continuar",
       "scanMismatch": "¡Error de validación cruzada! El código escaneado ({{scanned}}) no coincide con el SKU esperado ({{expected}})",
-      "scanSuccess": "✓ Validación cruzada exitosa. El SKU coincide."
+      "scanSuccess": "✓ Validación cruzada exitosa. El SKU coincide.",
+      "customerEmail": "Ingresa el correo electrónico del cliente",
+      "customerPhone": "Ingresa el teléfono del cliente",
+      "customerAddress": "Ingresa la dirección de entrega del cliente"
     },
     "success": {
       "confirmed": "Salida registrada correctamente para SKU {{sku}}"
@@ -799,7 +804,7 @@
     "errors": {
       "load": "No se pudo cargar la información de alertas",
       "resolve": "No se pudo resolver la alerta. Intenta de nuevo.",
-      "unauthorized": "No tienes privilegios para resolver esta alerta. Solo Almacenistas y Administradores pueden resolver alertas operativas.",
+      "unauthorized": "No tienes privilegios para resolver esta alerta. Solo los Almacenistas pueden resolver alertas operativas.",
       "unauthorizedShort": "Sin permisos"
     },
     "success": {
