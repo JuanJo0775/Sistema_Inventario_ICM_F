@@ -196,7 +196,7 @@ export function BarcodeDisplay({ value, productId, productName, sku }: BarcodeDi
     <div className="barcode-display">
       {fetchError && (
         <p style={{ fontSize: 11, color: 'var(--warn)', margin: '0 0 8px', textAlign: 'center' }}>
-          ⚠️ {fetchError}
+         {fetchError}
         </p>
       )}
       <div className="barcode-display__canvas">
