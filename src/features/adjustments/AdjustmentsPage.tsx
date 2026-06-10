@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import AppShell from '../../components/layout/AppShell'
+import { BarcodeScannerButton } from '../../components/ui/BarcodeScannerButton'
 import { fetchAdjustmentsOverview, submitAdjustment } from '../../services/adjustments'
 import type { AdjustmentsOverview } from '../../interfaces/adjustments'
+import type { BarcodeProductResult } from '../../services/barcodeScanner'
 
 function AdjustmentsPage() {
   const { t } = useTranslation()
@@ -49,6 +51,21 @@ function AdjustmentsPage() {
     await submitAdjustment(payload)
   }
 
+  /**
+   * Callback del lector HID: busca el producto escaneado en la lista
+   * cargada y lo selecciona automáticamente en el dropdown.
+   */
+  function handleProductScanned(product: BarcodeProductResult) {
+    const match = products.find(
+      (p) =>
+        p.productId === String(product.id) ||
+        p.sku?.toLowerCase() === product.sku?.toLowerCase(),
+    )
+    if (match) {
+      setProductId(match.productId)
+    }
+  }
+
   
 
   return (
@@ -69,12 +86,29 @@ function AdjustmentsPage() {
                       <div className="f-row f-row-2">
                         <div className="f-group f-group--full">
                           <label className="f-label" htmlFor="adj-prod">Producto</label>
-                          <select id="adj-prod" className="f-input" value={productId} onChange={(e: ChangeEvent<HTMLSelectElement>) => setProductId(e.target.value)}>
-                            <option value="">{t('adjustments.form.productPlaceholder')}</option>
-                            {products.map((p) => (
-                              <option key={p.id} value={p.productId}>{p.productName} — {p.sku}</option>
-                            ))}
-                          </select>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <select
+                              id="adj-prod"
+                              className="f-input"
+                              value={productId}
+                              onChange={(e: ChangeEvent<HTMLSelectElement>) => setProductId(e.target.value)}
+                              style={{ flex: 1 }}
+                            >
+                              <option value="">{t('adjustments.form.productPlaceholder')}</option>
+                              {products.map((p) => (
+                                <option key={p.id} value={p.productId}>{p.productName} — {p.sku}</option>
+                              ))}
+                            </select>
+                            <BarcodeScannerButton
+                              label="Escanear"
+                              onProductFound={handleProductScanned}
+                            />
+                          </div>
+                          {productId && (
+                            <p className="f-note" style={{ marginTop: 4 }}>
+                              Producto seleccionado: <strong>{products.find(p => p.productId === productId)?.productName}</strong>
+                            </p>
+                          )}
                         </div>
                         <div className="f-group f-group--full">
                           <label className="f-label" htmlFor="adj-loc">Ubicación</label>

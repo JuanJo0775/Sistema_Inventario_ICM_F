@@ -1,856 +1,729 @@
-import React, { useEffect, useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
-import {
-  Search,
-  AlertTriangle,
-  Clock,
-  CheckCircle2,
-  FileText,
-  TrendingUp,
-  X,
-  RefreshCw,
-} from 'lucide-react'
-import AppShell from '../../components/layout/AppShell'
-import useReceptionStore from '../../store/useReceptionStore'
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import AppShell from "../../components/layout/AppShell";
+import useReceptionStore from "../../store/useReceptionStore";
+import type {
+  PurchaseOrder,
+  PurchaseOrderItem,
+} from "../../interfaces/purchaseOrders";
 
-type ReceptionForm = {
-  receivedQuantity: string
-  locationId: string
-  lot: string           // solo visual, no se envía al backend
-  expirationDate: string // solo visual, no se envía al backend
-  serialNumbers: string  // se toma solo el primero para el backend
-  discrepancyNote: string
-  coldChainConfirmed: boolean
-  electricalSafetyConfirmed: boolean
+// ─── helpers ────────────────────────────────────────────────────────────────
+
+const statusPill = (status: string) => {
+  switch (status) {
+    case "pendiente":
+      return <span className="pill pill--warn">Pendiente</span>;
+    case "parcialmente_recibida":
+      return <span className="pill pill--amber">Parcial</span>;
+    case "completada":
+      return <span className="pill pill--ok">Completada</span>;
+    default:
+      return <span className="pill pill--muted">{status}</span>;
+  }
+};
+
+// ─── types ───────────────────────────────────────────────────────────────────
+
+interface ReceptionForm {
+  orderId: string;
+  itemId: string;
+  productId: string;
+  productName: string;
+  productSku: string;
+  ordered: number;
+  received: number;
+  locationId: string;
+  lotCode: string;
+  expirationDate: string;
+  serialNumbers: string;
+  discrepancyNote: string;
+  coldChainAck: boolean;
+  electricalSafetyAck: boolean;
 }
 
-const statusColorMap: Record<string, { bg: string; color: string; border: string }> = {
-  pendiente: { bg: '#e8f2ff', color: '#1971c2', border: '#a5d8ff' },
-  parcialmente_recibida: { bg: '#fff9db', color: '#f59f00', border: '#ffe066' },
-  completada: { bg: '#ebfbee', color: '#099268', border: '#b2f2bb' },
-  cancelada: { bg: '#fff5f5', color: '#e03131', border: '#ffc9c9' },
-  borrador: { bg: '#f1f3f5', color: '#495057', border: '#dee2e6' },
-}
-
-const toForm = (order?: ReceptionExpectedOrder): ReceptionForm => ({
-  receivedQuantity: order?.receivedQuantity.toString() ?? "",
-  locationId: order?.locationId ?? "",
-  lot: order?.lot ?? "",
-  expirationDate: order?.expirationDate ?? "",
+const emptyForm = (): ReceptionForm => ({
+  orderId: "",
+  itemId: "",
+  productId: "",
+  productName: "",
+  productSku: "",
+  ordered: 0,
+  received: 0,
+  locationId: "",
+  lotCode: "",
+  expirationDate: "",
   serialNumbers: "",
   discrepancyNote: "",
-  coldChainConfirmed: false,
-  electricalSafetyConfirmed: false,
+  coldChainAck: false,
+  electricalSafetyAck: false,
 });
 
-function ReceptionPage() {
-  const { t } = useTranslation()
-  const [overview, setOverview] = useState<ReceptionOverview | null>(null)
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
-  const [search, setSearch] = useState('')
-  const [scanValue, setScanValue] = useState('')
-  const [form, setForm] = useState<ReceptionForm>(toForm())
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  const [localMovements, setLocalMovements] = useState<ReceptionMovement[]>([])
-  const [receivedIds, setReceivedIds] = useState<Set<string>>(() => new Set())
+// ─── component ────────────────────────────────────────────────────────────────
 
-  const loadOverview = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await fetchReceptionOverview()
-      setOverview(data)
-      setLocalMovements(data.recentMovements)
-      const firstReceivable = data.expectedOrders.find((order) => order.status !== 'received')
-      setSelectedOrderId((current) => current ?? firstReceivable?.id ?? data.expectedOrders[0]?.id ?? null)
-    } catch {
-      setError(t('reception.errors.load'))
-    } finally {
-      setLoading(false)
-    }
-  }, [t])
+export default function ReceptionPage() {
+  const { t } = useTranslation();
+  const {
+    pendingOrders,
+    loading,
+    error,
+    fetchPendingOrders,
+    receiveItem,
+    clearError,
+  } = useReceptionStore();
+
+  const [search, setSearch] = useState("");
+  const [form, setForm] = useState<ReceptionForm>(emptyForm());
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [saving, setSaving] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadOverview()
-  }, [loadOverview])
-
-  const orders = overview?.expectedOrders ?? []
-  const locations = overview?.locations ?? []
+    fetchPendingOrders();
+  }, [fetchPendingOrders]);
 
   const filteredOrders = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase()
-    if (!normalizedSearch) {
-      return orders
-    }
+    if (!search.trim()) return pendingOrders;
+    const q = search.toLowerCase();
+    return pendingOrders.filter(
+      (o) =>
+        o.number.toLowerCase().includes(q) ||
+        o.supplier_nombre.toLowerCase().includes(q) ||
+        o.items.some(
+          (i) =>
+            i.product_name.toLowerCase().includes(q) ||
+            i.product_sku.toLowerCase().includes(q),
+        ),
+    );
+  }, [pendingOrders, search]);
 
-    return orders.filter((order) =>
-      [
-        order.purchaseOrder,
-        order.invoice,
-        order.productName,
-        order.sku,
-        order.barcode,
-        order.supplier,
-      ]
-        .join(' ')
-        .toLowerCase()
-        .includes(normalizedSearch),
-    )
-  }, [orders, search])
-
-  const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-
-  useEffect(() => {
-    setForm(toForm(selectedOrder))
-    setSuccessMessage(null)
-  }, [selectedOrder])
-
-  const stats = useMemo(() => {
-    const pending = orders.filter((order) => !receivedIds.has(order.id)).length
-    const discrepancies = orders.filter(
-      (order) => order.receivedQuantity !== order.expectedQuantity,
-    ).length
-    const serialRequired = orders.filter((order) => order.requiresSerial).length
-    const coldChain = orders.filter((order) => order.requiresColdChain).length
-    return { pending, discrepancies, serialRequired, coldChain }
-  }, [orders, receivedIds])
-
-  const receivedQuantity = Number(form.receivedQuantity)
   const hasDiscrepancy =
-    selectedOrder && Number.isFinite(receivedQuantity)
-      ? receivedQuantity !== selectedOrder.expectedQuantity
-      : false
-  const serialNumbers = form.serialNumbers
-    .split('\n')
-    .map((serial) => serial.trim())
-    .filter(Boolean)
+    form.ordered > 0 && form.received > 0 && form.received !== form.ordered;
 
-  const validationMessage = useMemo(() => {
-    if (!selectedOrder) return t("reception.errors.noOrder");
-    if (receivedIds.has(selectedOrder.id))
-      return t("reception.errors.alreadyReceived");
-    if (!Number.isFinite(receivedQuantity) || receivedQuantity <= 0)
-      return t("reception.errors.quantity");
-    if (!form.locationId) return t("reception.errors.location");
-    if (selectedOrder.requiresSerial && serialNumbers.length === 0)
-      return t("reception.errors.serials", { count: receivedQuantity });
-    if (hasDiscrepancy && !form.discrepancyNote.trim())
-      return t("reception.errors.discrepancyNote");
-    if (selectedOrder.requiresColdChain && !form.coldChainConfirmed)
-      return t("reception.errors.coldChain");
-    if (selectedOrder.requiresSerial && !form.electricalSafetyConfirmed)
-      return t("reception.errors.electricalSafety");
-    return null;
-  }, [
-    form.discrepancyNote,
-    form.locationId,
-    form.coldChainConfirmed,
-    form.electricalSafetyConfirmed,
-    hasDiscrepancy,
-    receivedIds,
-    receivedQuantity,
-    selectedOrder,
-    serialNumbers.length,
-    t,
-  ]);
-
-  // Refresh helper
-  const handleRefresh = async () => {
-    await Promise.all([fetchPendingOrders(), fetchCompletedOrders()])
+  function selectItem(order: PurchaseOrder, item: PurchaseOrderItem) {
+    setForm({
+      ...emptyForm(),
+      orderId: order.id,
+      itemId: item.id,
+      productId: item.product,
+      productName: item.product_name,
+      productSku: item.product_sku,
+      ordered: item.quantity_ordered,
+      received: item.quantity_pending,
+    });
+    setStep(2);
+    setFormError("");
+    setSuccessMsg("");
   }
 
-  // Filter logic
-  const filteredOrders = useMemo(() => {
-    const list = activeTab === 'pending' ? pendingOrders : completedOrders
-    return list.filter((order) => {
-      const matchSearch =
-        order.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.supplier_nombre.toLowerCase().includes(searchTerm.toLowerCase())
-      
-      const matchStatus = statusFilter === 'all' || order.status === statusFilter
-      return matchSearch && matchStatus
-    })
-  }, [activeTab, pendingOrders, completedOrders, searchTerm, statusFilter])
+  function clearSelection() {
+    setForm(emptyForm());
+    setStep(1);
+    setFormError("");
+  }
 
-  const handleConfirm = async () => {
-    if (!selectedOrder || validationMessage) return;
-
+  async function handleConfirm() {
+    if (!form.productId || !form.locationId) {
+      setFormError("Selecciona ubicación destino");
+      return;
+    }
+    if (form.received <= 0) {
+      setFormError("La cantidad recibida debe ser mayor a 0");
+      return;
+    }
+    if (hasDiscrepancy && !form.discrepancyNote.trim()) {
+      setFormError("Debes agregar una nota de discrepancia (BR-09)");
+      return;
+    }
     setSaving(true);
-    setError(null);
+    setFormError("");
     try {
-      const movement = await submitReception({
-        productId: selectedOrder.productId,
-        locationId: form.locationId,
-        quantity: receivedQuantity,
-        // Solo enviamos el primero, backend acepta uno por movimiento
-        serialNumber: serialNumbers.length > 0 ? serialNumbers[0] : undefined,
-        // Enviamos la cantidad facturada para que el backend detecte discrepancia
-        qtyInvoiced: selectedOrder.expectedQuantity,
-        discrepancyNote: form.discrepancyNote.trim() || undefined,
-        coldChainAcknowledged: form.coldChainConfirmed,
-        electricalSafetyAcknowledged: form.electricalSafetyConfirmed,
+      await receiveItem({
+        purchase_order_id: form.orderId,
+        items: [
+          {
+            purchase_order_item_id: form.itemId,
+            quantity_received: form.received,
+            lot_code: form.lotCode || undefined,
+            lot_expiration_date: form.expirationDate || undefined,
+          },
+        ],
+        destination_location_id: form.locationId,
+        notes: form.discrepancyNote || undefined,
       });
-      setLocalMovements((current) => [movement, ...current]);
-      setReceivedIds((current) => new Set(current).add(selectedOrder.id));
-      setSuccessMessage(
-        t("reception.success.confirmed", { sku: selectedOrder.sku }),
-      );
+      setSuccessMsg(`Entrada registrada para ${form.productSku}`);
+      setStep(3);
     } catch {
-      setError(t("reception.errors.save"));
+      setFormError("No se pudo registrar la entrada. Intenta de nuevo.");
     } finally {
       setSaving(false);
     }
-  };
+  }
 
   return (
-    <AppShell
-      title={t("reception.title")}
-      subtitle={t("reception.subtitle")}
-      actions={
-        <Button variant="ghost" size="sm" onClick={loadOverview}>
-          {t("common.actions.refresh")}
-        </Button>
-      }
-    >
-      <div className="page-body reception-page">
-        <section
-          className="reception-stats"
-          aria-label={t("reception.stats.ariaLabel")}
+    <AppShell title={t("reception.title")} subtitle={t("reception.subtitle")}>
+      <div className="page-body">
+        {/* ── step track ── */}
+        <nav
+          className="step-track"
+          aria-label="Progreso del flujo de recepción"
         >
-          <Card className="reception-stat rounded-lg">
-            <PackagePlus />
-            <div>
-              <span>{stats.pending}</span>
-              <p>{t("reception.stats.pending")}</p>
-            </div>
-            <div>
-              <span>{stats.discrepancies}</span>
-              <p>{t("reception.stats.discrepancies")}</p>
-            </div>
-          </Card>
-          <Card className="reception-stat rounded-lg">
-            <ShieldCheck />
-            <div>
-              <span>{stats.serialRequired}</span>
-              <p>{t("reception.stats.serialRequired")}</p>
-            </div>
-            <div>
-              <span>{stats.coldChain}</span>
-              <p>{t("reception.stats.coldChain")}</p>
-            </div>
-          </div>
-
-        <div className="reception-scanbar">
-          <div className="reception-scanbar__field">
-            <label className="inventory-label" htmlFor="reception-scan">
-              {t("reception.scan.label")}
-            </label>
-            <div className="reception-scanbar__input">
-              <Barcode />
-              <Input
-                id="reception-scan"
-                value={scanValue}
-                placeholder={t("reception.scan.placeholder")}
-                onChange={(event) => setScanValue(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    handleScan();
-                  }
-                }}
-              />
-              <Button type="button" onClick={handleScan}>
-                {t("reception.scan.action")}
-              </Button>
-            </div>
-          </div>
-          <div className="reception-scanbar__field">
-            <label className="inventory-label" htmlFor="reception-search">
-              {t("reception.search.label")}
-            </label>
-            <div className="reception-search">
-              <Search />
-              <Input
-                id="reception-search"
-                type="search"
-                value={search}
-                placeholder={t("reception.search.placeholder")}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Error Alert */}
-        {error && (
           <div
-            className="alert-bar alert-bar--warn"
-            role="alert"
-            style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center' }}
+            className={`step-item${step >= 1 ? (step > 1 ? " step-item--done" : " step-item--active") : ""}`}
+            aria-current={step === 1 ? "step" : undefined}
           >
-            <AlertTriangle style={{ marginRight: '0.5rem', width: '18px', height: '18px' }} />
+            <div className="step-num">1</div>
+            <span>Identificar</span>
+          </div>
+          <div
+            className={`step-item${step >= 2 ? (step > 2 ? " step-item--done" : " step-item--active") : ""}`}
+            aria-current={step === 2 ? "step" : undefined}
+          >
+            <div className="step-num">2</div>
+            <span>Cantidad</span>
+          </div>
+          <div
+            className={`step-item${step === 3 ? " step-item--done" : ""}`}
+            aria-current={step === 3 ? "step" : undefined}
+          >
+            <div className="step-num">3</div>
+            <span>Confirmar</span>
+          </div>
+        </nav>
+
+        {/* ── error global ── */}
+        {error && (
+          <div className="alert-bar alert-bar--err mb-20" role="alert">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              width={14}
+              height={14}
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
             <span>{error}</span>
-            <button className="alert-bar__close" onClick={clearError}>
-              <X style={{ width: '16px', height: '16px' }} />
+            <span className="alert-bar__spacer" />
+            <button className="btn btn--ghost btn--sm" onClick={clearError}>
+              Cerrar
             </button>
           </div>
         )}
 
-        {/* Tabs and White Search/Filter Box */}
-        <div
-          style={{
-            backgroundColor: '#fff',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            padding: '1.25rem',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-            marginBottom: '1.5rem',
-          }}
-        >
-          {/* Tab Selector */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '1rem',
-              borderBottom: '1px solid #f3f4f6',
-              paddingBottom: '1rem',
-              marginBottom: '1rem',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('pending')
-                setStatusFilter('all')
-              }}
-              style={{
-                background: 'none',
-                border: 'none',
-                borderBottom: activeTab === 'pending' ? '2px solid #1971c2' : '2px solid transparent',
-                color: activeTab === 'pending' ? '#1971c2' : '#6b7280',
-                padding: '0.5rem 1rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-            >
-              Pendientes de recibir
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('history')
-                setStatusFilter('all')
-              }}
-              style={{
-                background: 'none',
-                border: 'none',
-                borderBottom: activeTab === 'history' ? '2px solid #1971c2' : '2px solid transparent',
-                color: activeTab === 'history' ? '#1971c2' : '#6b7280',
-                padding: '0.5rem 1rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-            >
-              Historial completado
-            </button>
+        <div className="split split--2-1">
+          {/* ── left col: list → form → success ── */}
+          <div>
+            {/* STEP 1: list */}
+            {step === 1 && (
+              <>
+                <div className="s-head">
+                  <span className="s-head__label">Órdenes esperadas</span>
+                  <div className="s-head__rule" />
+                  <span className="pill pill--teal s-head__action">
+                    {filteredOrders.length} órdenes
+                  </span>
+                </div>
+
+                <div className="f-group mb-16">
+                  <label className="f-label" htmlFor="rec-search">
+                    Buscar por nombre, SKU, factura o proveedor
+                  </label>
+                  <div style={{ position: "relative" }}>
+                    <svg
+                      style={{
+                        position: "absolute",
+                        left: 11,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        width: 14,
+                        height: 14,
+                        stroke: "var(--teal-600)",
+                        strokeWidth: 1.8,
+                      }}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="M21 21l-4.35-4.35" />
+                    </svg>
+                    <input
+                      id="rec-search"
+                      className="f-input"
+                      style={{ paddingLeft: 34 }}
+                      placeholder="Nombre, SKU, proveedor..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {loading ? (
+                  <div className="mov-list">
+                    {[0, 1, 2].map((i) => (
+                      <div
+                        key={i}
+                        className="mov-item"
+                        style={{ opacity: 0.4 }}
+                      >
+                        <span
+                          className="mov-pip"
+                          style={{ background: "var(--ink-12)" }}
+                        />
+                        <div
+                          style={{
+                            background: "var(--ink-06)",
+                            borderRadius: 4,
+                            height: 36,
+                            flex: 1,
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : filteredOrders.length === 0 ? (
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: "var(--ink-40)",
+                      padding: "20px 0",
+                    }}
+                  >
+                    No hay órdenes pendientes.
+                  </p>
+                ) : (
+                  <div className="table-surface">
+                    <div className="table-wrap">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>OC / Proveedor</th>
+                            <th>Producto</th>
+                            <th>Pendiente</th>
+                            <th>Estado</th>
+                            <th>
+                              <span className="sr-only">Acción</span>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredOrders.flatMap((order) =>
+                            order.items
+                              .filter((i) => i.quantity_pending > 0)
+                              .map((item) => (
+                                <tr key={`${order.id}-${item.id}`}>
+                                  <td>
+                                    <p className="prod-name">{order.number}</p>
+                                    <p className="prod-sub">
+                                      {order.supplier_nombre}
+                                    </p>
+                                  </td>
+                                  <td>
+                                    <span className="sku">
+                                      {item.product_sku}
+                                    </span>
+                                    <p className="prod-sub">
+                                      {item.product_name}
+                                    </p>
+                                  </td>
+                                  <td className="text-mono">
+                                    {item.quantity_received}/
+                                    {item.quantity_ordered}
+                                  </td>
+                                  <td>{statusPill(order.status)}</td>
+                                  <td>
+                                    <button
+                                      className="btn btn--primary btn--sm"
+                                      onClick={() => selectItem(order, item)}
+                                    >
+                                      Seleccionar
+                                    </button>
+                                  </td>
+                                </tr>
+                              )),
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* STEP 2: form */}
+            {step === 2 && (
+              <>
+                <div className="s-head">
+                  <span className="s-head__label">Producto identificado</span>
+                  <div className="s-head__rule" />
+                  <span className="pill pill--ok s-head__action">Resuelto</span>
+                </div>
+
+                <div className="val-strip val-strip--ok mb-16">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    width={15}
+                    height={15}
+                    strokeWidth={2}
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Código resuelto —{" "}
+                  <strong className="text-mono" style={{ marginLeft: 6 }}>
+                    {form.productSku} · {form.productName}
+                  </strong>
+                </div>
+
+                {hasDiscrepancy && (
+                  <div className="notice notice--warn mb-16">
+                    <span>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                        <line x1="12" y1="9" x2="12" y2="13" />
+                      </svg>
+                    </span>
+                    <div>
+                      <p className="notice__title">
+                        Cantidad difiere de la facturada
+                      </p>
+                      <p className="notice__body">
+                        Registra una nota de discrepancia. BR-09.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {formError && (
+                  <div className="alert-bar alert-bar--err mb-16" role="alert">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      width={14}
+                      height={14}
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                    </svg>
+                    {formError}
+                  </div>
+                )}
+
+                <form noValidate>
+                  <div className="form-surface">
+                    <fieldset>
+                      <legend>Cantidades</legend>
+                      <div className="f-row f-row-2 mb-16">
+                        <div className="f-group">
+                          <label className="f-label">Cantidad facturada</label>
+                          <input
+                            className="f-input text-mono"
+                            type="number"
+                            value={form.ordered}
+                            readOnly
+                            style={{
+                              background: "var(--canvas)",
+                              cursor: "default",
+                            }}
+                          />
+                        </div>
+                        <div className="f-group">
+                          <label
+                            className="f-label"
+                            htmlFor="rec-qty"
+                            style={
+                              hasDiscrepancy
+                                ? { color: "var(--warn)" }
+                                : undefined
+                            }
+                          >
+                            Cantidad recibida {hasDiscrepancy ? "⚠" : "✓"}
+                          </label>
+                          <input
+                            id="rec-qty"
+                            className="f-input text-mono"
+                            type="number"
+                            min={1}
+                            value={form.received}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                received: Number(e.target.value),
+                              })
+                            }
+                            style={
+                              hasDiscrepancy
+                                ? { borderColor: "var(--warn)" }
+                                : undefined
+                            }
+                          />
+                        </div>
+                        {hasDiscrepancy && (
+                          <div className="f-group f-group--full">
+                            <label
+                              className="f-label"
+                              htmlFor="rec-disc-note"
+                              style={{ color: "var(--warn)" }}
+                            >
+                              Nota de discrepancia — BR-09 *
+                            </label>
+                            <input
+                              id="rec-disc-note"
+                              className="f-input"
+                              placeholder="Ej: 2 unidades faltantes en caja 3"
+                              value={form.discrepancyNote}
+                              onChange={(e) =>
+                                setForm({
+                                  ...form,
+                                  discrepancyNote: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </fieldset>
+
+                    <fieldset>
+                      <legend>Lote y vencimiento</legend>
+                      <div className="f-row f-row-2 mb-16">
+                        <div className="f-group">
+                          <label className="f-label" htmlFor="rec-lot">
+                            Código de lote
+                          </label>
+                          <input
+                            id="rec-lot"
+                            className="f-input text-mono"
+                            placeholder="Ej: LOT-2026-01"
+                            value={form.lotCode}
+                            onChange={(e) =>
+                              setForm({ ...form, lotCode: e.target.value })
+                            }
+                          />
+                        </div>
+                        <div className="f-group">
+                          <label className="f-label" htmlFor="rec-exp">
+                            Fecha de vencimiento
+                          </label>
+                          <input
+                            id="rec-exp"
+                            className="f-input"
+                            type="date"
+                            value={form.expirationDate}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                expirationDate: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+                    </fieldset>
+
+                    <fieldset>
+                      <legend>Ubicación destino</legend>
+                      <div className="f-group mb-16">
+                        <label
+                          className="f-label"
+                          htmlFor="rec-loc"
+                          style={{
+                            color: !form.locationId ? "var(--err)" : undefined,
+                          }}
+                        >
+                          Ubicación *
+                        </label>
+                        <input
+                          id="rec-loc"
+                          className="f-input"
+                          placeholder="UUID de la ubicación destino"
+                          value={form.locationId}
+                          onChange={(e) =>
+                            setForm({ ...form, locationId: e.target.value })
+                          }
+                        />
+                        <p className="f-note">
+                          Introduce el ID de la ubicación o conecta el selector
+                          de ubicaciones.
+                        </p>
+                      </div>
+                    </fieldset>
+
+                    <fieldset>
+                      <legend>Reconocimientos</legend>
+                      <div className="flex gap-20">
+                        <label
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            fontSize: 13,
+                            cursor: "pointer",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={form.coldChainAck}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                coldChainAck: e.target.checked,
+                              })
+                            }
+                          />
+                          Cadena de frío confirmada
+                        </label>
+                        <label
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            fontSize: 13,
+                            cursor: "pointer",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={form.electricalSafetyAck}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                electricalSafetyAck: e.target.checked,
+                              })
+                            }
+                          />
+                          Seguridad eléctrica revisada (BR-04)
+                        </label>
+                      </div>
+                    </fieldset>
+
+                    <div className="form-footer">
+                      <button
+                        type="button"
+                        className="btn btn--outline"
+                        onClick={clearSelection}
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn--primary"
+                        onClick={handleConfirm}
+                        disabled={saving}
+                      >
+                        {saving ? "Guardando..." : "Confirmar entrada"}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </>
+            )}
+
+            {/* STEP 3: success */}
+            {step === 3 && (
+              <>
+                <div
+                  className="val-strip val-strip--ok mb-24"
+                  style={{ padding: "16px 20px", borderRadius: 12 }}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    width={20}
+                    height={20}
+                    strokeWidth={2}
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <span style={{ fontSize: 14 }}>{successMsg}</span>
+                </div>
+                <button
+                  className="btn btn--primary"
+                  onClick={() => {
+                    clearSelection();
+                    fetchPendingOrders();
+                  }}
+                >
+                  Registrar otra entrada
+                </button>
+              </>
+            )}
           </div>
 
-        <div className="reception-layout">
-          <section aria-label={t("reception.orders.ariaLabel")}>
+          {/* ── right col: recent movements ── */}
+          <aside>
             <div className="s-head">
-              <span className="s-head__label">
-                {t("reception.orders.title")}
-              </span>
+              <span className="s-head__label">Entradas recientes</span>
               <div className="s-head__rule" />
             </div>
-            <div className="table-surface">
-              <div className="table-wrap">
-                <Table className="data-table reception-table">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>
-                        {t("reception.orders.columns.order")}
-                      </TableHead>
-                      <TableHead>
-                        {t("reception.orders.columns.product")}
-                      </TableHead>
-                      <TableHead>
-                        {t("reception.orders.columns.expected")}
-                      </TableHead>
-                      <TableHead>
-                        {t("reception.orders.columns.status")}
-                      </TableHead>
-                      <TableHead>
-                        <span className="sr-only">
-                          {t("reception.orders.columns.action")}
-                        </span>
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {loading ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="inventory-empty">
-                          {t("common.loading")}
-                        </TableCell>
-                      </TableRow>
-                    ) : null}
-                    {!loading && filteredOrders.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="inventory-empty">
-                          {t("common.empty")}
-                        </TableCell>
-                      </TableRow>
-                    ) : null}
-                    {filteredOrders.map((order) => {
-                      const isReceived = receivedIds.has(order.id);
-                      const status = isReceived ? "received" : order.status;
-                      return (
-                        <TableRow
-                          key={order.id}
-                          className={
-                            order.id === selectedOrder?.id
-                              ? "is-selected"
-                              : undefined
-                          }
-                        >
-                          <TableCell>
-                            <p className="prod-name">{order.purchaseOrder}</p>
-                            <p className="prod-sub">{order.invoice}</p>
-                          </TableCell>
-                          <TableCell>
-                            <p className="prod-name">{order.productName}</p>
-                            <div className="mov-meta">
-                              <span className="sku">{order.sku}</span>
-                              {order.requiresSerial ? (
-                                <Badge variant="warning">
-                                  {t("reception.flags.serial")}
-                                </Badge>
-                              ) : null}
-                              {order.requiresColdChain ? (
-                                <Badge variant="secondary">
-                                  {t("reception.flags.coldChain")}
-                                </Badge>
-                              ) : null}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-mono">
-                            {order.receivedQuantity}/{order.expectedQuantity}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={statusVariant[status]}>
-                              {t(`reception.status.${status}`)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleSelectOrder(order)}
-                            >
-                              {t("reception.orders.select")}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+            <p
+              style={{ fontSize: 12, color: "var(--ink-40)", marginBottom: 14 }}
+            >
+              Movimientos de entrada del día actual.
+            </p>
+            <div className="notice notice--info">
+              <span>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                </svg>
+              </span>
+              <div>
+                <p className="notice__title">BR-09: Discrepancia</p>
+                <p className="notice__body">
+                  Si la cantidad recibida difiere de la facturada, el sistema
+                  obliga a registrar una nota explicativa antes de confirmar.
+                </p>
               </div>
             </div>
-          </section>
 
-          <aside aria-label={t("reception.form.ariaLabel")}>
-            <Card className="reception-form-card rounded-lg">
-              <CardHeader>
-                <CardTitle className="reception-form-card__title">
-                  {selectedOrder?.productName ?? t("reception.form.emptyTitle")}
-                </CardTitle>
-                <CardDescription>
-                  {selectedOrder
-                    ? t("reception.form.description", {
-                        sku: selectedOrder.sku,
-                        invoice: selectedOrder.invoice,
-                      })
-                    : t("reception.form.emptyDescription")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="reception-form">
-                <div className="reception-form__grid">
-                  <div className="inventory-field">
-                    <label
-                      className="inventory-label"
-                      htmlFor="received-quantity"
-                    >
-                      {t("reception.form.receivedQuantity")}
-                    </label>
-                    <Input
-                      id="received-quantity"
-                      type="number"
-                      min="1"
-                      value={form.receivedQuantity}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          receivedQuantity: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="inventory-field">
-                    <label
-                      className="inventory-label"
-                      htmlFor="reception-location"
-                    >
-                      {t("reception.form.location")}
-                    </label>
-                    <Select
-                      id="reception-location"
-                      value={form.locationId}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          locationId: event.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">
-                        {t("reception.form.locationPlaceholder")}
-                      </option>
-                      {locations.map((location) => (
-                        <option key={location.id} value={location.id}>
-                          {location.code} - {location.name}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-                  <div className="inventory-field">
-                    <label className="inventory-label" htmlFor="reception-lot">
-                      {t("reception.form.lot")}
-                    </label>
-                    <Input
-                      id="reception-lot"
-                      value={form.lot}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          lot: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="inventory-field">
-                    <label
-                      className="inventory-label"
-                      htmlFor="reception-expiration"
-                    >
-                      {t("reception.form.expirationDate")}
-                    </label>
-                    <Input
-                      id="reception-expiration"
-                      type="date"
-                      value={form.expirationDate}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          expirationDate: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
+            <div className="c-divider" />
 
-                {selectedOrder?.requiresSerial ? (
-                  <div className="inventory-field">
-                    <label
-                      className="inventory-label"
-                      htmlFor="reception-serials"
-                    >
-                      {t("reception.form.serialNumbers")}
-                    </label>
-                    <textarea
-                      id="reception-serials"
-                      className="f-textarea"
-                      value={form.serialNumbers}
-                      placeholder={t("reception.form.serialPlaceholder")}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          serialNumbers: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                ) : null}
-
-                <div
-                  className={`reception-discrepancy${hasDiscrepancy ? " is-active" : ""}`}
+            <div className="notice notice--warn">
+              <span>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
                 >
-                  <div>
-                    <strong>
-                      {hasDiscrepancy
-                        ? t("reception.form.discrepancyDetected")
-                        : t("reception.form.noDiscrepancy")}
-                    </strong>
-                    <span>
-                      {selectedOrder
-                        ? t("reception.form.expectedHelp", {
-                            count: selectedOrder.expectedQuantity,
-                          })
-                        : t("reception.form.expectedEmpty")}
-                    </span>
-                  </div>
-                </div>
-
-                {hasDiscrepancy ? (
-                  <div className="inventory-field">
-                    <label className="inventory-label" htmlFor="reception-note">
-                      {t("reception.form.discrepancyNote")}
-                    </label>
-                    <textarea
-                      id="reception-note"
-                      className="f-textarea"
-                      value={form.discrepancyNote}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          discrepancyNote: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                ) : null}
-
-                {/* Acknowledgement de cadena de frío */}
-                {selectedOrder?.requiresColdChain ? (
-                  <label className="toggle-switch">
-                    <input
-                      type="checkbox"
-                      checked={form.coldChainConfirmed}
-                      onChange={(e) =>
-                        setForm((current) => ({
-                          ...current,
-                          coldChainConfirmed: e.target.checked,
-                        }))
-                      }
-                    />
-                    <span className="toggle-switch__track">
-                      <span className="toggle-switch__thumb" />
-                    </span>
-                    <span className="toggle-switch__label">
-                      {t("reception.form.coldChainAck")}
-                    </span>
-                  </label>
-                ) : null}
-
-                {/* Acknowledgement de seguridad eléctrica */}
-                {selectedOrder?.requiresSerial ? (
-                  <label className="reception-actions__label">
-                    <input
-                      type="checkbox"
-                      checked={form.electricalSafetyConfirmed}
-                      onChange={(e) =>
-                        setForm((current) => ({
-                          ...current,
-                          electricalSafetyConfirmed: e.target.checked,
-                        }))
-                      }
-                    />
-                    <span>{t("reception.form.electricalSafetyAck")}</span>
-                  </label>
-                ) : null}
-
-                {validationMessage ? (
-                  <div className="notice notice--warn">
-                    <AlertTriangle />
-                    <div className="notice__body">{validationMessage}</div>
-                  </div>
-                ) : null}
-
-                <Button
-                  type="button"
-                  onClick={handleConfirm}
-                  disabled={Boolean(validationMessage) || saving}
-                >
-                  <ClipboardCheck />
-                  {saving
-                    ? t("reception.form.saving")
-                    : t("reception.form.confirm")}
-                </Button>
-              </CardContent>
-            </Card>
+                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                </svg>
+              </span>
+              <div>
+                <p className="notice__title">BR-04: Serie obligatoria</p>
+                <p className="notice__body">
+                  Electroterapia requiere número de serie por unidad. Verifica
+                  con el almacenista si el producto lo requiere.
+                </p>
+              </div>
+            </div>
           </aside>
         </div>
-
-        <section aria-label={t("reception.movements.ariaLabel")}>
-          <div className="s-head">
-            <span className="s-head__label">
-              {t("reception.movements.title")}
-            </span>
-            <div className="s-head__rule" />
-          </div>
-          <div className="reception-movement-grid">
-            {localMovements.map((movement) => (
-              <Card key={movement.id} className="reception-movement rounded-lg">
-                <CardContent>
-                  <div>
-                    <p className="prod-name">{movement.productName}</p>
-                    <p className="prod-sub">
-                      <span className="sku">{movement.sku}</span> ·{" "}
-                      {movement.locationCode}
-                    </p>
-                  </div>
-                  <strong className="text-mono">
-                    {t("reception.movements.units", {
-                      count: movement.quantity,
-                    })}
-                  </strong>
-                  <span>{movement.operator}</span>
-                  <time>{movement.confirmedAt}</time>
-                  {movement.discrepancyNote ? (
-                    <p className="reception-movement__note">
-                      {movement.discrepancyNote}
-                    </p>
-                  ) : null}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div
-            className="table-surface"
-            style={{
-              borderRadius: '12px',
-              overflow: 'hidden',
-              border: '1px solid #e5e7eb',
-              background: '#fff',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-            }}
-          >
-            <table
-              className="data-table"
-              style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}
-            >
-              <thead>
-                <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
-                    Orden de Compra
-                  </th>
-                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
-                    Proveedor
-                  </th>
-                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem', textAlign: 'center' }}>
-                    Productos
-                  </th>
-                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem', textAlign: 'center' }}>
-                    Estado
-                  </th>
-                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
-                    Fecha de Solicitud
-                  </th>
-                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem', textAlign: 'center' }}>
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.map((order) => {
-                  const styleProps = statusColorMap[order.status] || { bg: '#f3f4f6', color: '#374151', border: '#e5e7eb' }
-                  return (
-                    <tr
-                      key={order.id}
-                      style={{
-                        borderBottom: '1px solid #f3f4f6',
-                        transition: 'background-color 0.2s',
-                      }}
-                      className="hover-row"
-                    >
-                      <td style={{ padding: '1rem 1.25rem', fontWeight: 500, color: '#111827' }}>
-                        {order.number}
-                      </td>
-                      <td style={{ padding: '1rem 1.25rem', color: '#4b5563' }}>
-                        {order.supplier_nombre}
-                      </td>
-                      <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            backgroundColor: '#f3f0ff',
-                            color: '#7048e8',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            padding: '0.25rem 0.6rem',
-                            borderRadius: '12px',
-                          }}
-                        >
-                          {order.items.length} {order.items.length === 1 ? 'Producto' : 'Productos'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            backgroundColor: styleProps.bg,
-                            color: styleProps.color,
-                            border: `1px solid ${styleProps.border}`,
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            padding: '0.25rem 0.6rem',
-                            borderRadius: '12px',
-                          }}
-                        >
-                          {statusTranslation[order.status] || order.status}
-                        </span>
-                      </td>
-                      <td style={{ padding: '1rem 1.25rem', color: '#6b7280', fontSize: '0.875rem' }}>
-                        {new Date(order.created_at).toLocaleDateString('es-CO', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
-                      </td>
-                      <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
-                        <button
-                          type="button"
-                          className={activeTab === 'pending' ? 'btn btn--primary' : 'btn btn--secondary'}
-                          style={{
-                            fontSize: '0.825rem',
-                            padding: '0.375rem 0.75rem',
-                            borderRadius: '6px',
-                            fontWeight: 500,
-                            height: '32px',
-                          }}
-                          onClick={() => navigate(`/app/reception/${order.id}`)}
-                        >
-                          {activeTab === 'pending' ? 'Recibir' : 'Ver Detalle'}
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
-      <style>{`
-        .hover-row:hover {
-          background-color: #f9fafb;
-        }
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </AppShell>
   );
 }
-
-export default ReceptionPage
