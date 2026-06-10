@@ -14,6 +14,8 @@ type DashboardOverviewParams = {
   movementsLimit?: number
 }
 
+const VISUAL_KPI_CONFIG = mockDashboardOverview.visualKpis;
+
 const toMovementType = (value: string): DashboardMovementItem['type'] => {
   switch (value) {
     case 'in':
@@ -65,9 +67,8 @@ const mapOverview = (data: DashboardApiOverview): DashboardOverview => {
       returns: data.alerts.returns,
     },
     kpiBars,
-    visualKpis: mockDashboardOverview.visualKpis.map((kpi) => {
-      const apiMetric = kpiBars.find((bar) => bar.key === kpi.key)
-
+    visualKpis: VISUAL_KPI_CONFIG.map((kpi) => {
+      const apiMetric = kpiBars.find((bar) => bar.key === kpi.key);
       return apiMetric && apiMetric.value !== null
         ? {
             ...kpi,
@@ -75,7 +76,7 @@ const mapOverview = (data: DashboardApiOverview): DashboardOverview => {
             unit: apiMetric.unit ?? kpi.unit,
             precision: apiMetric.precision ?? kpi.precision,
           }
-        : kpi
+        : kpi;
     }),
     movements: data.movements.map((movement) => ({
       id: movement.id,
@@ -85,9 +86,9 @@ const mapOverview = (data: DashboardApiOverview): DashboardOverview => {
       quantity: movement.quantity,
       user: movement.user,
       time: movement.time,
-      status: movement.status === 'pending' ? 'pending' : 'ok',
+      status: movement.status === "pending" ? "pending" : "ok",
     })),
-  }
+  };
 }
 
 export const fetchDashboardOverview = async (

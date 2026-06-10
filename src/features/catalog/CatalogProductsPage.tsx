@@ -1,22 +1,436 @@
-import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, X } from 'lucide-react';
-import AppShell from '../../components/layout/AppShell';
-import useCatalogStore from '../../store/useCatalogStore';
-import { fetchProductStock } from '../../services/inventory';
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import AppShell from "../../components/layout/AppShell";
+import { BarcodeDisplay } from "../../components/ui/BarcodeDisplay";
+import useCatalogStore from "../../store/useCatalogStore";
+import type { CatalogProduct } from "../../interfaces/catalog";
 
-const CatalogProductsPage: React.FC = () => {
+// ─── helpers ─────────────────────────────────────────────────────────────────
+
+function stockPill(stock: number | undefined, reorder: number) {
+  if (stock === undefined || stock === null)
+    return <span className="pill pill--muted">Sin datos</span>;
+  if (stock === 0) return <span className="pill pill--err">Sin stock</span>;
+  if (stock <= reorder) return <span className="pill pill--warn">Reorden</span>;
+  return <span className="pill pill--ok">OK</span>;
+}
+
+// ─── form modal ──────────────────────────────────────────────────────────────
+
+interface ProductFormProps {
+  initial?: Partial<CatalogProduct>;
+  categories: { id: string; name: string }[];
+  brands: { id: string; name: string; category?: string }[];
+  onSave: (data: Partial<CatalogProduct>) => Promise<void>;
+  onClose: () => void;
+}
+
+function ProductForm({
+  initial,
+  categories,
+  brands,
+  onSave,
+  onClose,
+}: ProductFormProps) {
+  const [form, setForm] = useState<Partial<CatalogProduct>>({
+    name: "",
+    sku: "",
+    category: "",
+    subcategory: null,
+    brand: "",
+    barcode: null,
+    requires_cold_chain: false,
+    requires_expiration: false,
+    reorder_point: 0,
+    notes: "",
+    is_active: true,
+    ...initial,
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const filteredBrands = useMemo(
+    () => brands.filter((b) => !form.category || b.category === form.category),
+    [brands, form.category],
+  );
+
+  async function handleSubmit() {
+    if (!form.name?.trim()) return setError("El nombre es obligatorio");
+    if (!form.sku?.trim()) return setError("El SKU es obligatorio");
+    if (!form.category) return setError("Selecciona una categoría");
+    setSaving(true);
+    setError("");
+    try {
+      await onSave(form);
+      onClose();
+    } catch (e: any) {
+      setError(e.message || "Error al guardar");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 50,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(15,30,32,.45)",
+        padding: 24,
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={initial?.id ? "Editar producto" : "Nuevo producto"}
+    >
+      <div
+        style={{
+          background: "var(--white)",
+          borderRadius: 18,
+          width: "100%",
+          maxWidth: 640,
+          maxHeight: "90vh",
+          overflow: "auto",
+          boxShadow: "0 24px 64px rgba(15,30,32,.2)",
+        }}
+      >
+        {/* header */}
+        <div
+          style={{
+            padding: "20px 24px",
+            borderBottom: "1px solid var(--ink-06)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            position: "sticky",
+            top: 0,
+            background: "var(--white)",
+            zIndex: 1,
+          }}
+        >
+          <div>
+            <h2
+              style={{
+                fontFamily: "var(--ff-display)",
+                fontSize: 20,
+                fontWeight: 400,
+              }}
+            >
+              {initial?.id ? "Editar producto" : "Nuevo producto"}
+            </h2>
+            <p
+              style={{
+                fontSize: 11,
+                color: "var(--ink-40)",
+                fontFamily: "var(--ff-mono)",
+                letterSpacing: "0.5px",
+                marginTop: 2,
+              }}
+            >
+              RF-003 · BR-12
+            </p>
+          </div>
+          <button
+            className="btn btn--ghost btn--sm"
+            onClick={onClose}
+            aria-label="Cerrar"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* body */}
+        <div
+          style={{
+            padding: 24,
+            display: "flex",
+            flexDirection: "column",
+            gap: 20,
+          }}
+        >
+          {error && (
+            <div className="alert-bar alert-bar--err" role="alert">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                width={14}
+                height={14}
+              >
+                <circle cx="12" cy="12" r="10" />
+              </svg>
+              {error}
+            </div>
+          )}
+
+          {/* identificación */}
+          <fieldset>
+            <legend>Identificación</legend>
+            <div className="f-row f-row-2">
+              <div className="f-group f-group--full">
+                <label className="f-label" htmlFor="pf-name">
+                  Nombre del producto *
+                </label>
+                <input
+                  id="pf-name"
+                  className="f-input"
+                  placeholder="Ej: Aguja Punción Seca 0.25mm"
+                  value={form.name || ""}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                />
+              </div>
+              <div className="f-group">
+                <label className="f-label" htmlFor="pf-sku">
+                  SKU *
+                </label>
+                <input
+                  id="pf-sku"
+                  className="f-input text-mono"
+                  placeholder="Ej: CAN-APS-001"
+                  value={form.sku || ""}
+                  onChange={(e) => setForm({ ...form, sku: e.target.value })}
+                />
+                <p className="f-note">
+                  Patrón: 1–4 letras, guion, 1–4 dígitos. BR-12
+                </p>
+              </div>
+              <div className="f-group">
+                <label className="f-label" htmlFor="pf-barcode">
+                  Código de barras
+                </label>
+                <input
+                  id="pf-barcode"
+                  className="f-input text-mono"
+                  placeholder="Auto-generado si vacío"
+                  value={form.barcode || ""}
+                  onChange={(e) =>
+                    setForm({ ...form, barcode: e.target.value || null })
+                  }
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          {/* clasificación */}
+          <fieldset>
+            <legend>Clasificación</legend>
+            <div className="f-row f-row-2">
+              <div className="f-group">
+                <label className="f-label" htmlFor="pf-cat">
+                  Categoría *
+                </label>
+                <select
+                  id="pf-cat"
+                  className="f-input"
+                  value={form.category || ""}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      category: e.target.value,
+                      subcategory: null,
+                    })
+                  }
+                >
+                  <option value="">Selecciona una categoría</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="f-group">
+                <label className="f-label" htmlFor="pf-brand">
+                  Marca (subcategoría)
+                </label>
+                <select
+                  id="pf-brand"
+                  className="f-input"
+                  value={form.subcategory || ""}
+                  onChange={(e) =>
+                    setForm({ ...form, subcategory: e.target.value || null })
+                  }
+                >
+                  <option value="">Sin marca específica</option>
+                  {filteredBrands.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </fieldset>
+
+          {/* logística */}
+          <fieldset>
+            <legend>Logística</legend>
+            <div className="f-row f-row-2">
+              <div className="f-group">
+                <label className="f-label" htmlFor="pf-reorder">
+                  Punto de reorden
+                </label>
+                <input
+                  id="pf-reorder"
+                  className="f-input text-mono"
+                  type="number"
+                  min={0}
+                  value={form.reorder_point ?? 0}
+                  onChange={(e) =>
+                    setForm({ ...form, reorder_point: Number(e.target.value) })
+                  }
+                />
+              </div>
+              <div className="f-group">
+                <label className="f-label" htmlFor="pf-notes">
+                  Notas
+                </label>
+                <input
+                  id="pf-notes"
+                  className="f-input"
+                  placeholder="Observaciones..."
+                  value={form.notes || ""}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          {/* condiciones especiales */}
+          <fieldset>
+            <legend>Condiciones especiales</legend>
+            <div className="flex gap-20" style={{ flexWrap: "wrap" }}>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={!!form.requires_cold_chain}
+                  onChange={(e) =>
+                    setForm({ ...form, requires_cold_chain: e.target.checked })
+                  }
+                />
+                Cadena de frío
+              </label>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={!!form.requires_expiration}
+                  onChange={(e) =>
+                    setForm({ ...form, requires_expiration: e.target.checked })
+                  }
+                />
+                Maneja vencimiento / lotes
+              </label>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={!!form.is_active}
+                  onChange={(e) =>
+                    setForm({ ...form, is_active: e.target.checked })
+                  }
+                />
+                Producto activo
+              </label>
+            </div>
+          </fieldset>
+
+          {/* Código de barras visual – solo si ya tiene uno guardado */}
+          {initial?.id && form.barcode && (
+            <fieldset>
+              <legend>Código de barras</legend>
+              <BarcodeDisplay
+                productId={String(initial.id)}
+                productName={form.name}
+                sku={form.sku}
+              />
+            </fieldset>
+          )}
+        </div>
+
+        {/* footer */}
+        <div
+          className="form-footer"
+          style={{
+            padding: "16px 24px",
+            borderTop: "1px solid var(--ink-06)",
+            position: "sticky",
+            bottom: 0,
+            background: "var(--white)",
+          }}
+        >
+          <button
+            className="btn btn--outline"
+            onClick={onClose}
+            disabled={saving}
+          >
+            Cancelar
+          </button>
+          <button
+            className="btn btn--primary"
+            onClick={handleSubmit}
+            disabled={saving}
+          >
+            {saving
+              ? "Guardando..."
+              : initial?.id
+                ? "Guardar cambios"
+                : "Crear producto"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── page ─────────────────────────────────────────────────────────────────────
+
+export default function CatalogProductsPage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const { products, loading, error: storeError, fetchProducts, categories, brands, fetchCategories, fetchBrands } = useCatalogStore();
-  
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [brandFilter, setBrandFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [localError, setLocalError] = useState<string | null>(null);
-  const [productStockTotals, setProductStockTotals] = useState<Record<string, number>>({});
+  const {
+    products,
+    categories,
+    brands,
+    loading,
+    error,
+    fetchProducts,
+    fetchCategories,
+    fetchBrands,
+    createProduct,
+    updateProduct,
+    deactivateProduct,
+  } = useCatalogStore();
+
+  const [search, setSearch] = useState("");
+  const [filterCat, setFilterCat] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<CatalogProduct | null>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -24,258 +438,301 @@ const CatalogProductsPage: React.FC = () => {
     fetchBrands();
   }, [fetchProducts, fetchCategories, fetchBrands]);
 
-  useEffect(() => {
-    if (!products || products.length === 0) {
-      setProductStockTotals({})
-      return
+  const filtered = useMemo(() => {
+    let list = products;
+    if (filterCat) list = list.filter((p) => p.category === filterCat);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          (p.sku || "").toLowerCase().includes(q) ||
+          (p.barcode || "").toLowerCase().includes(q),
+      );
     }
+    return list;
+  }, [products, search, filterCat]);
 
-    const loadStocks = async () => {
-      try {
-        const stockResults = await Promise.allSettled(
-          products.map((product: any) => fetchProductStock(product.id)),
-        )
+  const activeCount = filtered.filter((p) => p.is_active).length;
+  const reorderCount = filtered.filter(
+    (p) => p.is_active && (p.stockTotal ?? 0) <= (p.reorder_point ?? 0),
+  ).length;
 
-        const nextStockTotals: Record<string, number> = {}
-        stockResults.forEach((result, index) => {
-          if (result.status === 'fulfilled') {
-            nextStockTotals[String(products[index].id)] = result.value.total
-          }
-        })
-
-        setProductStockTotals(nextStockTotals)
-      } catch (err) {
-        console.warn('Error cargando stock de productos para catálogo:', err)
-        setProductStockTotals({})
-      }
+  async function handleSave(data: Partial<CatalogProduct>) {
+    if (editing) {
+      await updateProduct(editing.id, data);
+    } else {
+      await createProduct(data as any);
     }
+    setShowForm(false);
+    setEditing(null);
+  }
 
-    loadStocks()
-  }, [products])
-
-  const handleRefresh = () => {
-    setLocalError(null);
-    fetchProducts();
-    fetchCategories();
-    fetchBrands();
-  };
-
-  const filteredProducts = products ? products.filter((product: any) => {
-    const matchesSearch = !searchTerm.trim() ||
-      (product.name && product.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (product.barcode && product.barcode.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    // product.category holds the category UUID
-    const matchesCategory = categoryFilter ? String(product.category) === String(categoryFilter) : true;
-    // product.subcategory holds the subcategory (brand) UUID
-    const matchesBrand = brandFilter ? String(product.subcategory) === String(brandFilter) : true;
-    
-    let matchesStatus = true;
-    if (statusFilter === 'active') matchesStatus = product.is_active === true;
-    if (statusFilter === 'inactive') matchesStatus = product.is_active === false;
-
-    return matchesSearch && matchesCategory && matchesBrand && matchesStatus;
-  }) : [];
+  function openCreate() {
+    setEditing(null);
+    setShowForm(true);
+  }
+  function openEdit(p: CatalogProduct) {
+    setEditing(p);
+    setShowForm(true);
+  }
 
   return (
-    <AppShell 
-      title={t('catalog.products.title')} 
-      subtitle={t('catalog.products.subtitle')}
+    <AppShell
+      title={t("catalog.products.title")}
+      subtitle={t("catalog.products.subtitle")}
       actions={
-        <button
-          type="button"
-          onClick={handleRefresh}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-            color: '#4a5568',
-            fontWeight: 500,
-            padding: '4px 8px',
-            borderRadius: '4px',
-          }}
-        >
-          Actualizar
+        <button className="btn btn--primary btn--sm" onClick={openCreate}>
+          + {t("catalog.products.new")}
         </button>
       }
     >
-      <div className="catalog-page fade-slide-up">
-        
-        {/* Top actions */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
-          <button className="btn btn--primary" onClick={() => navigate('/app/catalog/products/new')} type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{ width: '16px', height: '16px' }}>
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            {t('catalog.products.new')}
-          </button>
+      <div className="page-body">
+        {/* stats strip */}
+        <div className="metric-strip mb-28" style={{ maxWidth: 480 }}>
+          <div className="metric-cell metric-cell--hero">
+            <p className="metric-cell__eyebrow">Total productos</p>
+            <p className="metric-cell__val">{activeCount}</p>
+            <p className="metric-cell__sub">activos en catálogo</p>
+          </div>
+          <div className="metric-cell metric-cell--light">
+            <p className="metric-cell__eyebrow">Bajo reorden</p>
+            <p
+              className="metric-cell__val"
+              style={{ color: reorderCount > 0 ? "var(--err)" : undefined }}
+            >
+              {reorderCount}
+            </p>
+            <p className="metric-cell__sub">requieren reposición</p>
+          </div>
         </div>
 
-        {/* Error Alert Bar */}
-        {(localError || storeError) && (
-          <div className="alert-bar alert-bar--warn" role="alert" style={{ marginBottom: '1.5rem' }}>
-            <AlertTriangle style={{ marginRight: '0.5rem', width: '18px', height: '18px' }} />
-            <span>{localError || storeError}</span>
-            <button className="alert-bar__close" onClick={() => setLocalError(null)}>
-              <X style={{ width: '16px', height: '16px' }} />
-            </button>
+        {/* filters */}
+        <div
+          className="flex gap-10 mb-20"
+          style={{ alignItems: "center", flexWrap: "wrap" }}
+        >
+          <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
+            <svg
+              style={{
+                position: "absolute",
+                left: 11,
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: 14,
+                height: 14,
+                stroke: "var(--teal-600)",
+                strokeWidth: 1.8,
+              }}
+              viewBox="0 0 24 24"
+              fill="none"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+            <input
+              className="f-input"
+              style={{ paddingLeft: 34 }}
+              placeholder="Buscar por nombre, SKU o código de barras..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Buscar producto"
+            />
+          </div>
+          <select
+            className="f-input"
+            style={{ width: 180 }}
+            value={filterCat}
+            onChange={(e) => setFilterCat(e.target.value)}
+            aria-label="Filtrar por categoría"
+          >
+            <option value="">Todas las categorías</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex gap-8 mb-16">
+          <span className="pill pill--teal">{filtered.length} productos</span>
+          {reorderCount > 0 && (
+            <span className="pill pill--warn">{reorderCount} bajo reorden</span>
+          )}
+        </div>
+
+        {error && (
+          <div className="alert-bar alert-bar--err mb-16" role="alert">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              width={14}
+              height={14}
+            >
+              <circle cx="12" cy="12" r="10" />
+            </svg>
+            {error}
           </div>
         )}
 
-        {/* Toolbar - single row */}
-        <div style={{ background: '#fff', padding: '1.25rem 1.5rem', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
-            
-            {/* Search */}
-            <div style={{ flex: 2 }}>
-              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, color: '#a0aec0', textTransform: 'uppercase', marginBottom: '0.4rem', letterSpacing: '0.05em' }}>
-                BUSCAR PRODUCTO
-              </label>
-              <div className="catalog-toolbar__search" style={{ margin: 0 }}>
-                <svg className="catalog-toolbar__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="M21 21l-4.35-4.35" />
-                </svg>
-                <input 
-                  type="text" 
-                  placeholder="Nombre, SKU, Código de barras..." 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Category filter */}
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, color: '#a0aec0', textTransform: 'uppercase', marginBottom: '0.4rem', letterSpacing: '0.05em' }}>
-                CATEGORÍA
-              </label>
-              <select className="form-select" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} style={{ width: '100%', height: '42px' }}>
-                <option value="">Todas</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-
-            {/* Brand filter */}
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, color: '#a0aec0', textTransform: 'uppercase', marginBottom: '0.4rem', letterSpacing: '0.05em' }}>
-                MARCA
-              </label>
-              <select className="form-select" value={brandFilter} onChange={(e) => setBrandFilter(e.target.value)} style={{ width: '100%', height: '42px' }}>
-                <option value="">Todas</option>
-                {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-            </div>
-
-            {/* Status filter */}
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, color: '#a0aec0', textTransform: 'uppercase', marginBottom: '0.4rem', letterSpacing: '0.05em' }}>
-                ESTADO
-              </label>
-              <select className="form-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ width: '100%', height: '42px' }}>
-                <option value="">Todos</option>
-                <option value="active">Activo</option>
-                <option value="inactive">Inactivo</option>
-              </select>
-            </div>
-
-            {/* Search button */}
-            <div>
-              <button className="btn btn--primary" style={{ height: '42px', padding: '0 1.5rem', whiteSpace: 'nowrap' }} type="button">
-                Buscar
-              </button>
-            </div>
-
-          </div>
+        {/* table */}
+        <div className="s-head">
+          <span className="s-head__label">Productos</span>
+          <div className="s-head__rule" />
         </div>
 
-        {/* Product list */}
         {loading ? (
-          <div className="empty-state">
-            <p>{t('common.loading')}</p>
-          </div>
-        ) : filteredProducts.length === 0 ? (
-          <div className="empty-state">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{ width: '48px', height: '48px', color: '#cbd5e0' }}>
-              <circle cx="12" cy="12" r="10" />
-              <path d="M8 12h8" />
-            </svg>
-            <p>{t('catalog.products.empty')}</p>
-          </div>
+          <p
+            style={{ fontSize: 13, color: "var(--ink-40)", padding: "20px 0" }}
+          >
+            Cargando...
+          </p>
         ) : (
-          <div className="entity-list">
-            {filteredProducts.map((product: any) => {
-              const stockValue = product.stockTotal ?? product.stock ?? productStockTotals[String(product.id)] ?? 0
-              return (
-                <div key={product.id} className="entity-card">
-                  <div className="entity-card__info" style={{ flex: 1 }}>
-                    <h3 className="entity-card__name" style={{ fontSize: '1rem', color: '#1a202c', marginBottom: '4px', fontWeight: 600 }}>{product.name}</h3>
-                    <p className="entity-card__desc" style={{ fontSize: '0.8rem', color: '#a0aec0', margin: 0 }}>
-                      SKU: {product.sku}
-                    </p>
-                  </div>
-                  <div className="entity-card__meta" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <span style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'var(--color-primary)' }}>
-                      Stock: {stockValue}
-                    </span>
-                  
-                  <span style={{ 
-                    padding: '4px 12px', 
-                    borderRadius: '100px', 
-                    fontSize: '0.7rem', 
-                    fontWeight: 700, 
-                    letterSpacing: '0.05em',
-                    backgroundColor: product.is_active ? '#e6fffa' : '#fff5f5',
-                    color: product.is_active ? '#2c7a7b' : '#c53030'
-                  }}>
-                    {product.is_active 
-                      ? t('catalog.products.detail.active', 'Activo')
-                      : t('catalog.products.detail.inactive', 'Inactivo')
-                    }
-                  </span>
-                  
-                  <button 
-                    className="btn btn--ghost btn--sm" 
-                    onClick={(e) => { 
-                      e.stopPropagation(); 
-                      navigate(`/app/catalog/products/${product.id}`); 
-                    }} 
-                    style={{ margin: 0, display: 'flex', alignItems: 'center' }} 
-                    type="button"
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '13px', height: '13px', marginRight: '4px' }}>
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                    {t('catalog.products.detail.view', 'Detalle')}
-                  </button>
-
-                  <button 
-                    className="btn btn--icon" 
-                    title={t('catalog.products.detail.edit', 'Editar')} 
-                    onClick={(e) => { 
-                      e.stopPropagation(); 
-                      navigate(`/app/catalog/products/${product.id}/edit`); 
-                    }} 
-                    type="button"
-                    style={{ margin: 0 }}
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '16px', height: '16px' }}>
-                      <path d="M12 20h9" />
-                      <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            )})}
+          <div className="table-surface">
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>SKU</th>
+                    <th>Producto</th>
+                    <th>Categoría</th>
+                    <th>Stock total</th>
+                    <th>Reorden</th>
+                    <th>Estado</th>
+                    <th>
+                      <span className="sr-only">Acciones</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        style={{
+                          textAlign: "center",
+                          color: "var(--ink-40)",
+                          padding: "24px 0",
+                          fontSize: 13,
+                        }}
+                      >
+                        No hay productos que coincidan con la búsqueda.
+                      </td>
+                    </tr>
+                  ) : (
+                    filtered.map((p) => {
+                      const cat = categories.find((c) => c.id === p.category);
+                      return (
+                        <tr
+                          key={p.id}
+                          style={!p.is_active ? { opacity: 0.5 } : undefined}
+                        >
+                          <td>
+                            <span className="sku">{p.sku}</span>
+                          </td>
+                          <td>
+                            <p className="prod-name">{p.name}</p>
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: 6,
+                                marginTop: 3,
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              {p.requires_cold_chain && (
+                                <span
+                                  className="pill pill--teal"
+                                  style={{ fontSize: 9 }}
+                                >
+                                  Cadena frío
+                                </span>
+                              )}
+                              {p.requires_expiration && (
+                                <span
+                                  className="pill pill--muted"
+                                  style={{ fontSize: 9 }}
+                                >
+                                  Vencimiento
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            {cat ? (
+                              <span
+                                className={`pill ${cat.name === "Electroterapia" ? "pill--amber" : cat.name === "Mesas" ? "pill--teal" : "pill--muted"}`}
+                              >
+                                {cat.name}
+                              </span>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                          <td className="text-mono">
+                            <strong
+                              style={
+                                (p.stockTotal ?? 0) <= (p.reorder_point ?? 0) &&
+                                p.is_active
+                                  ? { color: "var(--err)" }
+                                  : undefined
+                              }
+                            >
+                              {p.stockTotal ?? "—"}
+                            </strong>
+                          </td>
+                          <td className="text-mono">{p.reorder_point ?? 0}</td>
+                          <td>
+                            {p.is_active ? (
+                              stockPill(p.stockTotal, p.reorder_point ?? 0)
+                            ) : (
+                              <span className="pill pill--muted">Inactivo</span>
+                            )}
+                          </td>
+                          <td>
+                            <div className="flex gap-4">
+                              <button
+                                className="btn btn--ghost btn--sm"
+                                onClick={() => openEdit(p)}
+                              >
+                                Editar
+                              </button>
+                              {p.is_active && (
+                                <button
+                                  className="btn btn--danger btn--sm"
+                                  onClick={() => deactivateProduct(p.id)}
+                                >
+                                  Desactivar
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
+
+      {showForm && (
+        <ProductForm
+          initial={editing ?? undefined}
+          categories={categories}
+          brands={brands}
+          onSave={handleSave}
+          onClose={() => {
+            setShowForm(false);
+            setEditing(null);
+          }}
+        />
+      )}
     </AppShell>
   );
-};
-
-export default CatalogProductsPage;
-
+}
