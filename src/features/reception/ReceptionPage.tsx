@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import AppShell from "../../components/layout/AppShell";
 import useReceptionStore from "../../store/useReceptionStore";
+import useLocationStore from "../../store/useLocationStore";
 import type {
   PurchaseOrder,
   PurchaseOrderItem,
@@ -23,6 +24,12 @@ const statusPill = (status: string) => {
 };
 
 // ─── types ───────────────────────────────────────────────────────────────────
+
+interface LotEntry {
+  id: number;
+  lotCode: string;
+  expirationDate: string;
+}
 
 interface ReceptionForm {
   orderId: string;
@@ -58,6 +65,13 @@ const emptyForm = (): ReceptionForm => ({
   electricalSafetyAck: false,
 });
 
+let lotIdCounter = 1;
+const createLotEntry = (): LotEntry => ({
+  id: lotIdCounter++,
+  lotCode: "",
+  expirationDate: "",
+});
+
 // ─── component ────────────────────────────────────────────────────────────────
 
 export default function ReceptionPage() {
@@ -70,6 +84,7 @@ export default function ReceptionPage() {
     receiveItem,
     clearError,
   } = useReceptionStore();
+  const { locations, fetchLocations } = useLocationStore();
 
   const [search, setSearch] = useState("");
   const [form, setForm] = useState<ReceptionForm>(emptyForm());
@@ -77,10 +92,13 @@ export default function ReceptionPage() {
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [formError, setFormError] = useState("");
+  const [receivedStr, setReceivedStr] = useState("");
+  const [lotEntries, setLotEntries] = useState<LotEntry[]>([createLotEntry()]);
 
   useEffect(() => {
     fetchPendingOrders();
-  }, [fetchPendingOrders]);
+    fetchLocations();
+  }, [fetchPendingOrders, fetchLocations]);
 
   const filteredOrders = useMemo(() => {
     if (!search.trim()) return pendingOrders;
@@ -97,10 +115,22 @@ export default function ReceptionPage() {
     );
   }, [pendingOrders, search]);
 
+  const availableLocations = useMemo(
+    () =>
+      locations.filter(
+        (loc) =>
+          loc.is_active &&
+          (loc.operational_status === "active" ||
+            loc.operational_status === "restricted"),
+      ),
+    [locations],
+  );
+
   const hasDiscrepancy =
     form.ordered > 0 && form.received > 0 && form.received !== form.ordered;
 
   function selectItem(order: PurchaseOrder, item: PurchaseOrderItem) {
+    const pending = item.quantity_pending;
     setForm({
       ...emptyForm(),
       orderId: order.id,
@@ -109,8 +139,10 @@ export default function ReceptionPage() {
       productName: item.product_name,
       productSku: item.product_sku,
       ordered: item.quantity_ordered,
-      received: item.quantity_pending,
+      received: pending,
     });
+    setReceivedStr(String(pending));
+    setLotEntries([createLotEntry()]);
     setStep(2);
     setFormError("");
     setSuccessMsg("");
@@ -118,6 +150,8 @@ export default function ReceptionPage() {
 
   function clearSelection() {
     setForm(emptyForm());
+    setReceivedStr("");
+    setLotEntries([createLotEntry()]);
     setStep(1);
     setFormError("");
   }
@@ -132,20 +166,36 @@ export default function ReceptionPage() {
       return;
     }
     if (hasDiscrepancy && !form.discrepancyNote.trim()) {
-      setFormError("Debes agregar una nota de discrepancia (BR-09)");
+      setFormError("Debes agregar una nota de discrepancia");
       return;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    for (const lot of lotEntries) {
+      if (lot.expirationDate && lot.expirationDate < today) {
+        setFormError(`Fecha de vencimiento del lote "${lot.lotCode || '(sin código)'}" es anterior a hoy`);
+        return;
+      }
     }
     setSaving(true);
     setFormError("");
     try {
+      const activeLots = lotEntries.filter((l) => l.lotCode.trim() || l.expirationDate);
+      const allocations = activeLots.map((l) => ({
+        location_id: form.locationId,
+        quantity_received: form.received,
+        lot_code: l.lotCode || undefined,
+        lot_expiration_date: l.expirationDate || null,
+      }));
       await receiveItem({
-        purchase_order_id: form.orderId,
+        po_id: form.orderId,
         items: [
           {
             purchase_order_item_id: form.itemId,
             quantity_received: form.received,
+            discrepancy_note: hasDiscrepancy ? form.discrepancyNote : undefined,
             lot_code: form.lotCode || undefined,
             lot_expiration_date: form.expirationDate || undefined,
+            allocations,
           },
         ],
         destination_location_id: form.locationId,
@@ -269,10 +319,17 @@ export default function ReceptionPage() {
                         className="mov-item"
                         style={{ opacity: 0.4 }}
                       >
-                        <span
+                        <select
                           className="mov-pip"
                           style={{ background: "var(--ink-12)" }}
-                        />
+                        >
+                          <option value="">Selecciona una ubicacion</option>
+                          {availableLocations.map((location) => (
+                            <option key={location.id} value={location.id}>
+                              {location.code} - {location.name}
+                            </option>
+                          ))}
+                        </select>
                         <div
                           style={{
                             background: "var(--ink-06)",
@@ -399,7 +456,7 @@ export default function ReceptionPage() {
                         Cantidad difiere de la facturada
                       </p>
                       <p className="notice__body">
-                        Registra una nota de discrepancia. BR-09.
+                        Registra una nota de discrepancia.
                       </p>
                     </div>
                   </div>
@@ -454,15 +511,19 @@ export default function ReceptionPage() {
                           <input
                             id="rec-qty"
                             className="f-input text-mono"
-                            type="number"
-                            min={1}
-                            value={form.received}
-                            onChange={(e) =>
-                              setForm({
-                                ...form,
-                                received: Number(e.target.value),
-                              })
-                            }
+                            type="text"
+                            inputMode="numeric"
+                            value={receivedStr}
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              if (raw === "" || /^\d+$/.test(raw)) {
+                                setReceivedStr(raw);
+                                setForm({
+                                  ...form,
+                                  received: raw === "" ? 0 : parseInt(raw, 10),
+                                });
+                              }
+                            }}
                             style={
                               hasDiscrepancy
                                 ? { borderColor: "var(--warn)" }
@@ -477,7 +538,7 @@ export default function ReceptionPage() {
                               htmlFor="rec-disc-note"
                               style={{ color: "var(--warn)" }}
                             >
-                              Nota de discrepancia — BR-09 *
+                              Nota de discrepancia *
                             </label>
                             <input
                               id="rec-disc-note"
@@ -497,40 +558,78 @@ export default function ReceptionPage() {
                     </fieldset>
 
                     <fieldset>
-                      <legend>Lote y vencimiento</legend>
-                      <div className="f-row f-row-2 mb-16">
-                        <div className="f-group">
-                          <label className="f-label" htmlFor="rec-lot">
-                            Código de lote
-                          </label>
-                          <input
-                            id="rec-lot"
-                            className="f-input text-mono"
-                            placeholder="Ej: LOT-2026-01"
-                            value={form.lotCode}
-                            onChange={(e) =>
-                              setForm({ ...form, lotCode: e.target.value })
-                            }
-                          />
+                      <legend>Lotes y vencimientos</legend>
+                      {lotEntries.map((lot, idx) => (
+                        <div
+                          key={lot.id}
+                          className="f-row f-row-2 mb-12"
+                          style={{ alignItems: "end" }}
+                        >
+                          <div className="f-group">
+                            {idx === 0 && (
+                              <label className="f-label">Código de lote</label>
+                            )}
+                            <input
+                              className="f-input text-mono"
+                              placeholder="Ej: LOT-2026-01"
+                              value={lot.lotCode}
+                              onChange={(e) => {
+                                const next = [...lotEntries];
+                                next[idx] = { ...lot, lotCode: e.target.value };
+                                setLotEntries(next);
+                              }}
+                            />
+                          </div>
+                          <div className="f-group">
+                            {idx === 0 && (
+                              <label className="f-label">
+                                Fecha de vencimiento
+                              </label>
+                            )}
+                            <input
+                              className="f-input"
+                              type="date"
+                              value={lot.expirationDate}
+                              onChange={(e) => {
+                                const next = [...lotEntries];
+                                next[idx] = {
+                                  ...lot,
+                                  expirationDate: e.target.value,
+                                };
+                                setLotEntries(next);
+                              }}
+                            />
+                          </div>
+                          {idx > 0 && (
+                            <button
+                              type="button"
+                              className="btn btn--ghost btn--sm"
+                              style={{
+                                flexShrink: 0,
+                                color: "var(--err)",
+                                marginBottom: 2,
+                              }}
+                              onClick={() =>
+                                setLotEntries(
+                                  lotEntries.filter((_, i) => i !== idx),
+                                )
+                              }
+                            >
+                              ✕
+                            </button>
+                          )}
                         </div>
-                        <div className="f-group">
-                          <label className="f-label" htmlFor="rec-exp">
-                            Fecha de vencimiento
-                          </label>
-                          <input
-                            id="rec-exp"
-                            className="f-input"
-                            type="date"
-                            value={form.expirationDate}
-                            onChange={(e) =>
-                              setForm({
-                                ...form,
-                                expirationDate: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
-                      </div>
+                      ))}
+                      <button
+                        type="button"
+                        className="btn btn--outline btn--sm"
+                        style={{ marginTop: 6 }}
+                        onClick={() =>
+                          setLotEntries([...lotEntries, createLotEntry()])
+                        }
+                      >
+                        + Agregar otro lote
+                      </button>
                     </fieldset>
 
                     <fieldset>
@@ -545,67 +644,73 @@ export default function ReceptionPage() {
                         >
                           Ubicación *
                         </label>
-                        <input
+                        <select
                           id="rec-loc"
                           className="f-input"
-                          placeholder="UUID de la ubicación destino"
                           value={form.locationId}
                           onChange={(e) =>
                             setForm({ ...form, locationId: e.target.value })
                           }
-                        />
-                        <p className="f-note">
-                          Introduce el ID de la ubicación o conecta el selector
-                          de ubicaciones.
-                        </p>
+                        >
+                          <option value="">Selecciona una ubicación</option>
+                          {availableLocations.map((loc) => (
+                            <option key={loc.id} value={loc.id}>
+                              {loc.code} - {loc.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </fieldset>
 
                     <fieldset>
                       <legend>Reconocimientos</legend>
                       <div className="flex gap-20">
-                        <label
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            fontSize: 13,
-                            cursor: "pointer",
+                        <div
+                          className={`toggle-switch${form.coldChainAck ? " on" : ""}`}
+                          onClick={() =>
+                            setForm({
+                              ...form,
+                              coldChainAck: !form.coldChainAck,
+                            })
+                          }
+                          role="switch"
+                          aria-checked={form.coldChainAck}
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setForm({ ...form, coldChainAck: !form.coldChainAck });
+                            }
                           }}
                         >
-                          <input
-                            type="checkbox"
-                            checked={form.coldChainAck}
-                            onChange={(e) =>
-                              setForm({
-                                ...form,
-                                coldChainAck: e.target.checked,
-                              })
+                          <span className="toggle-switch__track" />
+                          <span className="toggle-switch__label">
+                            Cadena de frío confirmada
+                          </span>
+                        </div>
+                        <div
+                          className={`toggle-switch${form.electricalSafetyAck ? " on" : ""}`}
+                          onClick={() =>
+                            setForm({
+                              ...form,
+                              electricalSafetyAck: !form.electricalSafetyAck,
+                            })
+                          }
+                          role="switch"
+                          aria-checked={form.electricalSafetyAck}
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setForm({ ...form, electricalSafetyAck: !form.electricalSafetyAck });
                             }
-                          />
-                          Cadena de frío confirmada
-                        </label>
-                        <label
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            fontSize: 13,
-                            cursor: "pointer",
                           }}
                         >
-                          <input
-                            type="checkbox"
-                            checked={form.electricalSafetyAck}
-                            onChange={(e) =>
-                              setForm({
-                                ...form,
-                                electricalSafetyAck: e.target.checked,
-                              })
-                            }
-                          />
-                          Seguridad eléctrica revisada (BR-04)
-                        </label>
+                          <span className="toggle-switch__track" />
+                          <span className="toggle-switch__label">
+                            Seguridad eléctrica revisada
+                          </span>
+                        </div>
                       </div>
                     </fieldset>
 
@@ -689,7 +794,7 @@ export default function ReceptionPage() {
                 </svg>
               </span>
               <div>
-                <p className="notice__title">BR-09: Discrepancia</p>
+                <p className="notice__title">Discrepancia</p>
                 <p className="notice__body">
                   Si la cantidad recibida difiere de la facturada, el sistema
                   obliga a registrar una nota explicativa antes de confirmar.
@@ -714,10 +819,9 @@ export default function ReceptionPage() {
                 </svg>
               </span>
               <div>
-                <p className="notice__title">BR-04: Serie obligatoria</p>
+                <p className="notice__title">Serie obligatoria</p>
                 <p className="notice__body">
-                  Electroterapia requiere número de serie por unidad. Verifica
-                  con el almacenista si el producto lo requiere.
+                  Electroterapia requiere número de serie por unidad.
                 </p>
               </div>
             </div>

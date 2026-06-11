@@ -10,6 +10,14 @@ import type {
 } from "../interfaces/reception";
 import type { PurchaseOrder } from "../interfaces/purchaseOrders";
 
+type BackendListResponse<T> = T[] | { results?: T[]; count?: number };
+const normalizeList = <T,>(payload: BackendListResponse<T>): T[] => {
+  if (Array.isArray(payload)) return payload;
+  return payload.results ?? [];
+};
+
+type ReceptionResponse = { id: string };
+
 // Convierte la respuesta del backend al formato que usa el frontend en la UI
 const mapMovementResponse = (
   mov: ReceptionMovementResponse,
@@ -157,11 +165,15 @@ export const fetchPendingPurchaseOrders = async (): Promise<PurchaseOrder[]> => 
       updated_at: new Date().toISOString(),
     }));
   }
-  const res = await api.get<{ results: PurchaseOrder[] } | PurchaseOrder[]>(
-    PURCHASE_ORDERS_BASE,
-    { params: { status: "pendiente,parcialmente_recibida" } },
+  const statuses = ["pendiente", "parcialmente_recibida"];
+  const responses = await Promise.all(
+    statuses.map((status) =>
+      api.get<BackendListResponse<PurchaseOrder>>(PURCHASE_ORDERS_BASE, {
+        params: { status },
+      }),
+    ),
   );
-  return Array.isArray(res.data) ? res.data : (res.data.results ?? []);
+  return responses.flatMap((res) => normalizeList(res.data));
 };
 
 /** Devuelve órdenes de compra completadas */
@@ -199,15 +211,6 @@ export const createAndConfirmReception = async (
   payload: ReceptionCreatePayload,
 ): Promise<void> => {
   if (useMocks) return;
-  await api.post("/movements/entries/", {
-    product_id: payload.productId,
-    location_id: payload.locationId,
-    quantity: payload.quantity,
-    purchase_order_id: payload.purchaseOrderId,
-    serial_number: payload.serialNumber ?? null,
-    qty_invoiced: payload.qtyInvoiced ?? null,
-    discrepancy_note: payload.discrepancyNote ?? null,
-    cold_chain_acknowledged: payload.coldChainAcknowledged ?? false,
-    electrical_safety_acknowledged: payload.electricalSafetyAcknowledged ?? false,
-  });
+  const res = await api.post<ReceptionResponse>("/purchasing/receptions/", payload);
+  await api.post(`/purchasing/receptions/${res.data.id}/confirm/`);
 };

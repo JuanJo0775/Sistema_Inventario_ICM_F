@@ -63,16 +63,25 @@ export interface ReceptionSubmitPayload {
 }
 
 /** Payload para createAndConfirmReception (basado en órdenes de compra) */
+export interface ReceptionCreateItemPayload {
+  purchase_order_item_id: string;
+  quantity_received: number;
+  lot_code?: string;
+  lot_expiration_date?: string | null;
+  discrepancy_note?: string;
+  allocations?: Array<{
+    location_id: string;
+    quantity_received: number;
+    lot_code?: string;
+    lot_expiration_date?: string | null;
+  }>;
+}
+
 export interface ReceptionCreatePayload {
-  productId: string;
-  locationId: string;
-  quantity: number;
-  purchaseOrderId?: string;
-  qtyInvoiced?: number;
-  serialNumber?: string;
-  discrepancyNote?: string;
-  coldChainAcknowledged?: boolean;
-  electricalSafetyAcknowledged?: boolean;
+  po_id: string;
+  destination_location_id: string;
+  notes?: string;
+  items: ReceptionCreateItemPayload[];
 }
 
 // Lo que el backend devuelve en MovementSerializer
