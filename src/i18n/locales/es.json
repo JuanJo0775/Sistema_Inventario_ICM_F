@@ -538,7 +538,8 @@
     "scan": {
       "label": "Escaneo / código manual",
       "placeholder": "Escanea o escribe el SKU / código de barras...",
-      "helper": "Si el lector falla, escribe el SKU o el código de barras manualmente y valida igual."
+      "helper": "Si el lector falla, escribe el SKU o el código de barras manualmente y valida igual.",
+      "action": "Buscar"
     },
     "search": {
       "label": "Buscar orden / factura",

@@ -477,7 +477,7 @@ function toForm(order?: DispatchItem): DispatchForm {
                   type="button"
                   onClick={() => handleVerifyScan()}
                   variant="default"
-                  className={validationSuccess ? 'bg-green-600 hover:bg-green-700 text-white' : undefined}
+                  className={'text-white' + (validationSuccess ? ' bg-green-600 hover:bg-green-700' : '')}
                 >
                   {t('dispatch.scan.action')}
                 </Button>
