@@ -538,6 +538,7 @@
     "scan": {
       "label": "Scan expected SKU / Barcode",
       "placeholder": "Scan the product barcode...",
+      "helper": "If the scanner fails, type the SKU or barcode manually and validate.",
       "action": "Validate"
     },
     "search": {
