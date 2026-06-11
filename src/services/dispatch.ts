@@ -48,7 +48,7 @@ export const fetchDispatchOverview = async (): Promise<DispatchOverview> => {
 
   try {
     const [locationsRes, movementsRes] = await Promise.all([
-      api.get<{ results: Array<{ id: string; code: string; name: string }> }>(
+      api.get<Array<{ id: string; code: string; name: string }> | { results: Array<{ id: string; code: string; name: string }> }>(
         "/inventory/locations/",
       ),
       api.get<{ results: DispatchMovementResponse[] }>(
@@ -57,7 +57,10 @@ export const fetchDispatchOverview = async (): Promise<DispatchOverview> => {
       ),
     ]);
 
-    const locations = locationsRes.data.results.map((loc) => ({
+    const locData = Array.isArray(locationsRes.data)
+      ? locationsRes.data
+      : locationsRes.data.results;
+    const locations = locData.map((loc) => ({
       id: loc.id,
       code: loc.code,
       name: loc.name,
@@ -65,7 +68,7 @@ export const fetchDispatchOverview = async (): Promise<DispatchOverview> => {
     }));
 
     const locationCodeById = new Map(
-      locationsRes.data.results.map((loc) => [loc.id, loc.code]),
+      locData.map((loc) => [loc.id, loc.code]),
     );
 
     const recentMovements: DispatchMovement[] = movementsRes.data.results.map(
