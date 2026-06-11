@@ -10,13 +10,30 @@ export async function fetchAdjustmentsOverview(useMocks = false): Promise<Adjust
   }
 
   try {
-    const locationsRes = await api.get('/inventory/locations/')
-    const locations = (locationsRes.data || []) as Array<{ id: string; code: string; name: string }>
+    const [locationsRes, productsRes] = await Promise.all([
+      api.get<{ results?: Array<{ id: string; code: string; name: string }> } | Array<{ id: string; code: string; name: string }>>('/inventory/locations/'),
+      api.get<{ results?: Array<{ id: string; sku: string; name: string; barcode?: string; category?: string | number | null; subcategory?: string | number | null }> } | Array<{ id: string; sku: string; name: string; barcode?: string }>>('/catalog/products/?page_size=500'),
+    ])
 
-    // For now map locations only and return empty products/history when using backend responses.
+    // Normalizar respuestas paginadas o arrays directos
+    const locationsRaw = Array.isArray(locationsRes.data)
+      ? locationsRes.data
+      : (locationsRes.data?.results ?? [])
+
+    const productsRaw = Array.isArray(productsRes.data)
+      ? productsRes.data
+      : (productsRes.data?.results ?? [])
+
     return {
-      locations: locations.map((l) => ({ id: l.id, code: l.code, name: l.name })),
-      products: [],
+      locations: locationsRaw.map((l) => ({ id: l.id, code: l.code, name: l.name })),
+      products: productsRaw.map((p, i) => ({
+        id: String(i),          // índice local — solo para key de React
+        productId: p.id,        // UUID real del backend
+        productName: p.name,
+        sku: p.sku,
+        barcode: p.barcode,
+        category: p.category ?? undefined,
+      })),
       history: [],
     }
   } catch (error) {

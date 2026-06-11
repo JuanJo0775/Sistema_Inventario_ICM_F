@@ -62,6 +62,19 @@ export interface ReceptionSubmitPayload {
   electricalSafetyAcknowledged: boolean;
 }
 
+/** Payload para createAndConfirmReception (basado en órdenes de compra) */
+export interface ReceptionCreatePayload {
+  productId: string;
+  locationId: string;
+  quantity: number;
+  purchaseOrderId?: string;
+  qtyInvoiced?: number;
+  serialNumber?: string;
+  discrepancyNote?: string;
+  coldChainAcknowledged?: boolean;
+  electricalSafetyAcknowledged?: boolean;
+}
+
 // Lo que el backend devuelve en MovementSerializer
 export interface ReceptionMovementResponse {
   id: string;

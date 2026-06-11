@@ -20,6 +20,13 @@ const statusLabel: Record<ScanStatus, string> = {
   error: 'No encontrado',
 }
 
+const statusIcon: Record<ScanStatus, string> = {
+  idle: '📷',
+  scanning: '⏳',
+  success: '✅',
+  error: '❌',
+}
+
 export function BarcodeScannerButton({
   onProductFound,
   label = 'Escanear código de barras',
@@ -32,8 +39,10 @@ export function BarcodeScannerButton({
   const handleProductFound = useCallback(
     (product: BarcodeProductResult) => {
       onProductFound(product)
-      // Close modal with short delay so the user sees the success state
-      setTimeout(() => setModalOpen(false), 1200)
+      // Limpiar el input manual después de encontrar el producto
+      if (manualRef.current) manualRef.current.value = ''
+      // Close modal with delay so the user sees the success state
+      setTimeout(() => setModalOpen(false), 2000)
     },
     [onProductFound],
   )
@@ -65,6 +74,7 @@ export function BarcodeScannerButton({
     e.preventDefault()
     const val = manualRef.current?.value.trim()
     if (val) void lookupBarcode(val)
+    // No limpiar el input aquí — el usuario debe ver el código que buscó
   }
 
   return (

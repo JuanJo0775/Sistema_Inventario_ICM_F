@@ -6,7 +6,9 @@ import type {
   ReceptionMovementResponse,
   ReceptionOverview,
   ReceptionSubmitPayload,
+  ReceptionCreatePayload,
 } from "../interfaces/reception";
+import type { PurchaseOrder } from "../interfaces/purchaseOrders";
 
 // Convierte la respuesta del backend al formato que usa el frontend en la UI
 const mapMovementResponse = (
@@ -133,4 +135,79 @@ export const submitReception = async (
     }).format(new Date(mov.created_at)),
     discrepancyNote: mov.discrepancy_note ?? undefined,
   };
+};
+
+// ─── Funciones para useReceptionStore (órdenes de compra) ────────────────────
+
+const PURCHASE_ORDERS_BASE = "/purchasing/purchase-orders/";
+
+/** Devuelve órdenes de compra pendientes o parcialmente recibidas */
+export const fetchPendingPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
+  if (useMocks) {
+    // Mapear órdenes mock a PurchaseOrder mínimo
+    return mockReceptionOverview.expectedOrders.map((o) => ({
+      id: o.id,
+      number: o.purchaseOrder,
+      supplier: o.supplier,
+      supplier_nombre: o.supplier,
+      status: "pendiente" as const,
+      notes: "",
+      items: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }));
+  }
+  const res = await api.get<{ results: PurchaseOrder[] } | PurchaseOrder[]>(
+    PURCHASE_ORDERS_BASE,
+    { params: { status: "pendiente,parcialmente_recibida" } },
+  );
+  return Array.isArray(res.data) ? res.data : (res.data.results ?? []);
+};
+
+/** Devuelve órdenes de compra completadas */
+export const fetchCompletedPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
+  if (useMocks) return [];
+  const res = await api.get<{ results: PurchaseOrder[] } | PurchaseOrder[]>(
+    PURCHASE_ORDERS_BASE,
+    { params: { status: "completada" } },
+  );
+  return Array.isArray(res.data) ? res.data : (res.data.results ?? []);
+};
+
+/** Devuelve el detalle de una orden de compra por ID */
+export const fetchPendingOrderDetail = async (id: string): Promise<PurchaseOrder> => {
+  if (useMocks) {
+    const mock = mockReceptionOverview.expectedOrders.find((o) => o.id === id);
+    return {
+      id: mock?.id ?? id,
+      number: mock?.purchaseOrder ?? id,
+      supplier: mock?.supplier ?? "",
+      supplier_nombre: mock?.supplier ?? "",
+      status: "pendiente" as const,
+      notes: "",
+      items: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+  }
+  const res = await api.get<PurchaseOrder>(`${PURCHASE_ORDERS_BASE}${id}/`);
+  return res.data;
+};
+
+/** Crea y confirma una recepción para una orden de compra */
+export const createAndConfirmReception = async (
+  payload: ReceptionCreatePayload,
+): Promise<void> => {
+  if (useMocks) return;
+  await api.post("/movements/entries/", {
+    product_id: payload.productId,
+    location_id: payload.locationId,
+    quantity: payload.quantity,
+    purchase_order_id: payload.purchaseOrderId,
+    serial_number: payload.serialNumber ?? null,
+    qty_invoiced: payload.qtyInvoiced ?? null,
+    discrepancy_note: payload.discrepancyNote ?? null,
+    cold_chain_acknowledged: payload.coldChainAcknowledged ?? false,
+    electrical_safety_acknowledged: payload.electricalSafetyAcknowledged ?? false,
+  });
 };

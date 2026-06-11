@@ -60,8 +60,10 @@ type FetchProductsParams = {
   search?: string;
   category?: string;
   subcategory?: string;
+  /** Número de resultados por página (equivale a page_size en el backend). */
   limit?: number;
-  offset?: number;
+  /** Número de página (1-indexed). */
+  page?: number;
 };
 
 export const fetchProducts = async (
@@ -99,8 +101,9 @@ export const fetchProducts = async (
         q: params.search || undefined,
         category: params.category || undefined,
         subcategory: params.subcategory || undefined,
-        limit: params.limit,
-        offset: params.offset,
+        // El backend usa PageNumberPagination: page_size y page (no limit/offset)
+        page_size: params.limit,
+        page: params.page,
       },
     },
   );

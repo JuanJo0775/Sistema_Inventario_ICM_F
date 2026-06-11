@@ -148,12 +148,8 @@ export const fetchReturnsOverview = async (): Promise<ReturnsOverview> => {
       history,
     }
   } catch (err) {
-    console.warn(
-      'Error al cargar el resumen de devoluciones del backend real. Usando datos mock de contingencia.',
-      err,
-    )
-    const { mockReturnsOverview } = await import('../mocks/returns')
-    return mockReturnsOverview
+    console.error('Error al cargar el resumen de devoluciones del backend.', err)
+    throw err
   }
 }
 

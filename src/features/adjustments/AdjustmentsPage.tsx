@@ -59,7 +59,8 @@ function AdjustmentsPage() {
     const match = products.find(
       (p) =>
         p.productId === String(product.id) ||
-        p.sku?.toLowerCase() === product.sku?.toLowerCase(),
+        (product.sku && p.sku?.toLowerCase() === product.sku.toLowerCase()) ||
+        (product.barcode && p.barcode && p.barcode === product.barcode),
     )
     if (match) {
       setProductId(match.productId)
