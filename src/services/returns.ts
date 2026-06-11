@@ -114,7 +114,7 @@ export const fetchReturnsOverview = async (): Promise<ReturnsOverview> => {
 
   try {
     const [locationsRes, returnsRes, categories, rawProducts] = await Promise.all([
-      api.get<{ results: Array<{ id: string; code: string; name: string }> }>('/inventory/locations/'),
+      api.get<Array<{ id: string; code: string; name: string }> | { results: Array<{ id: string; code: string; name: string }> }>('/inventory/locations/'),
       api.get<{ results: BackendReturnMovement[] }>('/movements/returns/', {
         params: { page_size: 20, ordering: '-created_at' },
       }),
@@ -122,7 +122,8 @@ export const fetchReturnsOverview = async (): Promise<ReturnsOverview> => {
       fetchProducts({ limit: 100 }),
     ])
 
-    const locations: ReturnLocation[] = locationsRes.data.results.map((location) => ({
+    const locData = Array.isArray(locationsRes.data) ? locationsRes.data : locationsRes.data.results
+    const locations: ReturnLocation[] = locData.map((location) => ({
       id: location.id,
       code: location.code,
       name: location.name,
