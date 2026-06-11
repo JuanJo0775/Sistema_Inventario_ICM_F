@@ -14,6 +14,7 @@ function AdjustmentsPage() {
   const [locationId, setLocationId] = useState('')
   const [newQuantity, setNewQuantity] = useState<number | ''>('')
   const [justification, setJustification] = useState('')
+  const [productSearch, setProductSearch] = useState('')
 
   const useMocks = import.meta.env.VITE_USE_MOCKS === 'true'
 
@@ -31,6 +32,17 @@ function AdjustmentsPage() {
 
   const products = useMemo(() => overview?.products ?? [], [overview])
   const locations = useMemo(() => overview?.locations ?? [], [overview])
+
+  const filteredProducts = useMemo(() => {
+    const q = productSearch.trim().toLowerCase()
+    if (!q) return products
+    return products.filter(
+      (p) =>
+        p.productName.toLowerCase().includes(q) ||
+        p.sku.toLowerCase().includes(q) ||
+        (p.barcode && p.barcode.toLowerCase().includes(q)),
+    )
+  }, [products, productSearch])
 
   const systemStock = useMemo(() => {
     if (!overview || !productId) return 0
@@ -86,29 +98,59 @@ function AdjustmentsPage() {
                       <legend>Producto</legend>
                       <div className="f-row f-row-2">
                         <div className="f-group f-group--full">
-                          <label className="f-label" htmlFor="adj-prod">Producto</label>
-                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                            <select
-                              id="adj-prod"
-                              className="f-input"
-                              value={productId}
-                              onChange={(e: ChangeEvent<HTMLSelectElement>) => setProductId(e.target.value)}
-                              style={{ flex: 1 }}
-                            >
-                              <option value="">{t('adjustments.form.productPlaceholder')}</option>
-                              {products.map((p) => (
-                                <option key={p.id} value={p.productId}>{p.productName} — {p.sku}</option>
-                              ))}
-                            </select>
-                            <BarcodeScannerButton
-                              label="Escanear"
-                              onProductFound={handleProductScanned}
-                            />
-                          </div>
-                          {productId && (
-                            <p className="f-note" style={{ marginTop: 4 }}>
-                              Producto seleccionado: <strong>{products.find(p => p.productId === productId)?.productName}</strong>
-                            </p>
+                          <label className="f-label">Producto</label>
+                          {productId && !productSearch ? (
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <div style={{ flex: 1, padding: '9px 12px', border: '1px solid var(--ink-20)', borderRadius: 8, fontSize: 13, background: 'var(--white)' }}>
+                                <strong>{products.find(p => p.productId === productId)?.productName}</strong>
+                                <span className="sku" style={{ marginLeft: 8 }}>{products.find(p => p.productId === productId)?.sku}</span>
+                              </div>
+                              <button type="button" className="btn btn--ghost btn--sm" onClick={() => { setProductId(''); setProductSearch('') }}>Cambiar</button>
+                              <BarcodeScannerButton label="Escanear" onProductFound={handleProductScanned} />
+                            </div>
+                          ) : (
+                            <div>
+                              <div style={{ display: 'flex', gap: 8 }}>
+                                <div style={{ position: 'relative', flex: 1 }}>
+                                  <svg style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, stroke: 'var(--teal-600)', strokeWidth: 1.8 }} viewBox="0 0 24 24" fill="none">
+                                    <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+                                  </svg>
+                                  <input
+                                    className="f-input"
+                                    style={{ paddingLeft: 34 }}
+                                    placeholder="Buscar producto por nombre o SKU..."
+                                    value={productSearch}
+                                    onChange={(e) => setProductSearch(e.target.value)}
+                                    autoFocus
+                                  />
+                                </div>
+                                <BarcodeScannerButton label="Escanear" onProductFound={handleProductScanned} />
+                              </div>
+                              <div style={{ marginTop: 6, maxHeight: 180, overflowY: 'auto', border: '1px solid var(--ink-12)', borderRadius: 8, background: 'var(--white)' }}>
+                                {filteredProducts.length === 0 ? (
+                                  <p style={{ padding: '12px', fontSize: 12, color: 'var(--ink-40)', textAlign: 'center' }}>No se encontraron productos.</p>
+                                ) : (
+                                  filteredProducts.map((p) => (
+                                    <button
+                                      key={p.id}
+                                      type="button"
+                                      style={{
+                                        display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px',
+                                        border: 'none', borderBottom: '1px solid var(--ink-06)',
+                                        background: p.productId === productId ? 'var(--teal-50)' : 'transparent',
+                                        cursor: 'pointer', fontSize: 13, fontFamily: 'var(--ff-body)', color: 'var(--ink)',
+                                      }}
+                                      onClick={() => { setProductId(p.productId); setProductSearch('') }}
+                                      onMouseEnter={(e) => { if (p.productId !== productId) e.currentTarget.style.background = 'var(--ink-06)' }}
+                                      onMouseLeave={(e) => { if (p.productId !== productId) e.currentTarget.style.background = 'transparent' }}
+                                    >
+                                      <strong>{p.productName}</strong>
+                                      <span className="sku" style={{ marginLeft: 8 }}>{p.sku}</span>
+                                    </button>
+                                  ))
+                                )}
+                              </div>
+                            </div>
                           )}
                         </div>
                         <div className="f-group f-group--full">
