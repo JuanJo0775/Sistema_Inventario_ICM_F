@@ -16,7 +16,13 @@ import {
   deactivateBrand as deactivateBrandService,
   restoreBrand as restoreBrandService
 } from '../services/catalog'
-import type { CatalogProduct as Product, CatalogCategory as Category, CatalogBrand as Brand } from '../interfaces/catalog'
+import type {
+  CatalogProduct as Product,
+  CatalogCategory as Category,
+  CatalogBrand as Brand,
+  CatalogProductCreateInput,
+  CatalogProductUpdateInput,
+} from '../interfaces/catalog'
 
 interface CatalogState {
   products: Product[]
@@ -43,6 +49,35 @@ interface CatalogState {
   updateBrand: (id: string, brand: { name?: string; description?: string; is_active?: boolean }) => Promise<void>
   deactivateBrand: (id: string) => Promise<void>
   restoreBrand: (id: string) => Promise<void>
+}
+
+type ProductFormPayload = Partial<Product> &
+  Partial<CatalogProductCreateInput> &
+  Partial<CatalogProductUpdateInput>
+
+const mapProductPayload = (productData: ProductFormPayload): CatalogProductCreateInput | CatalogProductUpdateInput => {
+  const categoryId = productData.category_id ?? productData.category
+  const subcategoryId = productData.subcategory_id ?? productData.subcategory ?? null
+  const brand = productData.brand?.trim()
+
+  const payload: CatalogProductCreateInput | CatalogProductUpdateInput = {
+    sku: productData.sku,
+    name: productData.name,
+    category_id: categoryId,
+    subcategory_id: subcategoryId || null,
+    brand: brand || undefined,
+    requires_cold_chain: productData.requires_cold_chain,
+    requires_expiration: productData.requires_expiration,
+    expiration_date: productData.expiration_date,
+    weight_grams: productData.weight_grams,
+    notes: productData.notes,
+    reorder_point: productData.reorder_point,
+    is_active: productData.is_active,
+  }
+
+  return Object.fromEntries(
+    Object.entries(payload).filter(([, value]) => value !== undefined),
+  ) as CatalogProductCreateInput | CatalogProductUpdateInput
 }
 
 const useCatalogStore = create<CatalogState>((set) => ({
@@ -85,7 +120,7 @@ const useCatalogStore = create<CatalogState>((set) => ({
   createProduct: async (productData) => {
     set({ loading: true, error: null })
     try {
-      await createCatalogProduct(productData as any)
+      await createCatalogProduct(mapProductPayload(productData) as CatalogProductCreateInput)
       const products = await fetchCatalogProducts({ include_inactive: true })
       set({ products: products as any, loading: false })
     } catch (err: any) {
@@ -97,7 +132,7 @@ const useCatalogStore = create<CatalogState>((set) => ({
   updateProduct: async (id, productData) => {
     set({ loading: true, error: null })
     try {
-      await updateCatalogProduct(id.toString(), productData as any)
+      await updateCatalogProduct(id.toString(), mapProductPayload(productData) as CatalogProductUpdateInput)
       const products = await fetchCatalogProducts({ include_inactive: true })
       set({ products: products as any, loading: false })
     } catch (err: any) {

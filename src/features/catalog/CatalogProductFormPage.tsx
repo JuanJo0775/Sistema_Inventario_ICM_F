@@ -27,7 +27,6 @@ const CatalogProductFormPage: React.FC = () => {
     description: '',
     category_id: '',
     subcategory_id: '',
-    barcode: '',
     notes: '',
     reorder_point: 0,
     is_active: true,
@@ -58,7 +57,6 @@ const CatalogProductFormPage: React.FC = () => {
           description: (productToEdit as any).notes || (productToEdit as any).description || '',
           category_id: (productToEdit as any).category || (productToEdit as any).category_id || '',
           subcategory_id: (productToEdit as any).subcategory || (productToEdit as any).subcategory_id || '',
-          barcode: (productToEdit as any).barcode || '',
           notes: (productToEdit as any).notes || '',
           reorder_point: (productToEdit as any).reorder_point || 0,
           is_active: (productToEdit as any).is_active !== undefined ? (productToEdit as any).is_active : true,
@@ -94,7 +92,6 @@ const CatalogProductFormPage: React.FC = () => {
         sku: formData.sku,
         category_id: formData.category_id,
         subcategory_id: formData.subcategory_id || null,
-        barcode: formData.barcode || null,
         notes: formData.description || formData.notes,
         reorder_point: Number(formData.reorder_point),
         is_active: formData.is_active,
@@ -208,19 +205,6 @@ const CatalogProductFormPage: React.FC = () => {
                       </option>
                     ))}
                 </select>
-              </div>
-
-              <div className="form-field">
-                <label className="form-label" htmlFor="barcode">{t('catalog.products.form.barcode', 'Código de barras')}</label>
-                <input
-                  type="text"
-                  id="barcode"
-                  name="barcode"
-                  className="form-input"
-                  value={formData.barcode}
-                  onChange={handleChange}
-                  placeholder={t('catalog.products.form.barcodeAuto', 'Se genera automáticamente si se deja vacío')}
-                />
               </div>
 
               <div className="form-field form-field--full">

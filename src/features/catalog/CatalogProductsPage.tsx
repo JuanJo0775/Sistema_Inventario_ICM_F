@@ -37,8 +37,6 @@ function ProductForm({
     sku: "",
     category: "",
     subcategory: null,
-    brand: "",
-    barcode: null,
     requires_cold_chain: false,
     requires_expiration: false,
     reorder_point: 0,
@@ -197,20 +195,6 @@ function ProductForm({
                 <p className="f-note">
                   Patrón: 1–4 letras, guion, 1–4 dígitos. BR-12
                 </p>
-              </div>
-              <div className="f-group">
-                <label className="f-label" htmlFor="pf-barcode">
-                  Código de barras
-                </label>
-                <input
-                  id="pf-barcode"
-                  className="f-input text-mono"
-                  placeholder="Auto-generado si vacío"
-                  value={form.barcode || ""}
-                  onChange={(e) =>
-                    setForm({ ...form, barcode: e.target.value || null })
-                  }
-                />
               </div>
             </div>
           </fieldset>
