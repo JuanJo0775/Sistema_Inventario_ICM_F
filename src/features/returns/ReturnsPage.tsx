@@ -168,6 +168,7 @@ function ReturnsPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [pendingReturns, setPendingReturns] = useState<ReturnEntry[]>([])
   const [historyEntries, setHistoryEntries] = useState<ReturnEntry[]>([])
+  const [productSearch, setProductSearch] = useState("")
 
   const loadOverview = useCallback(async () => {
     setLoading(true)
@@ -177,7 +178,7 @@ function ReturnsPage() {
       setOverview(data)
       setPendingReturns(data.pendingReturns)
       setHistoryEntries(data.history)
-      const defaultProduct = data.products.find((item) => item.canReturn) ?? data.products[0]
+      const defaultProduct = data.products.find((item) => item.canReturn)
       const defaultLocation = data.locations[0]?.id ?? ''
       setForm(toFormState(defaultProduct, defaultLocation))
     } catch {
@@ -200,7 +201,7 @@ function ReturnsPage() {
         setOverview(data)
         setPendingReturns(data.pendingReturns)
         setHistoryEntries(data.history)
-        const defaultProduct = data.products.find((item) => item.canReturn) ?? data.products[0]
+        const defaultProduct = data.products.find((item) => item.canReturn)
         const defaultLocation = data.locations[0]?.id ?? ''
         setForm(toFormState(defaultProduct, defaultLocation))
       } catch {
@@ -223,6 +224,19 @@ function ReturnsPage() {
 
   const products = useMemo(() => overview?.products ?? [], [overview])
   const locations = useMemo(() => overview?.locations ?? [], [overview])
+
+  const returnableProducts = useMemo(() => products.filter((p) => p.canReturn), [products])
+
+  const filteredReturnableProducts = useMemo(() => {
+    const q = productSearch.trim().toLowerCase()
+    if (!q) return returnableProducts
+    return returnableProducts.filter(
+      (p) =>
+        p.productName.toLowerCase().includes(q) ||
+        p.sku.toLowerCase().includes(q) ||
+        p.barcode.toLowerCase().includes(q),
+    )
+  }, [returnableProducts, productSearch])
 
   const selectedProduct = useMemo(
     () => products.find((item) => item.productId === form.productId),
@@ -325,27 +339,89 @@ function ReturnsPage() {
                   <legend>{selectedProduct?.productName ?? t('returns.form.emptyTitle')}</legend>
                   <div className="f-row f-row-2">
                     <div className="f-group f-group--full">
-                      <label className="f-label" htmlFor="return-product">
+                      <label className="f-label">
                         {t('returns.form.product')}
                       </label>
-                      <select
-                        id="return-product"
-                        className="f-input"
-                        value={form.productId}
-                        onChange={(event) =>
-                          setForm((current) => ({
-                            ...current,
-                            productId: event.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">{t('returns.form.productPlaceholder')}</option>
-                        {products.map((product) => (
-                          <option key={product.id} value={product.productId}>
-                            {product.productName} — {product.sku}
-                          </option>
-                        ))}
-                      </select>
+                      {selectedProduct && !productSearch ? (
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <div style={{ flex: 1, padding: '9px 12px', border: '1px solid var(--ink-20)', borderRadius: 8, fontSize: 13, background: 'var(--white)' }}>
+                            <strong>{selectedProduct.productName}</strong>
+                            <span className="sku" style={{ marginLeft: 8 }}>{selectedProduct.sku}</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="btn btn--ghost btn--sm"
+                            onClick={() => { setForm((c) => ({ ...c, productId: '' })); setProductSearch('') }}
+                          >
+                            Cambiar
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ position: 'relative' }}>
+                            <svg
+                              style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, stroke: 'var(--teal-600)', strokeWidth: 1.8 }}
+                              viewBox="0 0 24 24" fill="none"
+                            >
+                              <circle cx="11" cy="11" r="8" />
+                              <path d="M21 21l-4.35-4.35" />
+                            </svg>
+                            <input
+                              className="f-input"
+                              style={{ paddingLeft: 34 }}
+                              placeholder="Buscar producto por nombre, SKU o código..."
+                              value={productSearch}
+                              onChange={(e) => setProductSearch(e.target.value)}
+                              autoFocus
+                            />
+                          </div>
+                          <div
+                            style={{
+                              marginTop: 6,
+                              maxHeight: 180,
+                              overflowY: 'auto',
+                              border: '1px solid var(--ink-12)',
+                              borderRadius: 8,
+                              background: 'var(--white)',
+                            }}
+                          >
+                            {filteredReturnableProducts.length === 0 ? (
+                              <p style={{ padding: '12px', fontSize: 12, color: 'var(--ink-40)', textAlign: 'center' }}>
+                                No hay productos devolvibles.
+                              </p>
+                            ) : (
+                              filteredReturnableProducts.map((product) => (
+                                <button
+                                  key={product.id}
+                                  type="button"
+                                  style={{
+                                    display: 'block',
+                                    width: '100%',
+                                    textAlign: 'left',
+                                    padding: '10px 12px',
+                                    border: 'none',
+                                    borderBottom: '1px solid var(--ink-06)',
+                                    background: product.productId === form.productId ? 'var(--teal-50)' : 'transparent',
+                                    cursor: 'pointer',
+                                    fontSize: 13,
+                                    fontFamily: 'var(--ff-body)',
+                                    color: 'var(--ink)',
+                                  }}
+                                  onClick={() => {
+                                    setForm((c) => ({ ...c, productId: product.productId }))
+                                    setProductSearch('')
+                                  }}
+                                  onMouseEnter={(e) => { if (product.productId !== form.productId) e.currentTarget.style.background = 'var(--ink-06)' }}
+                                  onMouseLeave={(e) => { if (product.productId !== form.productId) e.currentTarget.style.background = 'transparent' }}
+                                >
+                                  <strong>{product.productName}</strong>
+                                  <span className="sku" style={{ marginLeft: 8 }}>{product.sku}</span>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="f-group">
