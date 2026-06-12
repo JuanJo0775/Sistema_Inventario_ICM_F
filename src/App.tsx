@@ -21,6 +21,7 @@ import TransfersPage from './features/locations/TransfersPage'
 import SuppliersPage from './features/purchasing/SuppliersPage'
 import PurchaseOrdersPage from './features/purchasing/PurchaseOrdersPage'
 import AuditPage from './features/admin/AuditPage'
+import UsersPage from './features/admin/UsersPage'
 
 function App() {
   return (
@@ -184,6 +185,14 @@ function App() {
           element={
             <ProtectedRoute>
               <AuditPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/admin/users"
+          element={
+            <ProtectedRoute>
+              <UsersPage />
             </ProtectedRoute>
           }
         />

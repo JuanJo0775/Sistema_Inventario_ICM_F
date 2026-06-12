@@ -954,5 +954,91 @@
         "showcases": "Vitrinas activas"
       }
     }
+  },
+  "users": {
+    "title": "Administración de Usuarios",
+    "subtitle": "Gestiona cuentas de usuario y permisos en el sistema",
+    "createBtn": "Crear usuario",
+    "stats": {
+      "total": "Usuarios Registrados",
+      "active": "Usuarios Activos",
+      "inactive": "Usuarios Inactivos"
+    },
+    "filters": {
+      "searchPlaceholder": "Buscar por nombre, correo o @usuario...",
+      "searchBtn": "Buscar",
+      "roleLabel": "Filtrar por Rol",
+      "roleAll": "Todos los roles",
+      "statusLabel": "Filtrar por Estado",
+      "statusAll": "Todos",
+      "statusActive": "Activos",
+      "statusInactive": "Inactivos",
+      "clearBtn": "Limpiar filtros"
+    },
+    "table": {
+      "user": "Usuario",
+      "contact": "Contacto / Correo",
+      "role": "Rol",
+      "status": "Estado",
+      "action": "Acción"
+    },
+    "status": {
+      "active": "ACTIVO",
+      "inactive": "INACTIVO"
+    },
+    "actions": {
+      "edit": "Editar",
+      "reactivate": "Reactivar"
+    },
+    "loading": "Cargando usuarios del sistema...",
+    "empty": "No se encontraron usuarios que coincidan con los filtros de búsqueda.",
+    "noName": "Sin nombre cargado",
+    "modal": {
+      "createTitle": "Crear nuevo usuario",
+      "editTitle": "Editar usuario",
+      "fullName": "Nombre completo",
+      "fullNamePlaceholder": "Ej: Carlos Artunduaga",
+      "username": "Usuario",
+      "email": "Correo",
+      "phone": "Teléfono",
+      "role": "Rol",
+      "roleSelectPlaceholder": "Seleccionar rol",
+      "password": "Contraseña temporal",
+      "passwordPlaceholder": "Min. 8 caracteres",
+      "cancelBtn": "Cancelar",
+      "saveBtn": "Guardar cambios",
+      "createSubmitBtn": "Crear usuario",
+      "savingBtn": "Guardando..."
+    },
+    "deactivateModal": {
+      "title": "¿Desactivar usuario?",
+      "confirm": "¿Está seguro de que desea desactivar a",
+      "warning": "Este usuario no podrá ingresar al sistema ni realizar operaciones físicas de inventario. Su información histórica se conservará para auditoría.",
+      "cancelBtn": "Cancelar",
+      "confirmBtn": "Confirmar desactivación"
+    },
+    "deactivateBtn": "Desactivar usuario",
+    "roleRestrictions": {
+      "auxiliar_despacho": "Los auxiliares de despacho solo pueden acceder al sistema en el horario: 07:00 - 12:00 y 14:00 - 17:00.",
+      "almacenista": "Acceso total 24/7. El almacenista cuenta con privilegios para gestionar el catálogo de productos, locaciones e inventarios.",
+      "administrador": "Acceso total 24/7. El administrador cuenta con control total sobre los logs de auditoría y la gestión de accesos."
+    },
+    "errors": {
+      "load": "Error al cargar los usuarios.",
+      "save": "Error al guardar el usuario.",
+      "deactivate": "Error al desactivar el usuario.",
+      "reactivate": "Error al reactivar el usuario.",
+      "nameRequired": "El nombre completo es obligatorio.",
+      "usernameRequired": "El nombre de usuario es obligatorio.",
+      "emailRequired": "El correo electrónico es obligatorio.",
+      "roleRequired": "Debe seleccionar un rol para el usuario.",
+      "passwordRequired": "La contraseña temporal es obligatoria y debe tener al menos 8 caracteres."
+    },
+    "success": {
+      "created": "Usuario creado correctamente.",
+      "updated": "Usuario actualizado correctamente.",
+      "deactivated": "Usuario {{username}} desactivado correctamente.",
+      "reactivated": "Usuario {{username}} reactivado correctamente."
+    }
   }
 }
