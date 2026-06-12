@@ -451,6 +451,12 @@ function SidebarAdminSection({
           >
             {t('dashboard.nav.audit')}
           </Link>
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/admin/users') ? ' active' : ''}`}
+            to="/app/admin/users"
+          >
+            Usuarios
+          </Link>
         </div>
       ) : null}
     </div>

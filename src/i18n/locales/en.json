@@ -958,5 +958,91 @@
         "showcases": "Active showcases"
       }
     }
+  },
+  "users": {
+    "title": "User Administration",
+    "subtitle": "Manage user accounts and system permissions",
+    "createBtn": "Create user",
+    "stats": {
+      "total": "Registered Users",
+      "active": "Active Users",
+      "inactive": "Inactive Users"
+    },
+    "filters": {
+      "searchPlaceholder": "Search by name, email or @username...",
+      "searchBtn": "Search",
+      "roleLabel": "Filter by Role",
+      "roleAll": "All roles",
+      "statusLabel": "Filter by Status",
+      "statusAll": "All",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "clearBtn": "Clear filters"
+    },
+    "table": {
+      "user": "User",
+      "contact": "Contact / Email",
+      "role": "Role",
+      "status": "Status",
+      "action": "Action"
+    },
+    "status": {
+      "active": "ACTIVE",
+      "inactive": "INACTIVE"
+    },
+    "actions": {
+      "edit": "Edit",
+      "reactivate": "Reactivate"
+    },
+    "loading": "Loading system users...",
+    "empty": "No users matched the search filters.",
+    "noName": "No name loaded",
+    "modal": {
+      "createTitle": "Create new user",
+      "editTitle": "Edit user",
+      "fullName": "Full name",
+      "fullNamePlaceholder": "E.g. Carlos Artunduaga",
+      "username": "Username",
+      "email": "Email",
+      "phone": "Phone",
+      "role": "Role",
+      "roleSelectPlaceholder": "Select role",
+      "password": "Temporary password",
+      "passwordPlaceholder": "Min. 8 characters",
+      "cancelBtn": "Cancel",
+      "saveBtn": "Save changes",
+      "createSubmitBtn": "Create user",
+      "savingBtn": "Saving..."
+    },
+    "deactivateModal": {
+      "title": "Deactivate user?",
+      "confirm": "Are you sure you want to deactivate",
+      "warning": "This user will not be able to log in or perform physical inventory operations. Their historical data will be preserved for audit purposes.",
+      "cancelBtn": "Cancel",
+      "confirmBtn": "Confirm deactivation"
+    },
+    "deactivateBtn": "Deactivate user",
+    "roleRestrictions": {
+      "auxiliar_despacho": "Dispatch assistants may only access the system during: 07:00 - 12:00 and 14:00 - 17:00.",
+      "almacenista": "Full 24/7 access. The stockkeeper has privileges to manage the product catalog, locations and inventory.",
+      "administrador": "Full 24/7 access. The administrator has full control over audit logs and access management."
+    },
+    "errors": {
+      "load": "Could not load users.",
+      "save": "Could not save user.",
+      "deactivate": "Could not deactivate user.",
+      "reactivate": "Could not reactivate user.",
+      "nameRequired": "Full name is required.",
+      "usernameRequired": "Username is required.",
+      "emailRequired": "Email address is required.",
+      "roleRequired": "You must select a role for the user.",
+      "passwordRequired": "Temporary password is required and must be at least 8 characters."
+    },
+    "success": {
+      "created": "User created successfully.",
+      "updated": "User updated successfully.",
+      "deactivated": "User {{username}} deactivated successfully.",
+      "reactivated": "User {{username}} reactivated successfully."
+    }
   }
 }
