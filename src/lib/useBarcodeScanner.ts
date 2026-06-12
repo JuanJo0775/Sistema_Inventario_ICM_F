@@ -16,6 +16,7 @@ export function useHidBarcodeCapture(
 ) {
   const bufferRef = useRef('')
   const lastKeyTimeRef = useRef(0)
+  const lastScannedRef = useRef<{ code: string; time: number } | null>(null)
 
   useEffect(() => {
     if (!active) return
@@ -31,8 +32,13 @@ export function useHidBarcodeCapture(
       }
 
       if (e.key === 'Enter' || e.key === 'Tab') {
-        const code = bufferRef.current.trim()
+        const code = bufferRef.current.trim().replace(/'/g, '-')
         if (code.length >= 4) {
+          if (lastScannedRef.current && lastScannedRef.current.code === code && now - lastScannedRef.current.time < 3000) {
+            bufferRef.current = ''
+            return
+          }
+          lastScannedRef.current = { code, time: now }
           onScanned(code)
         }
         bufferRef.current = ''
@@ -41,7 +47,7 @@ export function useHidBarcodeCapture(
 
       // Only accept printable single characters
       if (e.key.length === 1) {
-        bufferRef.current += e.key
+        bufferRef.current += e.key.replace(/'/g, '-')
       }
     }
 
@@ -79,14 +85,21 @@ export function useBarcodeScanner(active = true): UseBarcodeResult {
   const [product, setProduct] = useState<BarcodeProductResult | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
+  const lastLookupRef = useRef<{ code: string; time: number } | null>(null)
   const lookupBarcode = useCallback(async (barcode: string) => {
-    if (!barcode.trim()) return
-    setLastCode(barcode)
+    const code = barcode.trim().replace(/'/g, '-')
+    if (!code) return
+    const now = Date.now()
+    if (lastLookupRef.current && lastLookupRef.current.code === code && now - lastLookupRef.current.time < 3000) {
+      return
+    }
+    lastLookupRef.current = { code, time: now }
+    setLastCode(code)
     setStatus('scanning')
     setErrorMessage(null)
     setProduct(null)
     try {
-      const result = await fetchProductByBarcode(barcode.trim())
+      const result = await fetchProductByBarcode(code)
       setProduct(result)
       setStatus('success')
     } catch (err) {

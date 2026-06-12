@@ -7,7 +7,9 @@ import {
 } from 'lucide-react'
 
 import AppShell from '../../components/layout/AppShell'
+import { BarcodeScannerButton } from '../../components/ui/BarcodeScannerButton'
 import type { ReturnEntry, ReturnProduct, ReturnsOverview, ReturnStatus } from '../../interfaces/returns'
+import type { BarcodeProductResult } from '../../services/barcodeScanner'
 import { useMocks } from '../../mocks/config'
 import { fetchReturnsOverview, getSubmitReturnErrorMessage, submitReturn } from '../../services/returns'
 
@@ -169,6 +171,19 @@ function ReturnsPage() {
   const [pendingReturns, setPendingReturns] = useState<ReturnEntry[]>([])
   const [historyEntries, setHistoryEntries] = useState<ReturnEntry[]>([])
   const [productSearch, setProductSearch] = useState("")
+
+  function handleProductScanned(product: BarcodeProductResult) {
+    const match = products.find(
+      (p) =>
+        p.productId === String(product.id) ||
+        (product.sku && p.sku?.toLowerCase() === product.sku.toLowerCase()) ||
+        (product.barcode && p.barcode && p.barcode === product.barcode),
+    )
+    if (match) {
+      setForm((c) => ({ ...c, productId: match.productId }))
+      setProductSearch('')
+    }
+  }
 
   const loadOverview = useCallback(async () => {
     setLoading(true)
@@ -355,25 +370,29 @@ function ReturnsPage() {
                           >
                             Cambiar
                           </button>
+                          <BarcodeScannerButton label="Escanear" onProductFound={handleProductScanned} />
                         </div>
                       ) : (
                         <div>
-                          <div style={{ position: 'relative' }}>
-                            <svg
-                              style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, stroke: 'var(--teal-600)', strokeWidth: 1.8 }}
-                              viewBox="0 0 24 24" fill="none"
-                            >
-                              <circle cx="11" cy="11" r="8" />
-                              <path d="M21 21l-4.35-4.35" />
-                            </svg>
-                            <input
-                              className="f-input"
-                              style={{ paddingLeft: 34 }}
-                              placeholder="Buscar producto por nombre, SKU o código..."
-                              value={productSearch}
-                              onChange={(e) => setProductSearch(e.target.value)}
-                              autoFocus
-                            />
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <div style={{ position: 'relative', flex: 1 }}>
+                              <svg
+                                style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, stroke: 'var(--teal-600)', strokeWidth: 1.8 }}
+                                viewBox="0 0 24 24" fill="none"
+                              >
+                                <circle cx="11" cy="11" r="8" />
+                                <path d="M21 21l-4.35-4.35" />
+                              </svg>
+                              <input
+                                className="f-input"
+                                style={{ paddingLeft: 34 }}
+                                placeholder="Buscar producto por nombre, SKU o código..."
+                                value={productSearch}
+                                onChange={(e) => setProductSearch(e.target.value.replace(/'/g, '-'))}
+                                autoFocus
+                              />
+                            </div>
+                            <BarcodeScannerButton label="Escanear" onProductFound={handleProductScanned} />
                           </div>
                           <div
                             style={{

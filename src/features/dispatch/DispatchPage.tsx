@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BarcodeScannerButton } from '../../components/ui/BarcodeScannerButton'
 import type { BarcodeProductResult } from '../../services/barcodeScanner'
@@ -211,6 +211,7 @@ function toForm(order?: DispatchItem): DispatchForm {
     const [recentMovements, setRecentMovements] = useState<DispatchMovement[]>([])
     const [dispatchedIds, setDispatchedIds] = useState<Set<string>>(() => new Set())
     const [lastSavedMovement, setLastSavedMovement] = useState<DispatchMovement | null>(null)
+    const lastScanRef = useRef<{ value: string; time: number } | null>(null)
 
     const dispatchModes = useMemo<DispatchModeOption[]>(
       () => [
@@ -273,6 +274,22 @@ function toForm(order?: DispatchItem): DispatchForm {
         }),
       [customerDataRequired, dispatchedIds, form, quantity, selectedOrder, t],
     )
+
+    useEffect(() => {
+      const val = scanValue.trim()
+      if (!val || !selectedOrder) return
+
+      const timer = setTimeout(() => {
+        const now = Date.now()
+        if (lastScanRef.current && lastScanRef.current.value === val && now - lastScanRef.current.time < 2000) {
+          return
+        }
+        lastScanRef.current = { value: val, time: now }
+        handleVerifyScan(val)
+      }, 250)
+
+      return () => clearTimeout(timer)
+    }, [scanValue, selectedOrder])
 
     const handleVerifyScan = (codeOrValue?: string) => {
       if (!selectedOrder) return
@@ -463,7 +480,7 @@ function toForm(order?: DispatchItem): DispatchForm {
                   id="dispatch-scan"
                   value={scanValue}
                   placeholder={t("dispatch.scan.placeholder")}
-                  onChange={(event) => setScanValue(event.target.value)}
+                  onChange={(event) => setScanValue(event.target.value.replace(/'/g, '-'))}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") handleVerifyScan();
                   }}
@@ -1008,7 +1025,6 @@ function toForm(order?: DispatchItem): DispatchForm {
                         count: movement.quantity,
                       })}
                     </strong>
-                    <span>{movement.operator}</span>
                     <time>{movement.confirmedAt}</time>
                     {movement.invoiceNumber ? (
                       <p className="reception-movement__note reception-movement__note--invoice">

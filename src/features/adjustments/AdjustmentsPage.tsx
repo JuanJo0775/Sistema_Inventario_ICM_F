@@ -120,7 +120,7 @@ function AdjustmentsPage() {
                                     style={{ paddingLeft: 34 }}
                                     placeholder="Buscar producto por nombre o SKU..."
                                     value={productSearch}
-                                    onChange={(e) => setProductSearch(e.target.value)}
+                                    onChange={(e) => setProductSearch(e.target.value.replace(/'/g, '-'))}
                                     autoFocus
                                   />
                                 </div>
