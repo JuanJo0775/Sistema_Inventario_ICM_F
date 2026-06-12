@@ -6,7 +6,10 @@ import {
   Edit2,
   AlertTriangle, 
   X, 
-  Folder 
+  Folder,
+  ChevronDown,
+  ChevronUp,
+  Hash
 } from 'lucide-react';
 import AppShell from '../../components/layout/AppShell';
 import useCatalogStore from '../../store/useCatalogStore';
@@ -36,6 +39,10 @@ export const CatalogCategoriesPage: React.FC = () => {
   const [formName, setFormName] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formIsActive, setFormIsActive] = useState(true);
+  const [formRequiresSerial, setFormRequiresSerial] = useState(false);
+
+  // Advanced section state
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   
   // Feedback states
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -78,6 +85,8 @@ export const CatalogCategoriesPage: React.FC = () => {
     setFormName('');
     setFormDescription('');
     setFormIsActive(true);
+    setFormRequiresSerial(false);
+    setAdvancedOpen(false);
     setValidationError(null);
     setIsModalOpen(true);
   };
@@ -87,6 +96,9 @@ export const CatalogCategoriesPage: React.FC = () => {
     setFormName(category.name);
     setFormDescription(category.description || '');
     setFormIsActive(category.is_active);
+    setFormRequiresSerial(!!category.requires_serial_number);
+    // Auto-expand advanced section if the flag is already set
+    setAdvancedOpen(!!category.requires_serial_number);
     setValidationError(null);
     setIsModalOpen(true);
   };
@@ -116,11 +128,12 @@ export const CatalogCategoriesPage: React.FC = () => {
 
     try {
       if (editingCategory) {
-        // Update category name, description, and status
+        // Update category name, description, status, and serial flag
         await updateCategory(editingCategory.id, {
           name: nameTrimmed,
           description: formDescription.trim(),
-          is_active: formIsActive
+          is_active: formIsActive,
+          requires_serial_number: formRequiresSerial
         });
         setSuccessMsg('Categoría actualizada correctamente.');
       } else {
@@ -128,7 +141,7 @@ export const CatalogCategoriesPage: React.FC = () => {
         await createCategory({
           name: nameTrimmed,
           description: formDescription.trim(),
-          requires_serial_number: false,
+          requires_serial_number: formRequiresSerial,
           is_returnable: false
         });
         setSuccessMsg('Categoría creada correctamente.');
@@ -549,6 +562,124 @@ export const CatalogCategoriesPage: React.FC = () => {
                     rows={4}
                     style={{ width: '100%', padding: '0.625rem 0.75rem', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.875rem', outline: 'none', resize: 'vertical' }}
                   />
+                </div>
+
+                {/* ── Opciones avanzadas ───────────────────────────────── */}
+                <div
+                  style={{
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '10px',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {/* Collapsible header */}
+                  <button
+                    type="button"
+                    onClick={() => setAdvancedOpen((prev) => !prev)}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.65rem 0.875rem',
+                      background: advancedOpen ? '#f8fafc' : '#f9fafb',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '0.825rem',
+                      fontWeight: 600,
+                      color: '#374151',
+                      letterSpacing: '0.01em',
+                      transition: 'background 0.15s',
+                    }}
+                  >
+                    <span>Opciones avanzadas</span>
+                    {advancedOpen
+                      ? <ChevronDown style={{ width: '16px', height: '16px', color: '#6b7280' }} />
+                      : <ChevronUp style={{ width: '16px', height: '16px', color: '#6b7280' }} />
+                    }
+                  </button>
+
+                  {/* Collapsible body */}
+                  {advancedOpen && (
+                    <div
+                       style={{
+                        padding: '1rem 0.875rem',
+                        borderTop: '1px solid #e5e7eb',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.75rem',
+                        background: '#fff',
+                      }}
+                    >
+                      {/* Requires serial number toggle */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+                          Código serial
+                        </span>
+                        <label
+                          htmlFor="cat-requires-serial"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '0.75rem',
+                            cursor: 'pointer',
+                            marginTop: '0.25rem'
+                          }}
+                        >
+                          <input
+                            id="cat-requires-serial"
+                            type="checkbox"
+                            checked={formRequiresSerial}
+                            onChange={(e) => setFormRequiresSerial(e.target.checked)}
+                            style={{
+                              width: '16px',
+                              height: '16px',
+                              marginTop: '2px',
+                              accentColor: '#1971c2',
+                              cursor: 'pointer',
+                              flexShrink: 0,
+                            }}
+                          />
+                          <div>
+                            <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#111827' }}>
+                              Ingresar un código
+                            </span>
+                            <p
+                              style={{
+                                fontSize: '0.775rem',
+                                color: '#6b7280',
+                                margin: '0.25rem 0 0 0',
+                                lineHeight: '1.45',
+                              }}
+                            >
+                              Esta categoría necesita un código serial. Este código se aplica a todos los productos que estén dentro de esta categoría.
+                            </p>
+                            {/* Inline preview badge when enabled */}
+                            {formRequiresSerial && (
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.4rem',
+                                  padding: '0.45rem 0.7rem',
+                                  marginTop: '0.75rem',
+                                  borderRadius: '8px',
+                                  backgroundColor: '#e8f2ff',
+                                  border: '1px solid #bfdbfe',
+                                  fontSize: '0.775rem',
+                                  color: '#1971c2',
+                                  fontWeight: 500,
+                                }}
+                              >
+                                <Hash style={{ width: '13px', height: '13px' }} />
+                                Los movimientos de esta categoría exigirán un número de serie válido.
+                              </div>
+                            )}
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {editingCategory && (
