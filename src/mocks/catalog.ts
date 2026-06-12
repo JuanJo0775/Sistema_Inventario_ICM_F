@@ -106,6 +106,11 @@ export let mockCatalogProducts: CatalogProduct[] = [
     notes: 'Equipo de alta gama para terapia física profunda.',
     reorder_point: 2,
     stockTotal: 1,
+    unit_cost: 4500000,
+    sale_price_retail: 8500000,
+    sale_price_wholesale: 7200000,
+    tax_rate_pct: 19,
+    currency: 'COP',
     created_at: '2026-05-31T10:03:00Z',
     updated_at: '2026-05-31T10:03:00Z',
   },
@@ -127,6 +132,11 @@ export let mockCatalogProducts: CatalogProduct[] = [
     notes: '4 canales independientes, batería recargable.',
     reorder_point: 3,
     stockTotal: 3,
+    unit_cost: 180000,
+    sale_price_retail: 320000,
+    sale_price_wholesale: 280000,
+    tax_rate_pct: 19,
+    currency: 'COP',
     created_at: '2026-05-31T10:04:00Z',
     updated_at: '2026-05-31T10:04:00Z',
   },
@@ -148,6 +158,11 @@ export let mockCatalogProducts: CatalogProduct[] = [
     notes: 'Caja x 100 agujas con tubo guía, estériles.',
     reorder_point: 15,
     stockTotal: 50,
+    unit_cost: 8500,
+    sale_price_retail: 22000,
+    sale_price_wholesale: 18500,
+    tax_rate_pct: 19,
+    currency: 'COP',
     created_at: '2026-05-31T10:08:00Z',
     updated_at: '2026-05-31T10:08:00Z',
   },
@@ -169,6 +184,11 @@ export let mockCatalogProducts: CatalogProduct[] = [
     notes: 'Fórmula hipoalergénica de alta conductividad.',
     reorder_point: 10,
     stockTotal: 20,
+    unit_cost: 3200,
+    sale_price_retail: 8500,
+    sale_price_wholesale: 6800,
+    tax_rate_pct: 19,
+    currency: 'COP',
     created_at: '2026-05-31T10:09:00Z',
     updated_at: '2026-05-31T10:09:00Z',
   },
@@ -477,4 +497,25 @@ export const mockRestoreProduct = (id: string) => {
   mockCatalogProducts[idx].is_active = true
   mockCatalogProducts[idx].updated_at = new Date().toISOString()
   return mockCatalogProducts[idx]
+}
+
+export const mockUpdateProductPrices = (id: string, data: {
+  unit_cost?: number | null
+  sale_price_retail?: number | null
+  sale_price_wholesale?: number | null
+  tax_rate_pct?: number | null
+  currency?: string | null
+}) => {
+  const idx = mockCatalogProducts.findIndex(p => p.id === id)
+  if (idx === -1) throw new Error('Producto no encontrado.')
+
+  const prod = mockCatalogProducts[idx]
+  if (data.unit_cost !== undefined) prod.unit_cost = data.unit_cost
+  if (data.sale_price_retail !== undefined) prod.sale_price_retail = data.sale_price_retail
+  if (data.sale_price_wholesale !== undefined) prod.sale_price_wholesale = data.sale_price_wholesale
+  if (data.tax_rate_pct !== undefined) prod.tax_rate_pct = data.tax_rate_pct
+  if (data.currency !== undefined) prod.currency = data.currency
+  prod.updated_at = new Date().toISOString()
+
+  return prod
 }
