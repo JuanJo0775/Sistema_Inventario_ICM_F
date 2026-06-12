@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -16,9 +16,6 @@ import useLocationStore from '../../store/useLocationStore'
 import useCatalogStore from '../../store/useCatalogStore'
 import type { PurchaseOrderItem } from '../../interfaces/purchaseOrders'
 
-/* ------------------------------------------------------------------ */
-/* Helpers for location splits                                        */
-/* ------------------------------------------------------------------ */
 interface LocationSplit {
   id: string
   locationId: string
@@ -31,10 +28,17 @@ const newSplit = (): LocationSplit => ({
   quantity: '',
 })
 
-/* ================================================================== */
-/*  Component                                                          */
-/* ================================================================== */
-export const ReceptionOrderDetailPage: React.FC = () => {
+const itemStatusBadge = (received: number, ordered: number) => {
+  if (received >= ordered) {
+    return <span className="pill pill--ok">Completo</span>
+  }
+  if (received > 0) {
+    return <span className="pill pill--amber">Parcial</span>
+  }
+  return <span className="pill pill--muted">Sin recibir</span>
+}
+
+export default function ReceptionOrderDetailPage() {
   const { orderId } = useParams<{ orderId: string }>()
   const navigate = useNavigate()
 
@@ -48,32 +52,21 @@ export const ReceptionOrderDetailPage: React.FC = () => {
   } = useReceptionStore()
 
   const { locations, fetchLocations } = useLocationStore()
-  const {
-    products: catalogProducts,
-    fetchProducts,
-  } = useCatalogStore()
+  const { products: catalogProducts, fetchProducts } = useCatalogStore()
 
-  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<PurchaseOrderItem | null>(null)
-
-  // Form States
   const [quantityReceived, setQuantityReceived] = useState<string>('')
   const [locationId, setLocationId] = useState<string>('')
   const [lotCode, setLotCode] = useState<string>('')
   const [expirationDate, setExpirationDate] = useState<string>('')
   const [discrepancyNote, setDiscrepancyNote] = useState<string>('')
-
-  // Split location states
   const [splitEnabled, setSplitEnabled] = useState(false)
   const [splits, setSplits] = useState<LocationSplit[]>([])
-
-  // Local feedback/saving state
   const [actionError, setActionError] = useState<string | null>(null)
   const [actionSuccess, setActionSuccess] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  // Load order and data on mount
   useEffect(() => {
     if (orderId) {
       fetchOrderDetail(orderId)
@@ -82,29 +75,35 @@ export const ReceptionOrderDetailPage: React.FC = () => {
     fetchProducts()
   }, [orderId, fetchOrderDetail, fetchLocations, fetchProducts])
 
-  // Get active and restricted locations for the dropdown
   const filteredLocations = useMemo(() => {
     return locations.filter(
-      (loc) => loc.operational_status === 'active' || loc.operational_status === 'restricted'
+      (loc) => loc.operational_status === 'active' || loc.operational_status === 'restricted',
     )
   }, [locations])
 
-  // Find product configuration (requires_expiration, etc.)
   const productConfig = useMemo(() => {
     if (!selectedItem) return null
     return catalogProducts.find((p) => p.id === selectedItem.product)
   }, [selectedItem, catalogProducts])
 
-  // Derived flags
   const requiresExpiration = productConfig?.requires_expiration ?? false
-  // Lot is mandatory when product has expiration date; optional otherwise
   const lotRequired = requiresExpiration
 
-  // Reset form when opening modal
+  const pendingQty = selectedItem
+    ? Number(selectedItem.quantity_ordered) - Number(selectedItem.quantity_received)
+    : 0
+
+  const enteredQty = Number(quantityReceived) || 0
+
+  const hasDiscrepancy = useMemo(() => {
+    if (!quantityReceived) return false
+    return enteredQty !== pendingQty
+  }, [quantityReceived, enteredQty, pendingQty])
+
   const handleOpenModal = (item: PurchaseOrderItem) => {
     setSelectedItem(item)
-    const pendingQty = Number(item.quantity_ordered) - Number(item.quantity_received)
-    setQuantityReceived(pendingQty.toString())
+    const pQty = Number(item.quantity_ordered) - Number(item.quantity_received)
+    setQuantityReceived(pQty.toString())
     setLocationId('')
     setLotCode('')
     setExpirationDate('')
@@ -120,34 +119,20 @@ export const ReceptionOrderDetailPage: React.FC = () => {
     setSelectedItem(null)
   }
 
-  // Check if discrepancy note is required
-  const pendingQty = selectedItem
-    ? Number(selectedItem.quantity_ordered) - Number(selectedItem.quantity_received)
-    : 0
-
-  const enteredQty = Number(quantityReceived) || 0
-
-  const hasDiscrepancy = useMemo(() => {
-    if (!quantityReceived) return false
-    return enteredQty !== pendingQty
-  }, [quantityReceived, enteredQty, pendingQty])
-
-  // Split location handlers
   const handleAddSplit = () => {
     setSplits((prev) => [...prev, newSplit()])
   }
+
   const handleRemoveSplit = (id: string) => {
     setSplits((prev) => prev.filter((s) => s.id !== id))
   }
+
   const handleSplitChange = (id: string, field: 'locationId' | 'quantity', value: string) => {
-    setSplits((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, [field]: value } : s))
-    )
+    setSplits((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)))
   }
 
   const totalSplitQty = splits.reduce((acc, s) => acc + (Number(s.quantity) || 0), 0)
 
-  // When enabling split, add an initial entry
   const handleToggleSplit = (checked: boolean) => {
     setSplitEnabled(checked)
     if (checked && splits.length === 0) {
@@ -158,7 +143,6 @@ export const ReceptionOrderDetailPage: React.FC = () => {
     }
   }
 
-  // Save the reception
   const handleSaveReception = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedItem || !orderId) return
@@ -172,31 +156,31 @@ export const ReceptionOrderDetailPage: React.FC = () => {
     }
 
     if (enteredQty > pendingQty) {
-      setActionError(`No puede recibir más de la cantidad esperada restante (${pendingQty} unidades).`)
+      setActionError(
+        `No puede recibir más de la cantidad esperada restante (${pendingQty} unidades).`,
+      )
       return
     }
 
-    // Lot validation
     if (lotRequired && !lotCode.trim()) {
-      setActionError('Este producto requiere fecha de vencimiento, por lo tanto el lote es obligatorio.')
+      setActionError(
+        'Este producto requiere fecha de vencimiento, por lo tanto el lote es obligatorio.',
+      )
       return
     }
 
-    // Expiration date validation
     if (requiresExpiration && !expirationDate) {
       setActionError('Este producto requiere fecha de vencimiento.')
       return
     }
 
-
-
-    // Discrepancy validation
     if (hasDiscrepancy && !discrepancyNote.trim()) {
-      setActionError('Se ha detectado una discrepancia. Debe especificar el motivo/nota de discrepancia.')
+      setActionError(
+        'Se ha detectado una discrepancia. Debe especificar el motivo/nota de discrepancia.',
+      )
       return
     }
 
-    // Split location validation
     if (splitEnabled) {
       if (splits.length < 2) {
         setActionError('Debe agregar al menos 2 ubicaciones para dividir la cantidad.')
@@ -214,11 +198,10 @@ export const ReceptionOrderDetailPage: React.FC = () => {
       }
       if (totalSplitQty !== enteredQty) {
         setActionError(
-          `La suma de las cantidades divididas (${totalSplitQty}) debe ser igual a la cantidad recibida (${enteredQty}).`
+          `La suma de las cantidades divididas (${totalSplitQty}) debe ser igual a la cantidad recibida (${enteredQty}).`,
         )
         return
       }
-      // Check for duplicate locations
       const locIds = splits.map((s) => s.locationId)
       if (new Set(locIds).size !== locIds.length) {
         setActionError('No puede seleccionar la misma ubicación dos veces en las divisiones.')
@@ -233,42 +216,41 @@ export const ReceptionOrderDetailPage: React.FC = () => {
 
     setSaving(true)
     try {
+      const baseItem = {
+        purchase_order_item_id: selectedItem.id,
+        quantity_received: enteredQty,
+        lot_code: lotCode.trim() || undefined,
+        lot_expiration_date: expirationDate || null,
+        discrepancy_note: hasDiscrepancy ? discrepancyNote.trim() : undefined,
+      }
+
       if (splitEnabled) {
-        // Create one reception per location split
-        for (const s of splits) {
-          await receiveItem({
-            po_id: orderId,
-            destination_location_id: s.locationId,
-            notes: `Recepción de ${selectedItem.product_name} (división de ubicación)`,
-            items: [
-              {
-                purchase_order_item_id: selectedItem.id,
+        await receiveItem({
+          po_id: orderId,
+          destination_location_id: splits[0].locationId,
+          notes: `Recepción de ${selectedItem.product_name} (división de ubicación)`,
+          items: [
+            {
+              ...baseItem,
+              allocations: splits.map((s) => ({
+                location_id: s.locationId,
                 quantity_received: Number(s.quantity),
-                lot_code: lotCode.trim() || undefined,
-                lot_expiration_date: expirationDate || null,
-                discrepancy_note: hasDiscrepancy ? discrepancyNote.trim() : undefined,
-              },
-            ],
-          })
-        }
+              })),
+            },
+          ],
+        })
       } else {
         await receiveItem({
           po_id: orderId,
           destination_location_id: locationId,
           notes: `Recepción de ${selectedItem.product_name}`,
-          items: [
-            {
-              purchase_order_item_id: selectedItem.id,
-              quantity_received: enteredQty,
-              lot_code: lotCode.trim() || undefined,
-              lot_expiration_date: expirationDate || null,
-              discrepancy_note: hasDiscrepancy ? discrepancyNote.trim() : undefined,
-            },
-          ],
+          items: [baseItem],
         })
       }
 
-      setActionSuccess(`Se ha registrado la recepción de ${enteredQty} unidades de ${selectedItem.product_name}.`)
+      setActionSuccess(
+        `Se ha registrado la recepción de ${enteredQty} unidades de ${selectedItem.product_name}.`,
+      )
       setIsModalOpen(false)
     } catch (err: any) {
       setActionError(err.message || 'Error al procesar la recepción.')
@@ -277,7 +259,6 @@ export const ReceptionOrderDetailPage: React.FC = () => {
     }
   }
 
-  // Total sums for the header
   const totals = useMemo(() => {
     if (!selectedOrder) return { expected: 0, received: 0 }
     let expected = 0
@@ -289,11 +270,16 @@ export const ReceptionOrderDetailPage: React.FC = () => {
     return { expected, received }
   }, [selectedOrder])
 
+  const isReceivable =
+    selectedOrder?.status === 'pendiente' || selectedOrder?.status === 'parcialmente_recibida'
+
   if (loading && !selectedOrder) {
     return (
       <AppShell title="Detalle de Recepción" subtitle="Cargando...">
-        <div className="empty-state" style={{ padding: '4rem' }}>
-          <p>Cargando información de la orden...</p>
+        <div className="page-body">
+          <div className="empty-state">
+            <p>Cargando información de la orden...</p>
+          </div>
         </div>
       </AppShell>
     )
@@ -302,332 +288,290 @@ export const ReceptionOrderDetailPage: React.FC = () => {
   if (!selectedOrder) {
     return (
       <AppShell title="Detalle de Recepción" subtitle="Orden no encontrada">
-        <div
-          className="empty-state"
-          style={{
-            padding: '4rem',
-            textAlign: 'center',
-            backgroundColor: '#fff',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-          }}
-        >
-          <AlertTriangle style={{ width: '48px', height: '48px', color: '#e03131', marginBottom: '1rem' }} />
-          <p>No se pudo cargar la orden de compra especificada.</p>
-          <button
-            type="button"
-            className="btn btn--secondary"
-            style={{ marginTop: '1rem' }}
-            onClick={() => navigate('/app/reception')}
-          >
-            Volver a la lista
-          </button>
+        <div className="page-body">
+          <div className="empty-state">
+            <AlertTriangle size={40} />
+            <p>No se pudo cargar la orden de compra especificada.</p>
+            <button
+              className="btn btn--secondary"
+              onClick={() => navigate('/app/reception')}
+            >
+              Volver a la lista
+            </button>
+          </div>
         </div>
       </AppShell>
     )
   }
 
-  // Determine order is editable (receivable)
-  const isReceivable = selectedOrder.status === 'pendiente' || selectedOrder.status === 'parcialmente_recibida'
+  const statusLabel: Record<string, string> = {
+    pendiente: 'Pendiente de recibir',
+    parcialmente_recibida: 'Parcialmente Recibida',
+    completada: 'Completada',
+    cancelada: 'Cancelada',
+    borrador: 'Borrador',
+  }
+
+  const statusStyle: Record<string, { bg: string; color: string; border: string }> = {
+    pendiente: { bg: '#e8f2ff', color: '#1971c2', border: '#a5d8ff' },
+    parcialmente_recibida: { bg: '#fff9db', color: '#f59f00', border: '#ffe066' },
+    completada: { bg: '#ebfbee', color: '#099268', border: '#b2f2bb' },
+    cancelada: { bg: '#fff5f5', color: '#e03131', border: '#ffc9c9' },
+    borrador: { bg: '#f1f3f5', color: '#495057', border: '#dee2e6' },
+  }
+
+  const ss = statusStyle[selectedOrder.status] || statusStyle.borrador
 
   return (
     <AppShell
       title={`Recepción: ${selectedOrder.number}`}
-      subtitle={`Gestión de ingreso de mercancía · ${selectedOrder.supplier_nombre}`}
+      subtitle={`${selectedOrder.supplier_nombre}`}
       actions={
         <button
-          className="btn btn--secondary"
+          className="btn btn--ghost btn--sm"
           type="button"
           onClick={() => navigate('/app/reception')}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '8px', height: '42px' }}
         >
-          <ArrowLeft style={{ width: '16px', height: '16px' }} />
+          <ArrowLeft size={13} />
           Volver a Recepciones
         </button>
       }
     >
-      <div className="catalog-page fade-slide-up" style={{ paddingBottom: '3rem' }}>
-        {/* Info alerts */}
+      <div className="page-body fade-slide-up">
+        {/* Success / Error alerts */}
         {actionSuccess && (
-          <div className="alert-bar alert-bar--ok" role="status" style={{ marginBottom: '1.5rem' }}>
+          <div className="alert-bar alert-bar--ok" role="status" style={{ marginBottom: 18 }}>
             <span>{actionSuccess}</span>
-            <button className="alert-bar__close" onClick={() => setActionSuccess(null)}>
-              <X style={{ width: '16px', height: '16px' }} />
+            <span className="alert-bar__spacer" />
+            <button className="btn btn--ghost btn--sm" onClick={() => setActionSuccess(null)}>
+              <X size={13} />
             </button>
           </div>
         )}
 
         {(actionError || error) && (
-          <div className="alert-bar alert-bar--warn" role="alert" style={{ marginBottom: '1.5rem' }}>
-            <AlertTriangle style={{ marginRight: '0.5rem', width: '18px', height: '18px' }} />
+          <div className="alert-bar alert-bar--warn" role="alert" style={{ marginBottom: 18 }}>
+            <AlertTriangle size={14} />
             <span>{actionError || error}</span>
-            <button className="alert-bar__close" onClick={clearError}>
-              <X style={{ width: '16px', height: '16px' }} />
+            <span className="alert-bar__spacer" />
+            <button className="btn btn--ghost btn--sm" onClick={clearError}>
+              <X size={13} />
             </button>
           </div>
         )}
 
-        {/* Order Header Summary Panel */}
+        {/* Order header summary */}
         <div
+          className="form-surface"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '1.5rem',
-            backgroundColor: '#fff',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            padding: '1.5rem',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-            marginBottom: '1.5rem',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: 20,
+            marginBottom: 20,
           }}
         >
           <div>
-            <h3 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#9ca3af', fontWeight: 600, letterSpacing: '0.05em', margin: 0 }}>
+            <span className="detail-section__title" style={{ marginBottom: 8 }}>
               Proveedor
-            </h3>
-            <p style={{ fontSize: '1.1rem', fontWeight: 600, color: '#111827', margin: '0.25rem 0 0 0' }}>
+            </span>
+            <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', margin: 0 }}>
               {selectedOrder.supplier_nombre}
             </p>
             {selectedOrder.supplier_nit && (
-              <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0.15rem 0 0 0' }}>
+              <p
+                className="text-mono"
+                style={{ fontSize: 11.5, color: 'var(--ink-40)', margin: '4px 0 0' }}
+              >
                 NIT: {selectedOrder.supplier_nit}
               </p>
             )}
           </div>
 
           <div>
-            <h3 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#9ca3af', fontWeight: 600, letterSpacing: '0.05em', margin: 0 }}>
+            <span className="detail-section__title" style={{ marginBottom: 8 }}>
               Detalles de la Orden
-            </h3>
-            <p style={{ fontSize: '0.875rem', color: '#4b5563', margin: '0.25rem 0 0 0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Calendar style={{ width: '15px', height: '15px', color: '#9ca3af' }} />
-              Creada: {new Date(selectedOrder.created_at).toLocaleDateString('es-CO')}
+            </span>
+            <p
+              style={{
+                fontSize: 12.5,
+                color: 'var(--ink-70)',
+                margin: 0,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <Calendar size={13} style={{ color: 'var(--ink-40)' }} />
+              Creada:{' '}
+              {new Date(selectedOrder.created_at).toLocaleDateString('es-CO')}
             </p>
             {selectedOrder.expected_delivery && (
-              <p style={{ fontSize: '0.875rem', color: '#4b5563', margin: '0.15rem 0 0 0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <Warehouse style={{ width: '15px', height: '15px', color: '#9ca3af' }} />
-                Entrega estimada: {new Date(selectedOrder.expected_delivery).toLocaleDateString('es-CO')}
+              <p
+                style={{
+                  fontSize: 12.5,
+                  color: 'var(--ink-70)',
+                  margin: '4px 0 0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <Warehouse size={13} style={{ color: 'var(--ink-40)' }} />
+                Entrega estimada:{' '}
+                {new Date(selectedOrder.expected_delivery).toLocaleDateString('es-CO')}
               </p>
             )}
           </div>
 
           <div>
-            <h3 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#9ca3af', fontWeight: 600, letterSpacing: '0.05em', margin: 0 }}>
-              Resumen de Cantidades
-            </h3>
-            <p style={{ fontSize: '0.9rem', color: '#4b5563', margin: '0.25rem 0 0 0' }}>
-              Total esperado: <strong style={{ color: '#111827' }}>{totals.expected} unidades</strong>
+            <span className="detail-section__title" style={{ marginBottom: 8 }}>
+              Cantidades
+            </span>
+            <p style={{ fontSize: 12.5, color: 'var(--ink-70)', margin: 0 }}>
+              Total esperado:{' '}
+              <strong style={{ color: 'var(--ink)' }}>{totals.expected} unidades</strong>
             </p>
-            <p style={{ fontSize: '0.9rem', color: '#4b5563', margin: '0.15rem 0 0 0' }}>
-              Total recibido: <strong style={{ color: '#099268' }}>{totals.received} unidades</strong>
+            <p style={{ fontSize: 12.5, color: 'var(--ink-70)', margin: '4px 0 0' }}>
+              Total recibido:{' '}
+              <strong style={{ color: 'var(--ok)' }}>{totals.received} unidades</strong>
             </p>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'flex-start',
+            }}
+          >
             <span
-              style={{
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                color: '#9ca3af',
-                marginBottom: '0.25rem',
-              }}
+              className="detail-section__title"
+              style={{ marginBottom: 6, display: 'block' }}
             >
               Estado de la OC
             </span>
             <span
               style={{
                 display: 'inline-block',
-                backgroundColor:
-                  selectedOrder.status === 'completada'
-                    ? '#ebfbee'
-                    : selectedOrder.status === 'parcialmente_recibida'
-                    ? '#fff9db'
-                    : '#e8f2ff',
-                color:
-                  selectedOrder.status === 'completada'
-                    ? '#099268'
-                    : selectedOrder.status === 'parcialmente_recibida'
-                    ? '#f59f00'
-                    : '#1971c2',
-                border: `1px solid ${
-                  selectedOrder.status === 'completada'
-                    ? '#b2f2bb'
-                    : selectedOrder.status === 'parcialmente_recibida'
-                    ? '#ffe066'
-                    : '#a5d8ff'
-                }`,
-                fontSize: '0.8rem',
+                backgroundColor: ss.bg,
+                color: ss.color,
+                border: `1px solid ${ss.border}`,
+                fontSize: 11,
                 fontWeight: 700,
-                padding: '0.35rem 0.75rem',
-                borderRadius: '12px',
+                padding: '4px 10px',
+                borderRadius: 99,
               }}
             >
-              {selectedOrder.status === 'pendiente'
-                ? 'Pendiente de recibir'
-                : selectedOrder.status === 'parcialmente_recibida'
-                ? 'Parcialmente Recibida'
-                : selectedOrder.status === 'completada'
-                ? 'Completada'
-                : selectedOrder.status}
+              {statusLabel[selectedOrder.status] || selectedOrder.status}
             </span>
           </div>
         </div>
 
         {/* Product items table */}
-        <div
-          className="table-surface"
-          style={{
-            borderRadius: '12px',
-            overflow: 'hidden',
-            border: '1px solid #e5e7eb',
-            background: '#fff',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-          }}
-        >
+        <div className="table-surface">
           <div
             style={{
-              padding: '1.25rem',
-              borderBottom: '1px solid #f3f4f6',
+              padding: '14px 18px',
+              borderBottom: '1px solid var(--ink-06)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}
           >
-            <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#111827', margin: 0 }}>
+            <strong style={{ fontSize: 12.5, color: 'var(--ink)' }}>
               Productos Solicitados
-            </h2>
-            <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>
-              {selectedOrder.items.length} {selectedOrder.items.length === 1 ? 'ítem' : 'ítems'} en total
+            </strong>
+            <span className="text-mono" style={{ fontSize: 11, color: 'var(--ink-40)' }}>
+              {selectedOrder.items.length}{' '}
+              {selectedOrder.items.length === 1 ? 'ítem' : 'ítems'} en total
             </span>
           </div>
 
-          <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
-                  Producto
-                </th>
-                <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
-                  SKU
-                </th>
-                <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem', textAlign: 'center' }}>
-                  Esperado
-                </th>
-                <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem', textAlign: 'center' }}>
-                  Recibido
-                </th>
-                <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem', textAlign: 'center' }}>
-                  Estado
-                </th>
-                <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem', textAlign: 'center' }}>
-                  Acción
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {selectedOrder.items.map((item) => {
-                const ordered = Number(item.quantity_ordered)
-                const received = Number(item.quantity_received)
-                const isComplete = received >= ordered
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>SKU</th>
+                  <th style={{ textAlign: 'center' }}>Esperado</th>
+                  <th style={{ textAlign: 'center' }}>Recibido</th>
+                  <th style={{ textAlign: 'center' }}>Estado</th>
+                  <th style={{ textAlign: 'center' }}>Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedOrder.items.map((item) => {
+                  const ordered = Number(item.quantity_ordered)
+                  const received = Number(item.quantity_received)
+                  const isComplete = received >= ordered
 
-                // Compute product status badge
-                let itemStatusLabel = 'Sin recibir'
-                let badgeStyle = { bg: '#f1f3f5', color: '#495057', border: '#dee2e6' }
-
-                if (received > 0 && received < ordered) {
-                  itemStatusLabel = 'Parcial'
-                  badgeStyle = { bg: '#fff9db', color: '#f59f00', border: '#ffe066' }
-                } else if (received >= ordered) {
-                  itemStatusLabel = 'Completo'
-                  badgeStyle = { bg: '#ebfbee', color: '#099268', border: '#b2f2bb' }
-                }
-
-                return (
-                  <tr
-                    key={item.id}
-                    style={{ borderBottom: '1px solid #f3f4f6' }}
-                  >
-                    <td style={{ padding: '1rem 1.25rem' }}>
-                      <p style={{ fontWeight: 500, color: '#111827', margin: 0 }}>
-                        {item.product_name}
-                      </p>
-                    </td>
-                    <td style={{ padding: '1rem 1.25rem', color: '#6b7280', fontSize: '0.875rem' }}>
-                      {item.product_sku}
-                    </td>
-                    <td style={{ padding: '1rem 1.25rem', textAlign: 'center', fontWeight: 600, color: '#111827' }}>
-                      {ordered}
-                    </td>
-                    <td style={{ padding: '1rem 1.25rem', textAlign: 'center', fontWeight: 600, color: '#4b5563' }}>
-                      {received}
-                    </td>
-                    <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
-                      <span
+                  return (
+                    <tr key={item.id}>
+                      <td>
+                        <p className="prod-name">{item.product_name}</p>
+                      </td>
+                      <td>
+                        <span className="sku">{item.product_sku}</span>
+                      </td>
+                      <td style={{ textAlign: 'center', fontWeight: 600, color: 'var(--ink)' }}>
+                        {ordered}
+                      </td>
+                      <td
                         style={{
-                          display: 'inline-block',
-                          backgroundColor: badgeStyle.bg,
-                          color: badgeStyle.color,
-                          border: `1px solid ${badgeStyle.border}`,
-                          fontSize: '0.75rem',
+                          textAlign: 'center',
                           fontWeight: 600,
-                          padding: '0.25rem 0.6rem',
-                          borderRadius: '12px',
+                          color: 'var(--ink-70)',
                         }}
                       >
-                        {itemStatusLabel}
-                      </span>
-                    </td>
-                    <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
-                      {isComplete ? (
-                        <span
-                          style={{
-                            fontSize: '0.85rem',
-                            color: '#099268',
-                            fontWeight: 600,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.25rem',
-                          }}
-                        >
-                          ✓ Recibido
-                        </span>
-                      ) : isReceivable ? (
-                        <button
-                          type="button"
-                          className="btn btn--primary"
-                          style={{
-                            fontSize: '0.825rem',
-                            padding: '0.375rem 0.75rem',
-                            borderRadius: '6px',
-                            fontWeight: 500,
-                            height: '32px',
-                          }}
-                          onClick={() => handleOpenModal(item)}
-                        >
-                          Recibir
-                        </button>
-                      ) : (
-                        <span style={{ fontSize: '0.85rem', color: '#9ca3af' }}>No editable</span>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                        {received}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        {itemStatusBadge(received, ordered)}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        {isComplete ? (
+                          <span
+                            style={{
+                              fontSize: 11.5,
+                              color: 'var(--ok)',
+                              fontWeight: 600,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                          >
+                            ✓ Recibido
+                          </span>
+                        ) : isReceivable ? (
+                          <button
+                            className="btn btn--primary btn--sm"
+                            onClick={() => handleOpenModal(item)}
+                          >
+                            Recibir
+                          </button>
+                        ) : (
+                          <span style={{ fontSize: 12, color: 'var(--ink-40)' }}>
+                            No editable
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      {/* ========================================================== */}
-      {/* Modal: Recibir Producto                                      */}
-      {/* ========================================================== */}
+      {/* Modal: Recibir Producto */}
       {isModalOpen && selectedItem && (
         <div
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.45)',
+            backgroundColor: 'rgba(15, 30, 32, 0.45)',
             backdropFilter: 'blur(4px)',
             display: 'flex',
             alignItems: 'center',
@@ -636,85 +580,95 @@ export const ReceptionOrderDetailPage: React.FC = () => {
           }}
         >
           <div
+            className="form-surface"
             style={{
-              backgroundColor: '#fff',
-              borderRadius: '12px',
               width: '100%',
-              maxWidth: splitEnabled ? '580px' : '480px',
+              maxWidth: splitEnabled ? 580 : 480,
               maxHeight: '90vh',
               overflowY: 'auto',
-              padding: '1.5rem',
-              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+              padding: 24,
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+            {/* Modal header */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                marginBottom: 18,
+              }}
+            >
               <div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#111827', margin: 0 }}>
+                <h3
+                  style={{
+                    fontSize: 17,
+                    fontWeight: 700,
+                    color: 'var(--ink)',
+                    margin: 0,
+                    fontFamily: 'var(--ff-display)',
+                  }}
+                >
                   Registrar Recepción
                 </h3>
-                <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0.25rem 0 0 0' }}>
-                  {selectedItem.product_name} · SKU: {selectedItem.product_sku}
+                <p style={{ fontSize: 12.5, color: 'var(--ink-40)', margin: '4px 0 0' }}>
+                  {selectedItem.product_name} · SKU:{' '}
+                  <span className="text-mono">{selectedItem.product_sku}</span>
                 </p>
               </div>
               <button
+                className="btn btn--ghost btn--sm"
                 type="button"
                 onClick={handleCloseModal}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: '#9ca3af',
-                  padding: '0.25rem',
-                }}
+                style={{ padding: 4 }}
               >
-                <X style={{ width: '20px', height: '20px' }} />
+                <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveReception} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {/* Form feedback error */}
+            <form
+              onSubmit={handleSaveReception}
+              style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+            >
+              {/* Error */}
               {actionError && (
-                <div
-                  className="alert-bar alert-bar--warn"
-                  style={{
-                    padding: '0.75rem',
-                    borderRadius: '8px',
-                    fontSize: '0.85rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  <AlertTriangle style={{ marginRight: '0.5rem', width: '16px', height: '16px', flexShrink: 0 }} />
+                <div className="alert-bar alert-bar--warn" role="alert" style={{ padding: '8px 12px' }}>
+                  <AlertTriangle size={14} />
                   <span>{actionError}</span>
                 </div>
               )}
 
-              {/* Basic Info panel — only Esperado and Recibido */}
+              {/* Basic info */}
               <div
                 style={{
-                  backgroundColor: '#f9fafb',
-                  borderRadius: '8px',
-                  padding: '0.75rem 1rem',
-                  fontSize: '0.875rem',
-                  color: '#4b5563',
+                  backgroundColor: 'var(--ink-06)',
+                  borderRadius: 8,
+                  padding: '10px 14px',
+                  fontSize: 12.5,
+                  color: 'var(--ink-70)',
                   display: 'flex',
                   justifyContent: 'space-around',
                 }}
               >
-                <span>Cantidad esperada: <strong>{selectedItem.quantity_ordered}</strong></span>
-                <span>Cantidad recibida: <strong style={{ color: '#099268' }}>{Number(selectedItem.quantity_received) + (Number(quantityReceived) || 0)}</strong></span>
+                <span>
+                  Cantidad esperada:{' '}
+                  <strong>{selectedItem.quantity_ordered}</strong>
+                </span>
+                <span>
+                  Cantidad recibida:{' '}
+                  <strong style={{ color: 'var(--ok)' }}>
+                    {Number(selectedItem.quantity_received) + enteredQty}
+                  </strong>
+                </span>
               </div>
 
-              {/* Quantity input */}
-              <div>
-                <label
-                  htmlFor="received-qty-input"
-                  style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '0.35rem' }}
-                >
-                  Cantidad a recibir <span style={{ color: '#e03131' }}>*</span>
+              {/* Quantity */}
+              <div className="f-group">
+                <label className="f-label" htmlFor="received-qty-input">
+                  Cantidad a recibir <span style={{ color: 'var(--err)' }}>*</span>
                 </label>
                 <input
                   id="received-qty-input"
+                  className="f-input text-mono"
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
@@ -723,150 +677,113 @@ export const ReceptionOrderDetailPage: React.FC = () => {
                     const val = e.target.value.replace(/[^0-9]/g, '')
                     setQuantityReceived(val)
                   }}
-                  style={{
-                    width: '100%',
-                    height: '42px',
-                    padding: '0 0.75rem',
-                    borderRadius: '8px',
-                    border: '1px solid #d1d5db',
-                    outline: 'none',
-                    fontSize: '0.9rem',
-                    boxSizing: 'border-box',
-                  }}
                   required
                 />
               </div>
 
-              {/* ---------------------------------------------------------- */}
-              {/* Conditional fields based on product/category config         */}
-              {/* ---------------------------------------------------------- */}
-
-
-
-              {/* Lot Code & Expiration Date */}
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <div style={{ flex: 1 }}>
-                  <label
-                    htmlFor="lot-code-input"
-                    style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '0.35rem' }}
-                  >
-                    Lote {lotRequired && <span style={{ color: '#e03131' }}>*</span>}
+              {/* Lot + Expiration */}
+              <div className="f-row f-row-2">
+                <div className="f-group">
+                  <label className="f-label" htmlFor="lot-code-input">
+                    Lote {lotRequired && <span style={{ color: 'var(--err)' }}>*</span>}
                   </label>
                   <input
                     id="lot-code-input"
+                    className="f-input text-mono"
                     type="text"
                     placeholder="Ej. LOT-2026"
                     value={lotCode}
                     onChange={(e) => setLotCode(e.target.value)}
-                    style={{
-                      width: '100%',
-                      height: '42px',
-                      padding: '0 0.75rem',
-                      borderRadius: '8px',
-                      border: '1px solid #d1d5db',
-                      outline: 'none',
-                      fontSize: '0.9rem',
-                    }}
                     required={lotRequired}
                   />
                   {lotRequired && (
-                    <p style={{ fontSize: '0.75rem', color: '#e03131', margin: '0.25rem 0 0 0' }}>
+                    <span className="f-note f-note--err">
                       Obligatorio porque el producto requiere fecha de vencimiento.
-                    </p>
+                    </span>
                   )}
                 </div>
 
-                {/* Expiration Date — only if product.requires_expiration */}
                 {requiresExpiration && (
-                  <div style={{ flex: 1 }}>
-                    <label
-                      htmlFor="expiration-date-input"
-                      style={{
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        color: '#374151',
-                        display: 'block',
-                        marginBottom: '0.35rem',
-                      }}
-                    >
-                      Vencimiento <span style={{ color: '#e03131' }}>*</span>
+                  <div className="f-group">
+                    <label className="f-label" htmlFor="expiration-date-input">
+                      Vencimiento <span style={{ color: 'var(--err)' }}>*</span>
                     </label>
                     <input
                       id="expiration-date-input"
+                      className="f-input"
                       type="date"
                       value={expirationDate}
                       onChange={(e) => setExpirationDate(e.target.value)}
-                      style={{
-                        width: '100%',
-                        height: '42px',
-                        padding: '0 0.75rem',
-                        borderRadius: '8px',
-                        border: '1px solid #d1d5db',
-                        outline: 'none',
-                        fontSize: '0.9rem',
-                      }}
                       required
                     />
                   </div>
                 )}
               </div>
 
-              {/* ---------------------------------------------------------- */}
-              {/* Split location toggle                                       */}
-              {/* ---------------------------------------------------------- */}
+
+              {/* Split location toggle */}
               <div
                 style={{
-                  backgroundColor: '#f0f4ff',
-                  border: '1px solid #d0d5dd',
-                  borderRadius: '8px',
-                  padding: '0.85rem 1rem',
-                  boxSizing: 'border-box',
-                  width: '100%',
+                  backgroundColor: 'var(--teal-50)',
+                  border: '1px solid var(--teal-100)',
+                  borderRadius: 8,
+                  padding: '12px 14px',
                 }}
               >
                 <label
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.6rem',
+                    gap: 8,
                     cursor: 'pointer',
-                    fontSize: '0.875rem',
+                    fontSize: 12.5,
                     fontWeight: 500,
-                    color: '#374151',
+                    color: 'var(--ink-70)',
                   }}
                 >
                   <input
                     type="checkbox"
                     checked={splitEnabled}
                     onChange={(e) => handleToggleSplit(e.target.checked)}
-                    style={{ width: '18px', height: '18px', accentColor: '#4f46e5', cursor: 'pointer' }}
+                    style={{
+                      width: 18,
+                      height: 18,
+                      accentColor: 'var(--teal-700)',
+                      cursor: 'pointer',
+                    }}
                   />
                   ¿Desea dividir esta cantidad recibida en diferentes ubicaciones?
                 </label>
 
                 {splitEnabled && (
-                  <div style={{ marginTop: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', width: '100%', boxSizing: 'border-box' }}>
+                  <div
+                    style={{
+                      marginTop: 12,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 8,
+                    }}
+                  >
                     {splits.map((s, idx) => (
                       <div
                         key={s.id}
                         style={{
                           display: 'flex',
-                          gap: '0.5rem',
+                          gap: 6,
                           alignItems: 'center',
-                          backgroundColor: '#fff',
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '6px',
-                          border: '1px solid #e5e7eb',
-                          width: '100%',
-                          boxSizing: 'border-box',
+                          backgroundColor: 'var(--white)',
+                          padding: '6px 10px',
+                          borderRadius: 6,
+                          border: '1px solid var(--ink-12)',
                         }}
                       >
                         <span
+                          className="text-mono"
                           style={{
-                            fontSize: '0.75rem',
+                            fontSize: 11,
                             fontWeight: 700,
-                            color: '#6b7280',
-                            width: '20px',
+                            color: 'var(--ink-40)',
+                            width: 20,
                             flexShrink: 0,
                           }}
                         >
@@ -874,18 +791,15 @@ export const ReceptionOrderDetailPage: React.FC = () => {
                         </span>
                         <select
                           value={s.locationId}
-                          onChange={(e) => handleSplitChange(s.id, 'locationId', e.target.value)}
+                          onChange={(e) =>
+                            handleSplitChange(s.id, 'locationId', e.target.value)
+                          }
+                          className="f-input"
                           style={{
-                            flex: '1 1 auto',
+                            flex: 1,
                             minWidth: 0,
-                            height: '38px',
-                            padding: '0 0.5rem',
-                            borderRadius: '6px',
-                            border: '1px solid #d1d5db',
-                            fontSize: '0.85rem',
-                            backgroundColor: '#fff',
-                            cursor: 'pointer',
-                            boxSizing: 'border-box',
+                            height: 36,
+                            fontSize: 12,
                           }}
                         >
                           <option value="">Ubicación</option>
@@ -896,6 +810,7 @@ export const ReceptionOrderDetailPage: React.FC = () => {
                           ))}
                         </select>
                         <input
+                          className="f-input text-mono"
                           type="text"
                           inputMode="numeric"
                           pattern="[0-9]*"
@@ -906,65 +821,55 @@ export const ReceptionOrderDetailPage: React.FC = () => {
                             handleSplitChange(s.id, 'quantity', val)
                           }}
                           style={{
-                            width: '80px',
+                            width: 80,
                             flexShrink: 0,
-                            height: '38px',
-                            padding: '0 0.5rem',
-                            borderRadius: '6px',
-                            border: '1px solid #d1d5db',
-                            fontSize: '0.85rem',
-                            boxSizing: 'border-box',
+                            height: 36,
+                            fontSize: 12,
                           }}
                         />
                         <button
                           type="button"
                           onClick={() => handleRemoveSplit(s.id)}
+                          className="btn btn--ghost btn--sm"
                           style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: '#e03131',
-                            padding: '0.25rem',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: '32px',
-                            height: '32px',
+                            color: 'var(--err)',
+                            width: 32,
+                            height: 32,
                             flexShrink: 0,
+                            padding: 0,
                           }}
                           title="Eliminar"
                         >
-                          <Trash2 style={{ width: '16px', height: '16px' }} />
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     ))}
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.25rem' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
                       <button
                         type="button"
+                        className="btn btn--ghost btn--sm"
                         onClick={handleAddSplit}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.3rem',
-                          background: 'none',
-                          border: 'none',
-                          color: '#4f46e5',
-                          fontWeight: 600,
-                          fontSize: '0.825rem',
-                          cursor: 'pointer',
-                          padding: 0,
-                        }}
+                        style={{ color: 'var(--teal-700)' }}
                       >
-                        <Plus style={{ width: '15px', height: '15px' }} />
+                        <Plus size={14} />
                         Agregar ubicación
                       </button>
-
                       <span
+                        className="text-mono"
                         style={{
-                          fontSize: '0.8rem',
+                          fontSize: 11.5,
                           fontWeight: 600,
-                          color: totalSplitQty === enteredQty ? '#099268' : '#e03131',
+                          color:
+                            totalSplitQty === enteredQty
+                              ? 'var(--ok)'
+                              : 'var(--err)',
                         }}
                       >
                         Total: {totalSplitQty} / {enteredQty}
@@ -974,30 +879,18 @@ export const ReceptionOrderDetailPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Single location — only when NOT splitting */}
+              {/* Single location */}
               {!splitEnabled && (
-                <div>
-                  <label
-                    htmlFor="location-select"
-                    style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '0.35rem' }}
-                  >
-                    Ubicación destino <span style={{ color: '#e03131' }}>*</span>
+                <div className="f-group">
+                  <label className="f-label" htmlFor="location-select">
+                    Ubicación destino{' '}
+                    <span style={{ color: 'var(--err)' }}>*</span>
                   </label>
                   <select
                     id="location-select"
+                    className="f-input"
                     value={locationId}
                     onChange={(e) => setLocationId(e.target.value)}
-                    style={{
-                      width: '100%',
-                      height: '42px',
-                      padding: '0 0.75rem',
-                      borderRadius: '8px',
-                      border: '1px solid #d1d5db',
-                      outline: 'none',
-                      fontSize: '0.9rem',
-                      backgroundColor: '#fff',
-                      cursor: 'pointer',
-                    }}
                     required
                   >
                     <option value="">Selecciona una ubicación</option>
@@ -1010,52 +903,46 @@ export const ReceptionOrderDetailPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Discrepancy warning and field */}
+              {/* Discrepancy */}
               {hasDiscrepancy && (
                 <div
-                  style={{
-                    backgroundColor: '#fff9db',
-                    border: '1px solid #ffe066',
-                    borderRadius: '8px',
-                    padding: '0.85rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.5rem',
-                  }}
+                  className="notice notice--warn"
+                  style={{ display: 'grid', gap: 8 }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#f59f00', fontWeight: 700, fontSize: '0.85rem' }}>
-                    <AlertCircle style={{ width: '16px', height: '16px' }} />
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontWeight: 700,
+                      fontSize: 12,
+                      color: 'var(--warn)',
+                    }}
+                  >
+                    <AlertCircle size={14} />
                     Diferencia detectada
                   </div>
-                  <p style={{ fontSize: '0.8rem', color: '#665400', margin: 0 }}>
-                    La cantidad a registrar ({quantityReceived || 0}) difiere de la cantidad esperada en esta entrega. Escribe el motivo:
+                  <p style={{ fontSize: 11.5, color: 'var(--ink-70)', margin: 0 }}>
+                    La cantidad a registrar ({quantityReceived || 0}) difiere de la
+                    cantidad esperada en esta entrega. Escribe el motivo:
                   </p>
                   <textarea
+                    className="f-input"
                     placeholder="Escribe el motivo del faltante o retraso..."
                     value={discrepancyNote}
                     onChange={(e) => setDiscrepancyNote(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      height: '60px',
-                      borderRadius: '6px',
-                      border: '1px solid #ffe066',
-                      outline: 'none',
-                      fontSize: '0.85rem',
-                      resize: 'none',
-                    }}
+                    style={{ minHeight: 60, resize: 'none' }}
                     required
                   />
                 </div>
               )}
 
-              {/* Form buttons */}
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+              {/* Buttons */}
+              <div className="form-footer" style={{ marginTop: 4 }}>
                 <button
                   type="button"
+                  className="btn btn--outline"
                   onClick={handleCloseModal}
-                  className="btn btn--secondary"
-                  style={{ height: '42px', borderRadius: '8px', padding: '0 1.25rem' }}
                   disabled={saving}
                 >
                   Cancelar
@@ -1063,7 +950,6 @@ export const ReceptionOrderDetailPage: React.FC = () => {
                 <button
                   type="submit"
                   className="btn btn--primary"
-                  style={{ height: '42px', borderRadius: '8px', padding: '0 1.25rem' }}
                   disabled={saving}
                 >
                   {saving ? 'Guardando...' : 'Confirmar Recepción'}
@@ -1076,5 +962,3 @@ export const ReceptionOrderDetailPage: React.FC = () => {
     </AppShell>
   )
 }
-
-export default ReceptionOrderDetailPage
