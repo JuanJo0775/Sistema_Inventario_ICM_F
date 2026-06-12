@@ -32,6 +32,7 @@ type AppShellChromeProps = Readonly<{
   isCatalog: boolean
   isLocations: boolean
   isPurchasing: boolean
+  isAdmin: boolean
   handleLanguageChange: (next: 'es' | 'en') => void
   handleLogout: () => void
 }>
@@ -49,6 +50,7 @@ type ShellRailProps = Readonly<{
   isCatalog: boolean
   isLocations: boolean
   isPurchasing: boolean
+  isAdmin: boolean
 }>
 
 type ShellSidebarProps = Readonly<{
@@ -67,6 +69,7 @@ type ShellSidebarProps = Readonly<{
   isCatalog: boolean
   isLocations: boolean
   isPurchasing: boolean
+  isAdmin: boolean
   handleLogout: () => void
 }>
 
@@ -403,29 +406,53 @@ function SidebarOperationsSection({
   )
 }
 
-function SidebarAdminSection({ t, canManageAdmin }: SidebarNavCommonProps) {
+function SidebarAdminSection({
+  t,
+  locationPathname,
+  canManageAdmin,
+  isAdmin,
+}: SidebarNavCommonProps & { isAdmin: boolean }) {
+  const [adminOpen, setAdminOpen] = React.useState(isAdmin)
+
+  React.useEffect(() => {
+    if (isAdmin) setAdminOpen(true)
+  }, [isAdmin])
+
   if (!canManageAdmin) {
     return null
   }
 
   return (
     <div className="nav__section">
-      <span className="nav__label">{t('dashboard.nav.admin')}</span>
-      <button className="nav__link" type="button">
+      <span className="nav__label">{t('dashboard.nav.administration')}</span>
+      <button
+        type="button"
+        className={`nav__link nav__link--group${isAdmin ? ' active' : ''}`}
+        onClick={() => setAdminOpen((open) => !open)}
+      >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         </svg>
-        {t('dashboard.nav.audit')}
-      </button>
-      <button className="nav__link" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+        {t('dashboard.nav.administration')}
+        <svg
+          className={`nav__chevron${adminOpen ? ' nav__chevron--open' : ''}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path d="M6 9l6 6 6-6" />
         </svg>
-        {t('dashboard.nav.users')}
       </button>
+      {adminOpen ? (
+        <div className="nav__submenu">
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/admin/audit') ? ' active' : ''}`}
+            to="/app/admin/audit"
+          >
+            {t('dashboard.nav.audit')}
+          </Link>
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -443,6 +470,7 @@ function ShellRail({
   isCatalog,
   isLocations,
   isPurchasing,
+  isAdmin,
 }: ShellRailProps) {
   return (
     <nav className="rail" aria-label={t('dashboard.nav.quickAccess')}>
@@ -501,12 +529,11 @@ function ShellRail({
         </Link>
       ) : null}
       {canManageAdmin ? (
-        <button className="rail__btn" title={t('dashboard.nav.settings')} type="button">
+        <Link className={`rail__btn${isAdmin ? ' active' : ''}`} title={t('dashboard.nav.audit')} to="/app/admin/audit">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3" />
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           </svg>
-        </button>
+        </Link>
       ) : null}
       <div className="rail__spacer"></div>
       <Link className={`rail__btn${isAlerts ? ' active' : ''}`} title={t('dashboard.nav.alerts')} to="/app/alerts">
@@ -545,6 +572,7 @@ function ShellSidebar({
   isCatalog,
   isLocations,
   isPurchasing,
+  isAdmin,
   handleLogout,
 }: ShellSidebarProps) {
   const location = useLocation()
@@ -663,6 +691,7 @@ function ShellSidebar({
           isDispatch={isDispatch}
           isReturns={isReturns}
           isAlerts={isAlerts}
+          isAdmin={isAdmin}
         />
       </nav>
       <footer className="sidebar__footer">
@@ -731,6 +760,7 @@ function AppShellChrome({
   isCatalog,
   isLocations,
   isPurchasing,
+  isAdmin,
   handleLanguageChange,
   handleLogout,
 }: AppShellChromeProps) {
@@ -749,6 +779,7 @@ function AppShellChrome({
         isCatalog={isCatalog}
         isLocations={isLocations}
         isPurchasing={isPurchasing}
+        isAdmin={isAdmin}
       />
 
       <ShellSidebar
@@ -767,6 +798,7 @@ function AppShellChrome({
         isCatalog={isCatalog}
         isLocations={isLocations}
         isPurchasing={isPurchasing}
+        isAdmin={isAdmin}
         handleLogout={handleLogout}
       />
 
@@ -806,7 +838,8 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
     user?.role === 'almacenista'
 
   const canManageAdmin =
-    user?.role === 'administrador'
+    user?.role === 'administrador' ||
+    user?.role === 'almacenista'
 
   const isDashboard = location.pathname === '/app'
 
@@ -825,6 +858,8 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
   const isLocations = location.pathname.startsWith('/app/locations')
 
   const isPurchasing = location.pathname.startsWith('/app/purchasing')
+
+  const isAdmin = location.pathname.startsWith('/app/admin')
 
   const handleLanguageChange = (next: 'es' | 'en') => {
     if (next !== language) {
@@ -858,6 +893,7 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
       isCatalog={isCatalog}
       isLocations={isLocations}
       isPurchasing={isPurchasing}
+      isAdmin={isAdmin}
       handleLanguageChange={handleLanguageChange}
       handleLogout={handleLogout}
     >

@@ -12,7 +12,7 @@ export async function fetchAdjustmentsOverview(useMocks = false): Promise<Adjust
   try {
     const [locationsRes, productsRes] = await Promise.all([
       api.get<{ results?: Array<{ id: string; code: string; name: string }> } | Array<{ id: string; code: string; name: string }>>('/inventory/locations/'),
-      api.get<{ results?: Array<{ id: string; sku: string; name: string; barcode?: string; category?: string | number | null; subcategory?: string | number | null }> } | Array<{ id: string; sku: string; name: string; barcode?: string }>>('/catalog/products/?page_size=500'),
+      api.get<{ results?: Array<{ id: string; sku: string; name: string; barcode?: string; category?: string | number | null; subcategory?: string | number | null }> } | Array<{ id: string; sku: string; name: string; barcode?: string; category?: string | number | null; subcategory?: string | number | null }>>('/catalog/products/?page_size=500'),
     ])
 
     // Normalizar respuestas paginadas o arrays directos
@@ -32,7 +32,7 @@ export async function fetchAdjustmentsOverview(useMocks = false): Promise<Adjust
         productName: p.name,
         sku: p.sku,
         barcode: p.barcode,
-        category: p.category ?? undefined,
+        category: p.category ? String(p.category) : undefined,
       })),
       history: [],
     }

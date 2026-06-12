@@ -16,4 +16,5 @@ export interface AlertItem {
   resolved_at: string | null;
   resolved_by: string | null; // UUID del usuario que resolvió, no el nombre
   created_at: string;
+  lot_code?: string | null;
 }

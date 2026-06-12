@@ -13,16 +13,12 @@ import {
   Eye,
   Check,
   ChevronDown,
-  Calendar,
-  Building2,
 } from 'lucide-react'
 import AppShell from '../../components/layout/AppShell'
 import usePurchaseOrderStore from '../../store/usePurchaseOrderStore'
 import useSupplierStore from '../../store/useSupplierStore'
 import useCatalogStore from '../../store/useCatalogStore'
-import type { Supplier } from '../../interfaces/suppliers'
-import type { CatalogProduct } from '../../interfaces/catalog'
-import type { PurchaseOrder, PurchaseOrderItem } from '../../interfaces/purchaseOrders'
+import type { PurchaseOrder } from '../../interfaces/purchaseOrders'
 
 // ============================================================================
 // CUSTOM COMBOBOX COMPONENT
@@ -277,7 +273,6 @@ export const PurchaseOrdersPage: React.FC = () => {
 
   // Local UI States
   const [searchTerm, setSearchTerm] = useState('')
-  const [activeSearch, setActiveSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null)
@@ -337,10 +332,6 @@ export const PurchaseOrdersPage: React.FC = () => {
   }
 
   // Clear search filter
-  const handleClearFilter = () => {
-    setSearchTerm('')
-    setActiveSearch('')
-  }
 
   // Active items for combobox options
   const supplierOptions: ComboboxOption[] = suppliers
