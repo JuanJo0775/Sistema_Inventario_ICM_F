@@ -34,13 +34,14 @@ export function BarcodeScannerButton({
   disabled = false,
 }: BarcodeScannerButtonProps) {
   const [modalOpen, setModalOpen] = useState(false)
-  const manualRef = useRef<HTMLInputElement>(null)
+  const [manualValue, setManualValue] = useState('')
+  const lastSubmittedRef = useRef<string>('')
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const handleProductFound = useCallback(
     (product: BarcodeProductResult) => {
       onProductFound(product)
-      // Limpiar el input manual después de encontrar el producto
-      if (manualRef.current) manualRef.current.value = ''
+      setManualValue('')
       // Close modal with delay so the user sees the success state
       setTimeout(() => setModalOpen(false), 2000)
     },
@@ -60,21 +61,35 @@ export function BarcodeScannerButton({
   // Reset when modal opens
   const handleOpen = () => {
     reset()
+    setManualValue('')
     setModalOpen(true)
-    // Give the modal time to mount, then focus the manual input
-    setTimeout(() => manualRef.current?.focus(), 80)
+    setTimeout(() => inputRef.current?.focus(), 80)
   }
 
   const handleClose = () => {
     reset()
+    setManualValue('')
     setModalOpen(false)
   }
 
+  const doLookup = useCallback((val: string) => {
+    const trimmed = val.trim()
+    if (!trimmed) return
+    if (lastSubmittedRef.current === trimmed) return
+    lastSubmittedRef.current = trimmed
+    void lookupBarcode(trimmed)
+  }, [lookupBarcode])
+
+  // Auto-submit when value stabilizes (scanner finishes typing)
+  useEffect(() => {
+    if (!manualValue.trim() || status !== 'idle') return
+    const timer = setTimeout(() => doLookup(manualValue), 400)
+    return () => clearTimeout(timer)
+  }, [manualValue, status, doLookup])
+
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const val = manualRef.current?.value.trim()
-    if (val) void lookupBarcode(val)
-    // No limpiar el input aquí — el usuario debe ver el código que buscó
+    doLookup(manualValue)
   }
 
   return (
@@ -201,13 +216,16 @@ export function BarcodeScannerButton({
               </label>
               <div className="barcode-manual__row">
                 <input
-                  ref={manualRef}
+                  ref={inputRef}
                   id="barcode-manual-input"
                   className="barcode-manual__input"
                   type="text"
                   placeholder="Escribe o pega el código…"
                   autoComplete="off"
                   spellCheck={false}
+                  autoFocus
+                  value={manualValue}
+                  onChange={(e) => setManualValue(e.target.value.replace(/'/g, '-'))}
                 />
                 <button
                   type="submit"

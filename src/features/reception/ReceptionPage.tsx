@@ -1,833 +1,275 @@
-import { useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
-import AppShell from "../../components/layout/AppShell";
-import useReceptionStore from "../../store/useReceptionStore";
-import useLocationStore from "../../store/useLocationStore";
-import type {
-  PurchaseOrder,
-  PurchaseOrderItem,
-} from "../../interfaces/purchaseOrders";
-
-// ─── helpers ────────────────────────────────────────────────────────────────
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import {
+  Search,
+  AlertTriangle,
+  FileText,
+  X,
+  RefreshCw,
+} from 'lucide-react'
+import AppShell from '../../components/layout/AppShell'
+import useReceptionStore from '../../store/useReceptionStore'
 
 const statusPill = (status: string) => {
   switch (status) {
-    case "pendiente":
-      return <span className="pill pill--warn">Pendiente</span>;
-    case "parcialmente_recibida":
-      return <span className="pill pill--amber">Parcial</span>;
-    case "completada":
-      return <span className="pill pill--ok">Completada</span>;
+    case 'pendiente':
+      return <span className="pill pill--warn">Pendiente</span>
+    case 'parcialmente_recibida':
+      return <span className="pill pill--amber">Parcial</span>
+    case 'completada':
+      return <span className="pill pill--ok">Completada</span>
+    case 'cancelada':
+      return <span className="pill pill--err">Cancelada</span>
+    case 'borrador':
+      return <span className="pill pill--muted">Borrador</span>
     default:
-      return <span className="pill pill--muted">{status}</span>;
+      return <span className="pill pill--muted">{status}</span>
   }
-};
-
-// ─── types ───────────────────────────────────────────────────────────────────
-
-interface LotEntry {
-  id: number;
-  lotCode: string;
-  expirationDate: string;
 }
-
-interface ReceptionForm {
-  orderId: string;
-  itemId: string;
-  productId: string;
-  productName: string;
-  productSku: string;
-  ordered: number;
-  received: number;
-  locationId: string;
-  lotCode: string;
-  expirationDate: string;
-  serialNumbers: string;
-  discrepancyNote: string;
-  coldChainAck: boolean;
-  electricalSafetyAck: boolean;
-}
-
-const emptyForm = (): ReceptionForm => ({
-  orderId: "",
-  itemId: "",
-  productId: "",
-  productName: "",
-  productSku: "",
-  ordered: 0,
-  received: 0,
-  locationId: "",
-  lotCode: "",
-  expirationDate: "",
-  serialNumbers: "",
-  discrepancyNote: "",
-  coldChainAck: false,
-  electricalSafetyAck: false,
-});
-
-let lotIdCounter = 1;
-const createLotEntry = (): LotEntry => ({
-  id: lotIdCounter++,
-  lotCode: "",
-  expirationDate: "",
-});
-
-// ─── component ────────────────────────────────────────────────────────────────
 
 export default function ReceptionPage() {
-  const { t } = useTranslation();
+  const navigate = useNavigate()
   const {
     pendingOrders,
+    completedOrders,
     loading,
     error,
     fetchPendingOrders,
-    receiveItem,
+    fetchCompletedOrders,
     clearError,
-  } = useReceptionStore();
-  const { locations, fetchLocations } = useLocationStore();
+  } = useReceptionStore()
 
-  const [search, setSearch] = useState("");
-  const [form, setForm] = useState<ReceptionForm>(emptyForm());
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [saving, setSaving] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
-  const [formError, setFormError] = useState("");
-  const [receivedStr, setReceivedStr] = useState("");
-  const [lotEntries, setLotEntries] = useState<LotEntry[]>([createLotEntry()]);
+  const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
 
   useEffect(() => {
-    fetchPendingOrders();
-    fetchLocations();
-  }, [fetchPendingOrders, fetchLocations]);
+    fetchPendingOrders()
+    fetchCompletedOrders()
+  }, [fetchPendingOrders, fetchCompletedOrders])
+
+  const handleRefresh = async () => {
+    await Promise.all([fetchPendingOrders(), fetchCompletedOrders()])
+  }
 
   const filteredOrders = useMemo(() => {
-    if (!search.trim()) return pendingOrders;
-    const q = search.toLowerCase();
-    return pendingOrders.filter(
-      (o) =>
-        o.number.toLowerCase().includes(q) ||
-        o.supplier_nombre.toLowerCase().includes(q) ||
-        o.items.some(
-          (i) =>
-            i.product_name.toLowerCase().includes(q) ||
-            i.product_sku.toLowerCase().includes(q),
-        ),
-    );
-  }, [pendingOrders, search]);
+    const list = activeTab === 'pending' ? pendingOrders : completedOrders
+    return list.filter((order) => {
+      const matchSearch =
+        order.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.supplier_nombre.toLowerCase().includes(searchTerm.toLowerCase())
 
-  const availableLocations = useMemo(
-    () =>
-      locations.filter(
-        (loc) =>
-          loc.is_active &&
-          (loc.operational_status === "active" ||
-            loc.operational_status === "restricted"),
-      ),
-    [locations],
-  );
+      const matchStatus = statusFilter === 'all' || order.status === statusFilter
+      return matchSearch && matchStatus
+    })
+  }, [activeTab, pendingOrders, completedOrders, searchTerm, statusFilter])
 
-  const hasDiscrepancy =
-    form.ordered > 0 && form.received > 0 && form.received !== form.ordered;
+  const kpis = useMemo(() => {
+    const totalPending = pendingOrders.filter((o) => o.status === 'pendiente').length
+    const totalPartial = pendingOrders.filter((o) => o.status === 'parcialmente_recibida').length
+    const totalCompleted = completedOrders.length
+    const totalCount = pendingOrders.length + completedOrders.length
 
-  function selectItem(order: PurchaseOrder, item: PurchaseOrderItem) {
-    const pending = item.quantity_pending;
-    setForm({
-      ...emptyForm(),
-      orderId: order.id,
-      itemId: item.id,
-      productId: item.product,
-      productName: item.product_name,
-      productSku: item.product_sku,
-      ordered: item.quantity_ordered,
-      received: pending,
-    });
-    setReceivedStr(String(pending));
-    setLotEntries([createLotEntry()]);
-    setStep(2);
-    setFormError("");
-    setSuccessMsg("");
-  }
-
-  function clearSelection() {
-    setForm(emptyForm());
-    setReceivedStr("");
-    setLotEntries([createLotEntry()]);
-    setStep(1);
-    setFormError("");
-  }
-
-  async function handleConfirm() {
-    if (!form.productId || !form.locationId) {
-      setFormError("Selecciona ubicación destino");
-      return;
-    }
-    if (form.received <= 0) {
-      setFormError("La cantidad recibida debe ser mayor a 0");
-      return;
-    }
-    if (hasDiscrepancy && !form.discrepancyNote.trim()) {
-      setFormError("Debes agregar una nota de discrepancia");
-      return;
-    }
-    const today = new Date().toISOString().slice(0, 10);
-    for (const lot of lotEntries) {
-      if (lot.expirationDate && lot.expirationDate < today) {
-        setFormError(`Fecha de vencimiento del lote "${lot.lotCode || '(sin código)'}" es anterior a hoy`);
-        return;
-      }
-    }
-    setSaving(true);
-    setFormError("");
-    try {
-      const activeLots = lotEntries.filter((l) => l.lotCode.trim() || l.expirationDate);
-      const allocations = activeLots.map((l) => ({
-        location_id: form.locationId,
-        quantity_received: form.received,
-        lot_code: l.lotCode || undefined,
-        lot_expiration_date: l.expirationDate || null,
-      }));
-      await receiveItem({
-        po_id: form.orderId,
-        items: [
-          {
-            purchase_order_item_id: form.itemId,
-            quantity_received: form.received,
-            discrepancy_note: hasDiscrepancy ? form.discrepancyNote : undefined,
-            lot_code: form.lotCode || undefined,
-            lot_expiration_date: form.expirationDate || undefined,
-            allocations,
-          },
-        ],
-        destination_location_id: form.locationId,
-        notes: form.discrepancyNote || undefined,
-      });
-      setSuccessMsg(`Entrada registrada para ${form.productSku}`);
-      setStep(3);
-    } catch {
-      setFormError("No se pudo registrar la entrada. Intenta de nuevo.");
-    } finally {
-      setSaving(false);
-    }
-  }
+    return { totalPending, totalPartial, totalCompleted, totalCount }
+  }, [pendingOrders, completedOrders])
 
   return (
-    <AppShell title={t("reception.title")} subtitle={t("reception.subtitle")}>
-      <div className="page-body">
-        {/* ── step track ── */}
-        <nav
-          className="step-track"
-          aria-label="Progreso del flujo de recepción"
+    <AppShell
+      title="Recepción de Mercancía"
+      subtitle="Recibe órdenes de compra y registra ingresos en el inventario"
+      actions={
+        <button
+          className="btn btn--ghost btn--sm"
+          type="button"
+          onClick={handleRefresh}
+          disabled={loading}
         >
-          <div
-            className={`step-item${step >= 1 ? (step > 1 ? " step-item--done" : " step-item--active") : ""}`}
-            aria-current={step === 1 ? "step" : undefined}
-          >
-            <div className="step-num">1</div>
-            <span>Identificar</span>
+          <RefreshCw
+            style={{
+              width: 13,
+              height: 13,
+              animation: loading ? 'pulse 1.5s ease infinite' : 'none',
+            }}
+          />
+          Actualizar
+        </button>
+      }
+    >
+      <div className="page-body fade-slide-up">
+        {/* KPI Cards */}
+        <div className="catalog-kpis" style={{ marginBottom: 22 }}>
+          <div className="catalog-kpi" style={{ borderLeft: '4px solid #1971c2' }}>
+            <span className="catalog-kpi__label">Pendientes</span>
+            <span className="catalog-kpi__value">{kpis.totalPending}</span>
+            <span className="catalog-kpi__sub">Órdenes por recibir</span>
           </div>
-          <div
-            className={`step-item${step >= 2 ? (step > 2 ? " step-item--done" : " step-item--active") : ""}`}
-            aria-current={step === 2 ? "step" : undefined}
-          >
-            <div className="step-num">2</div>
-            <span>Cantidad</span>
+          <div className="catalog-kpi" style={{ borderLeft: '4px solid #f59f00' }}>
+            <span className="catalog-kpi__label">Parciales</span>
+            <span className="catalog-kpi__value">{kpis.totalPartial}</span>
+            <span className="catalog-kpi__sub">Recepciones parciales</span>
           </div>
-          <div
-            className={`step-item${step === 3 ? " step-item--done" : ""}`}
-            aria-current={step === 3 ? "step" : undefined}
-          >
-            <div className="step-num">3</div>
-            <span>Confirmar</span>
+          <div className="catalog-kpi" style={{ borderLeft: '4px solid #099268' }}>
+            <span className="catalog-kpi__label">Completadas</span>
+            <span className="catalog-kpi__value">{kpis.totalCompleted}</span>
+            <span className="catalog-kpi__sub">Finalizadas</span>
           </div>
-        </nav>
+          <div className="catalog-kpi" style={{ borderLeft: '4px solid #7048e8' }}>
+            <span className="catalog-kpi__label">Total</span>
+            <span className="catalog-kpi__value">{kpis.totalCount}</span>
+            <span className="catalog-kpi__sub">Órdenes registradas</span>
+          </div>
+        </div>
 
-        {/* ── error global ── */}
+        {/* Error alert */}
         {error && (
-          <div className="alert-bar alert-bar--err mb-20" role="alert">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              width={14}
-              height={14}
-            >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="15" y1="9" x2="9" y2="15" />
-              <line x1="9" y1="9" x2="15" y2="15" />
-            </svg>
+          <div className="alert-bar alert-bar--warn" role="alert" style={{ marginBottom: 20 }}>
+            <AlertTriangle size={14} />
             <span>{error}</span>
             <span className="alert-bar__spacer" />
             <button className="btn btn--ghost btn--sm" onClick={clearError}>
-              Cerrar
+              <X size={13} />
             </button>
           </div>
         )}
 
-        <div className="split split--2-1">
-          {/* ── left col: list → form → success ── */}
-          <div>
-            {/* STEP 1: list */}
-            {step === 1 && (
-              <>
-                <div className="s-head">
-                  <span className="s-head__label">Órdenes esperadas</span>
-                  <div className="s-head__rule" />
-                  <span className="pill pill--teal s-head__action">
-                    {filteredOrders.length} órdenes
-                  </span>
-                </div>
+        {/* Tabs */}
+        <div className="s-head" style={{ marginBottom: 14 }}>
+          <span className="s-head__label">Órdenes de compra</span>
+          <div className="s-head__rule" />
+          <span className="pill pill--teal s-head__action">
+            {filteredOrders.length} {filteredOrders.length === 1 ? 'orden' : 'órdenes'}
+          </span>
+        </div>
 
-                <div className="f-group mb-16">
-                  <label className="f-label" htmlFor="rec-search">
-                    Buscar por nombre, SKU, factura o proveedor
-                  </label>
-                  <div style={{ position: "relative" }}>
-                    <svg
-                      style={{
-                        position: "absolute",
-                        left: 11,
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        width: 14,
-                        height: 14,
-                        stroke: "var(--teal-600)",
-                        strokeWidth: 1.8,
-                      }}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                    >
-                      <circle cx="11" cy="11" r="8" />
-                      <path d="M21 21l-4.35-4.35" />
-                    </svg>
-                    <input
-                      id="rec-search"
-                      className="f-input"
-                      style={{ paddingLeft: 34 }}
-                      placeholder="Nombre, SKU, proveedor..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                    />
-                  </div>
-                </div>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 18 }}>
+          <button
+            className={`btn btn--sm ${activeTab === 'pending' ? 'btn--primary' : 'btn--ghost'}`}
+            onClick={() => {
+              setActiveTab('pending')
+              setStatusFilter('all')
+            }}
+          >
+            Pendientes de recibir
+          </button>
+          <button
+            className={`btn btn--sm ${activeTab === 'history' ? 'btn--primary' : 'btn--ghost'}`}
+            onClick={() => {
+              setActiveTab('history')
+              setStatusFilter('all')
+            }}
+          >
+            Historial completado
+          </button>
+        </div>
 
-                {loading ? (
-                  <div className="mov-list">
-                    {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        className="mov-item"
-                        style={{ opacity: 0.4 }}
-                      >
-                        <select
-                          className="mov-pip"
-                          style={{ background: "var(--ink-12)" }}
-                        >
-                          <option value="">Selecciona una ubicacion</option>
-                          {availableLocations.map((location) => (
-                            <option key={location.id} value={location.id}>
-                              {location.code} - {location.name}
-                            </option>
-                          ))}
-                        </select>
-                        <div
-                          style={{
-                            background: "var(--ink-06)",
-                            borderRadius: 4,
-                            height: 36,
-                            flex: 1,
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                ) : filteredOrders.length === 0 ? (
-                  <p
-                    style={{
-                      fontSize: 13,
-                      color: "var(--ink-40)",
-                      padding: "20px 0",
-                    }}
-                  >
-                    No hay órdenes pendientes.
-                  </p>
-                ) : (
-                  <div className="table-surface">
-                    <div className="table-wrap">
-                      <table className="data-table">
-                        <thead>
-                          <tr>
-                            <th>OC / Proveedor</th>
-                            <th>Producto</th>
-                            <th>Pendiente</th>
-                            <th>Estado</th>
-                            <th>
-                              <span className="sr-only">Acción</span>
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredOrders.flatMap((order) =>
-                            order.items
-                              .filter((i) => i.quantity_pending > 0)
-                              .map((item) => (
-                                <tr key={`${order.id}-${item.id}`}>
-                                  <td>
-                                    <p className="prod-name">{order.number}</p>
-                                    <p className="prod-sub">
-                                      {order.supplier_nombre}
-                                    </p>
-                                  </td>
-                                  <td>
-                                    <span className="sku">
-                                      {item.product_sku}
-                                    </span>
-                                    <p className="prod-sub">
-                                      {item.product_name}
-                                    </p>
-                                  </td>
-                                  <td className="text-mono">
-                                    {item.quantity_received}/
-                                    {item.quantity_ordered}
-                                  </td>
-                                  <td>{statusPill(order.status)}</td>
-                                  <td>
-                                    <button
-                                      className="btn btn--primary btn--sm"
-                                      onClick={() => selectItem(order, item)}
-                                    >
-                                      Seleccionar
-                                    </button>
-                                  </td>
-                                </tr>
-                              )),
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* STEP 2: form */}
-            {step === 2 && (
-              <>
-                <div className="s-head">
-                  <span className="s-head__label">Producto identificado</span>
-                  <div className="s-head__rule" />
-                  <span className="pill pill--ok s-head__action">Resuelto</span>
-                </div>
-
-                <div className="val-strip val-strip--ok mb-16">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    width={15}
-                    height={15}
-                    strokeWidth={2}
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  Código resuelto —{" "}
-                  <strong className="text-mono" style={{ marginLeft: 6 }}>
-                    {form.productSku} · {form.productName}
-                  </strong>
-                </div>
-
-                {hasDiscrepancy && (
-                  <div className="notice notice--warn mb-16">
-                    <span>
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                      >
-                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                        <line x1="12" y1="9" x2="12" y2="13" />
-                      </svg>
-                    </span>
-                    <div>
-                      <p className="notice__title">
-                        Cantidad difiere de la facturada
-                      </p>
-                      <p className="notice__body">
-                        Registra una nota de discrepancia.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {formError && (
-                  <div className="alert-bar alert-bar--err mb-16" role="alert">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      width={14}
-                      height={14}
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                    </svg>
-                    {formError}
-                  </div>
-                )}
-
-                <form noValidate>
-                  <div className="form-surface">
-                    <fieldset>
-                      <legend>Cantidades</legend>
-                      <div className="f-row f-row-2 mb-16">
-                        <div className="f-group">
-                          <label className="f-label">Cantidad facturada</label>
-                          <input
-                            className="f-input text-mono"
-                            type="number"
-                            value={form.ordered}
-                            readOnly
-                            style={{
-                              background: "var(--canvas)",
-                              cursor: "default",
-                            }}
-                          />
-                        </div>
-                        <div className="f-group">
-                          <label
-                            className="f-label"
-                            htmlFor="rec-qty"
-                            style={
-                              hasDiscrepancy
-                                ? { color: "var(--warn)" }
-                                : undefined
-                            }
-                          >
-                            Cantidad recibida {hasDiscrepancy ? "⚠" : "✓"}
-                          </label>
-                          <input
-                            id="rec-qty"
-                            className="f-input text-mono"
-                            type="text"
-                            inputMode="numeric"
-                            value={receivedStr}
-                            onChange={(e) => {
-                              const raw = e.target.value;
-                              if (raw === "" || /^\d+$/.test(raw)) {
-                                setReceivedStr(raw);
-                                setForm({
-                                  ...form,
-                                  received: raw === "" ? 0 : parseInt(raw, 10),
-                                });
-                              }
-                            }}
-                            style={
-                              hasDiscrepancy
-                                ? { borderColor: "var(--warn)" }
-                                : undefined
-                            }
-                          />
-                        </div>
-                        {hasDiscrepancy && (
-                          <div className="f-group f-group--full">
-                            <label
-                              className="f-label"
-                              htmlFor="rec-disc-note"
-                              style={{ color: "var(--warn)" }}
-                            >
-                              Nota de discrepancia *
-                            </label>
-                            <input
-                              id="rec-disc-note"
-                              className="f-input"
-                              placeholder="Ej: 2 unidades faltantes en caja 3"
-                              value={form.discrepancyNote}
-                              onChange={(e) =>
-                                setForm({
-                                  ...form,
-                                  discrepancyNote: e.target.value,
-                                })
-                              }
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </fieldset>
-
-                    <fieldset>
-                      <legend>Lotes y vencimientos</legend>
-                      {lotEntries.map((lot, idx) => (
-                        <div
-                          key={lot.id}
-                          className="f-row f-row-2 mb-12"
-                          style={{ alignItems: "end" }}
-                        >
-                          <div className="f-group">
-                            {idx === 0 && (
-                              <label className="f-label">Código de lote</label>
-                            )}
-                            <input
-                              className="f-input text-mono"
-                              placeholder="Ej: LOT-2026-01"
-                              value={lot.lotCode}
-                              onChange={(e) => {
-                                const next = [...lotEntries];
-                                next[idx] = { ...lot, lotCode: e.target.value };
-                                setLotEntries(next);
-                              }}
-                            />
-                          </div>
-                          <div className="f-group">
-                            {idx === 0 && (
-                              <label className="f-label">
-                                Fecha de vencimiento
-                              </label>
-                            )}
-                            <input
-                              className="f-input"
-                              type="date"
-                              value={lot.expirationDate}
-                              onChange={(e) => {
-                                const next = [...lotEntries];
-                                next[idx] = {
-                                  ...lot,
-                                  expirationDate: e.target.value,
-                                };
-                                setLotEntries(next);
-                              }}
-                            />
-                          </div>
-                          {idx > 0 && (
-                            <button
-                              type="button"
-                              className="btn btn--ghost btn--sm"
-                              style={{
-                                flexShrink: 0,
-                                color: "var(--err)",
-                                marginBottom: 2,
-                              }}
-                              onClick={() =>
-                                setLotEntries(
-                                  lotEntries.filter((_, i) => i !== idx),
-                                )
-                              }
-                            >
-                              ✕
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        className="btn btn--outline btn--sm"
-                        style={{ marginTop: 6 }}
-                        onClick={() =>
-                          setLotEntries([...lotEntries, createLotEntry()])
-                        }
-                      >
-                        + Agregar otro lote
-                      </button>
-                    </fieldset>
-
-                    <fieldset>
-                      <legend>Ubicación destino</legend>
-                      <div className="f-group mb-16">
-                        <label
-                          className="f-label"
-                          htmlFor="rec-loc"
-                          style={{
-                            color: !form.locationId ? "var(--err)" : undefined,
-                          }}
-                        >
-                          Ubicación *
-                        </label>
-                        <select
-                          id="rec-loc"
-                          className="f-input"
-                          value={form.locationId}
-                          onChange={(e) =>
-                            setForm({ ...form, locationId: e.target.value })
-                          }
-                        >
-                          <option value="">Selecciona una ubicación</option>
-                          {availableLocations.map((loc) => (
-                            <option key={loc.id} value={loc.id}>
-                              {loc.code} - {loc.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </fieldset>
-
-                    <fieldset>
-                      <legend>Reconocimientos</legend>
-                      <div className="flex gap-20">
-                        <div
-                          className={`toggle-switch${form.coldChainAck ? " on" : ""}`}
-                          onClick={() =>
-                            setForm({
-                              ...form,
-                              coldChainAck: !form.coldChainAck,
-                            })
-                          }
-                          role="switch"
-                          aria-checked={form.coldChainAck}
-                          tabIndex={0}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              setForm({ ...form, coldChainAck: !form.coldChainAck });
-                            }
-                          }}
-                        >
-                          <span className="toggle-switch__track" />
-                          <span className="toggle-switch__label">
-                            Cadena de frío confirmada
-                          </span>
-                        </div>
-                        <div
-                          className={`toggle-switch${form.electricalSafetyAck ? " on" : ""}`}
-                          onClick={() =>
-                            setForm({
-                              ...form,
-                              electricalSafetyAck: !form.electricalSafetyAck,
-                            })
-                          }
-                          role="switch"
-                          aria-checked={form.electricalSafetyAck}
-                          tabIndex={0}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              setForm({ ...form, electricalSafetyAck: !form.electricalSafetyAck });
-                            }
-                          }}
-                        >
-                          <span className="toggle-switch__track" />
-                          <span className="toggle-switch__label">
-                            Seguridad eléctrica revisada
-                          </span>
-                        </div>
-                      </div>
-                    </fieldset>
-
-                    <div className="form-footer">
-                      <button
-                        type="button"
-                        className="btn btn--outline"
-                        onClick={clearSelection}
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn--primary"
-                        onClick={handleConfirm}
-                        disabled={saving}
-                      >
-                        {saving ? "Guardando..." : "Confirmar entrada"}
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              </>
-            )}
-
-            {/* STEP 3: success */}
-            {step === 3 && (
-              <>
-                <div
-                  className="val-strip val-strip--ok mb-24"
-                  style={{ padding: "16px 20px", borderRadius: 12 }}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    width={20}
-                    height={20}
-                    strokeWidth={2}
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  <span style={{ fontSize: 14 }}>{successMsg}</span>
-                </div>
-                <button
-                  className="btn btn--primary"
-                  onClick={() => {
-                    clearSelection();
-                    fetchPendingOrders();
-                  }}
-                >
-                  Registrar otra entrada
-                </button>
-              </>
-            )}
+        {/* Search + filter */}
+        <div className="catalog-toolbar" style={{ marginBottom: 18 }}>
+          <div className="catalog-toolbar__search">
+            <Search className="catalog-toolbar__search-icon" size={14} />
+            <input
+              type="text"
+              placeholder="Buscar por número de orden o proveedor..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
 
-          {/* ── right col: recent movements ── */}
-          <aside>
-            <div className="s-head">
-              <span className="s-head__label">Entradas recientes</span>
-              <div className="s-head__rule" />
-            </div>
-            <p
-              style={{ fontSize: 12, color: "var(--ink-40)", marginBottom: 14 }}
+          <select
+            className="catalog-filter-select"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="all">Todos los estados</option>
+            {activeTab === 'pending' ? (
+              <>
+                <option value="pendiente">Pendiente</option>
+                <option value="parcialmente_recibida">Parcialmente recibida</option>
+              </>
+            ) : (
+              <option value="completada">Completada</option>
+            )}
+          </select>
+
+          {(searchTerm || statusFilter !== 'all') && (
+            <button
+              className="btn btn--ghost btn--sm"
+              onClick={() => {
+                setSearchTerm('')
+                setStatusFilter('all')
+              }}
             >
-              Movimientos de entrada del día actual.
-            </p>
-            <div className="notice notice--info">
-              <span>
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="16" x2="12" y2="12" />
-                </svg>
-              </span>
-              <div>
-                <p className="notice__title">Discrepancia</p>
-                <p className="notice__body">
-                  Si la cantidad recibida difiere de la facturada, el sistema
-                  obliga a registrar una nota explicativa antes de confirmar.
-                </p>
-              </div>
-            </div>
-
-            <div className="c-divider" />
-
-            <div className="notice notice--warn">
-              <span>
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                  <line x1="12" y1="9" x2="12" y2="13" />
-                </svg>
-              </span>
-              <div>
-                <p className="notice__title">Serie obligatoria</p>
-                <p className="notice__body">
-                  Electroterapia requiere número de serie por unidad.
-                </p>
-              </div>
-            </div>
-          </aside>
+              Limpiar filtros
+            </button>
+          )}
         </div>
+
+        {/* Table / loading / empty */}
+        {loading ? (
+          <div className="empty-state">
+            <RefreshCw size={32} className="pulse" />
+            <p>Cargando órdenes de compra...</p>
+          </div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="empty-state">
+            <FileText size={40} />
+            <p>No se encontraron órdenes de compra</p>
+            <small>Intenta cambiar la búsqueda o los filtros aplicados.</small>
+          </div>
+        ) : (
+          <div className="table-surface">
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Orden de Compra</th>
+                    <th>Proveedor</th>
+                    <th style={{ textAlign: 'center' }}>Productos</th>
+                    <th style={{ textAlign: 'center' }}>Estado</th>
+                    <th>Fecha de Solicitud</th>
+                    <th style={{ textAlign: 'center' }}>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredOrders.map((order) => (
+                    <tr key={order.id}>
+                      <td>
+                        <p className="prod-name">{order.number}</p>
+                      </td>
+                      <td>
+                        <span className="prod-sub">{order.supplier_nombre}</span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span className="pill pill--teal">
+                          {order.items.length}{' '}
+                          {order.items.length === 1 ? 'Producto' : 'Productos'}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>{statusPill(order.status)}</td>
+                      <td>
+                        <span className="text-mono" style={{ fontSize: 11.5 }}>
+                          {new Date(order.created_at).toLocaleDateString('es-CO', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <button
+                          className={`btn btn--sm ${activeTab === 'pending' ? 'btn--primary' : 'btn--outline'}`}
+                          onClick={() => navigate(`/app/reception/${order.id}`)}
+                        >
+                          {activeTab === 'pending' ? 'Recibir' : 'Ver Detalle'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </AppShell>
-  );
+  )
 }
