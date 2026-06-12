@@ -83,4 +83,12 @@ export interface DispatchMovementResponse {
   executed_by: string;
   created_at: string;
   note: string | null;
+  // Pricing fields — null si el producto no tiene precio configurado
+  unit_price?: number | null;
+  subtotal?: number | null;
+  tax_amount?: number | null;
+  total_amount?: number | null;
+  currency?: string | null;
+  price_type?: string | null;
+  customer_snapshot?: Record<string, unknown> | null;
 }

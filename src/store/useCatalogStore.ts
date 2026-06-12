@@ -7,6 +7,7 @@ import {
   updateCatalogProduct,
   deactivateCatalogProduct,
   restoreCatalogProduct,
+  updateCatalogProductPrices,
   createCategory as createCategoryService,
   updateCategory as updateCategoryService,
   deactivateCategory as deactivateCategoryService,
@@ -22,6 +23,7 @@ import type {
   CatalogBrand as Brand,
   CatalogProductCreateInput,
   CatalogProductUpdateInput,
+  CatalogProductPricesInput,
 } from '../interfaces/catalog'
 
 interface CatalogState {
@@ -37,6 +39,7 @@ interface CatalogState {
   
   createProduct: (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => Promise<void>
   updateProduct: (id: string | number, product: Partial<Product>) => Promise<void>
+  updateProductPrices: (id: string, prices: CatalogProductPricesInput) => Promise<void>
   deactivateProduct: (id: number | string) => Promise<void>
   restoreProduct: (id: number | string) => Promise<void>
 
@@ -133,6 +136,18 @@ const useCatalogStore = create<CatalogState>((set) => ({
     set({ loading: true, error: null })
     try {
       await updateCatalogProduct(id.toString(), mapProductPayload(productData) as CatalogProductUpdateInput)
+      const products = await fetchCatalogProducts({ include_inactive: true })
+      set({ products: products as any, loading: false })
+    } catch (err: any) {
+      set({ error: err.message, loading: false })
+      throw err
+    }
+  },
+
+  updateProductPrices: async (id, prices) => {
+    set({ loading: true, error: null })
+    try {
+      await updateCatalogProductPrices(id, prices)
       const products = await fetchCatalogProducts({ include_inactive: true })
       set({ products: products as any, loading: false })
     } catch (err: any) {

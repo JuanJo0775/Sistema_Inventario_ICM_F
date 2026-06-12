@@ -179,10 +179,24 @@ const CatalogProductDetailPage = () => {
                     <span className="font-medium w-1/3" style={{ width: '30%', fontWeight: 500, color: '#718096' }}>{t('catalog.products.detail.brand', 'Marca')}:</span>
                     <span className="w-2/3" style={{ width: '70%', color: '#2d3748' }}>{brandName}</span>
                   </div>
-                  <div className="detail-row flex mb-2" style={{ display: 'flex', padding: '0.5rem 0' }}>
-                    <span className="font-medium w-1/3" style={{ width: '30%', fontWeight: 500, color: '#718096' }}>{t('catalog.products.detail.price', 'Precio Unitario')}:</span>
-                    <span className="w-2/3" style={{ width: '70%', color: '#2d3748', fontWeight: 600 }}>${product.price ? Number(product.price).toFixed(2) : '0.00'}</span>
-                  </div>
+                  {product.sale_price_retail != null && (
+                    <div className="detail-row flex mb-2" style={{ display: 'flex', padding: '0.5rem 0' }}>
+                      <span className="font-medium w-1/3" style={{ width: '30%', fontWeight: 500, color: '#718096' }}>Precio venta Público:</span>
+                      <span className="w-2/3" style={{ width: '70%', color: '#2d3748', fontWeight: 600 }}>${Number(product.sale_price_retail).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {product.sale_price_wholesale != null && (
+                    <div className="detail-row flex mb-2" style={{ display: 'flex', padding: '0.5rem 0' }}>
+                      <span className="font-medium w-1/3" style={{ width: '30%', fontWeight: 500, color: '#718096' }}>Precio venta Mayor:</span>
+                      <span className="w-2/3" style={{ width: '70%', color: '#2d3748', fontWeight: 600 }}>${Number(product.sale_price_wholesale).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {product.unit_cost != null && (
+                    <div className="detail-row flex mb-2" style={{ display: 'flex', padding: '0.5rem 0' }}>
+                      <span className="font-medium w-1/3" style={{ width: '30%', fontWeight: 500, color: '#718096' }}>Costo unitario:</span>
+                      <span className="w-2/3" style={{ width: '70%', color: '#718096' }}>${Number(product.unit_cost).toFixed(2)}</span>
+                    </div>
+                  )}
                   {product.barcode && (
                     <div className="detail-row flex mb-2" style={{ display: 'flex', padding: '0.5rem 0' }}>
                       <span className="font-medium w-1/3" style={{ width: '30%', fontWeight: 500, color: '#718096' }}>{t('catalog.products.form.barcode', 'Código de barras') || 'Código de barras'}:</span>

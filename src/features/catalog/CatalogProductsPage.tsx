@@ -2,8 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import AppShell from "../../components/layout/AppShell";
 import { BarcodeDisplay } from "../../components/ui/BarcodeDisplay";
+import { SkuInput } from "../../components/ui/SkuInput";
 import useCatalogStore from "../../store/useCatalogStore";
 import type { CatalogProduct } from "../../interfaces/catalog";
+
+const SKU_REGEX = /^[A-Za-z]{1,4}-\d{1,4}$/;
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -55,6 +58,7 @@ function ProductForm({
   async function handleSubmit() {
     if (!form.name?.trim()) return setError("El nombre es obligatorio");
     if (!form.sku?.trim()) return setError("El SKU es obligatorio");
+    if (!SKU_REGEX.test(form.sku!.trim())) return setError("El SKU debe tener formato: 1–4 letras + guion + 1–4 dígitos (BR-12)");
     if (!form.category) return setError("Selecciona una categoría");
     setSaving(true);
     setError("");
@@ -182,19 +186,12 @@ function ProductForm({
                 />
               </div>
               <div className="f-group">
-                <label className="f-label" htmlFor="pf-sku">
-                  SKU *
-                </label>
-                <input
+                <SkuInput
                   id="pf-sku"
-                  className="f-input text-mono"
-                  placeholder="Ej: CAN-APS-001"
+                  label="SKU *"
                   value={form.sku || ""}
-                  onChange={(e) => setForm({ ...form, sku: e.target.value })}
+                  onChange={(v) => setForm({ ...form, sku: v })}
                 />
-                <p className="f-note">
-                  Patrón: 1–4 letras, guion, 1–4 dígitos. BR-12
-                </p>
               </div>
             </div>
           </fieldset>
@@ -345,6 +342,93 @@ function ProductForm({
             </div>
           </fieldset>
 
+          {/* precios — solo en edición */}
+          {initial?.id && (
+            <fieldset>
+              <legend>Precios (opcional)</legend>
+              <div className="f-row f-row-2">
+                <div className="f-group">
+                  <label className="f-label" htmlFor="pf-unit-cost">Costo unitario</label>
+                  <input
+                    id="pf-unit-cost"
+                    className="f-input text-mono"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    placeholder="0"
+                    value={(form as any).unit_cost ?? ''}
+                    onChange={(e) =>
+                      setForm({ ...form, unit_cost: e.target.value ? Number(e.target.value) : null } as any)
+                    }
+                  />
+                </div>
+                <div className="f-group">
+                  <label className="f-label" htmlFor="pf-price-retail">Precio venta público</label>
+                  <input
+                    id="pf-price-retail"
+                    className="f-input text-mono"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    placeholder="0"
+                    value={(form as any).sale_price_retail ?? ''}
+                    onChange={(e) =>
+                      setForm({ ...form, sale_price_retail: e.target.value ? Number(e.target.value) : null } as any)
+                    }
+                  />
+                </div>
+              </div>
+              <div className="f-row f-row-2" style={{ marginTop: 12 }}>
+                <div className="f-group">
+                  <label className="f-label" htmlFor="pf-price-wholesale">Precio venta mayor</label>
+                  <input
+                    id="pf-price-wholesale"
+                    className="f-input text-mono"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    placeholder="0"
+                    value={(form as any).sale_price_wholesale ?? ''}
+                    onChange={(e) =>
+                      setForm({ ...form, sale_price_wholesale: e.target.value ? Number(e.target.value) : null } as any)
+                    }
+                  />
+                </div>
+                <div className="f-group">
+                  <label className="f-label" htmlFor="pf-tax-rate">IVA %</label>
+                  <input
+                    id="pf-tax-rate"
+                    className="f-input text-mono"
+                    type="number"
+                    min={0}
+                    max={100}
+                    step="0.01"
+                    placeholder="19"
+                    value={(form as any).tax_rate_pct ?? ''}
+                    onChange={(e) =>
+                      setForm({ ...form, tax_rate_pct: e.target.value ? Number(e.target.value) : null } as any)
+                    }
+                  />
+                </div>
+              </div>
+              <div className="f-group" style={{ marginTop: 12 }}>
+                <label className="f-label" htmlFor="pf-currency">Moneda</label>
+                <select
+                  id="pf-currency"
+                  className="f-input"
+                  value={(form as any).currency || 'COP'}
+                  onChange={(e) =>
+                    setForm({ ...form, currency: e.target.value } as any)
+                  }
+                >
+                  <option value="COP">COP ($)</option>
+                  <option value="USD">USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                </select>
+              </div>
+            </fieldset>
+          )}
+
           {/* Código de barras visual – solo si ya tiene uno guardado */}
           {initial?.id && form.barcode && (
             <fieldset>
@@ -408,6 +492,7 @@ export default function CatalogProductsPage() {
     fetchBrands,
     createProduct,
     updateProduct,
+    updateProductPrices,
     deactivateProduct,
   } = useCatalogStore();
 
@@ -445,6 +530,16 @@ export default function CatalogProductsPage() {
   async function handleSave(data: Partial<CatalogProduct>) {
     if (editing) {
       await updateProduct(editing.id, data);
+      // Save prices separately via /prices/ endpoint
+      if ((data as any).unit_cost || (data as any).sale_price_retail || (data as any).sale_price_wholesale) {
+        await updateProductPrices(editing.id, {
+          unit_cost: (data as any).unit_cost ?? null,
+          sale_price_retail: (data as any).sale_price_retail ?? null,
+          sale_price_wholesale: (data as any).sale_price_wholesale ?? null,
+          tax_rate_pct: (data as any).tax_rate_pct ?? null,
+          currency: (data as any).currency || 'COP',
+        });
+      }
     } else {
       await createProduct(data as any);
     }
@@ -583,6 +678,7 @@ export default function CatalogProductsPage() {
                     <th>SKU</th>
                     <th>Producto</th>
                     <th>Categoría</th>
+                    <th>Precio</th>
                     <th>Stock total</th>
                     <th>Reorden</th>
                     <th>Estado</th>
@@ -595,7 +691,7 @@ export default function CatalogProductsPage() {
                   {filtered.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={7}
+                        colSpan={8}
                         style={{
                           textAlign: "center",
                           color: "var(--ink-40)",
@@ -655,6 +751,11 @@ export default function CatalogProductsPage() {
                             ) : (
                               "—"
                             )}
+                          </td>
+                          <td className="text-mono" style={{ fontSize: 12 }}>
+                            {(p as any).sale_price_retail
+                              ? `$${(p as any).sale_price_retail.toLocaleString('es-CO')}`
+                              : "—"}
                           </td>
                           <td className="text-mono">
                             <strong

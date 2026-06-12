@@ -45,6 +45,12 @@ export interface CatalogProduct {
   created_at?: string
   updated_at?: string
   stockTotal?: number // Computed or fetched from stock API
+  // Pricing fields — null por defecto si no se configuraron
+  unit_cost?: number | null
+  sale_price_retail?: number | null
+  sale_price_wholesale?: number | null
+  tax_rate_pct?: number | null
+  currency?: string | null
 }
 
 export interface CatalogProductCreateInput {
@@ -77,4 +83,13 @@ export interface CatalogProductUpdateInput {
   notes?: string
   reorder_point?: number
   is_active?: boolean
+}
+
+/** Payload para PATCH /catalog/products/{id}/prices/ */
+export interface CatalogProductPricesInput {
+  unit_cost?: number | null
+  sale_price_retail?: number | null
+  sale_price_wholesale?: number | null
+  tax_rate_pct?: number | null
+  currency?: string | null
 }
