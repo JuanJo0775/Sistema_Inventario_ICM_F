@@ -20,6 +20,7 @@ import LocationsPage from './features/locations/LocationsPage'
 import TransfersPage from './features/locations/TransfersPage'
 import SuppliersPage from './features/purchasing/SuppliersPage'
 import PurchaseOrdersPage from './features/purchasing/PurchaseOrdersPage'
+import AuditPage from './features/admin/AuditPage'
 
 function App() {
   return (
@@ -174,6 +175,15 @@ function App() {
           element={
             <ProtectedRoute>
               <PurchaseOrdersPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Admin Module */}
+        <Route
+          path="/app/admin/audit"
+          element={
+            <ProtectedRoute>
+              <AuditPage />
             </ProtectedRoute>
           }
         />

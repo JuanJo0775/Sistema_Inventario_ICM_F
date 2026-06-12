@@ -88,9 +88,22 @@ export const updatePurchaseOrder = async (
     if (mockOrders[index].status !== 'borrador') {
       throw new Error('Solo se pueden editar órdenes en borrador')
     }
-    const updated = {
+    const updated: PurchaseOrder = {
       ...mockOrders[index],
       ...data,
+      items: data.items
+        ? data.items.map((it, idx) => ({
+            id: `item-${idx}`,
+            product: it.product_id,
+            product_name: 'Mock Product',
+            product_sku: 'MOCK-SKU',
+            quantity_ordered: it.quantity_ordered,
+            quantity_received: 0,
+            quantity_pending: it.quantity_ordered,
+            unit_cost: it.unit_cost,
+            notes: it.notes,
+          }))
+        : mockOrders[index].items,
       updated_at: new Date().toISOString(),
     }
     mockOrders[index] = updated

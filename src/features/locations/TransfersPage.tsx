@@ -70,7 +70,7 @@ const TransfersPage: React.FC = () => {
   const [availableLots, setAvailableLots] = useState<LotOption[]>([])
   const [selectedLotId, setSelectedLotId] = useState('')
   const [selectedDestinationId, setSelectedDestinationId] = useState('')
-  const [transferQuantity, setTransferQuantity] = useState<number>(1)
+  const [transferQuantity, setTransferQuantity] = useState<string>('1')
   const [coldChainAck, setColdChainAck] = useState(false)
   const [electricalSafetyAck, setElectricalSafetyAck] = useState(false)
 
@@ -189,7 +189,7 @@ const TransfersPage: React.FC = () => {
     setAvailableLots([])
     setSelectedLotId('')
     setSelectedDestinationId('')
-    setTransferQuantity(1)
+    setTransferQuantity('1')
     setColdChainAck(false)
     setElectricalSafetyAck(false)
     setFormError(null)
@@ -330,11 +330,12 @@ const TransfersPage: React.FC = () => {
       setFormError('La ubicación de origen y destino deben ser distintas.')
       return
     }
-    if (transferQuantity <= 0) {
+    const parsedQty = parseInt(transferQuantity, 10)
+    if (!parsedQty || parsedQty <= 0) {
       setFormError('La cantidad a transferir debe ser mayor a 0.')
       return
     }
-    if (transferQuantity > maxAllowedQuantity) {
+    if (parsedQty > maxAllowedQuantity) {
       setFormError(`La cantidad ingresada supera el stock disponible (${maxAllowedQuantity}).`)
       return
     }
@@ -365,13 +366,13 @@ const TransfersPage: React.FC = () => {
         product_id: selectedProduct.id,
         origin_id: selectedOriginId,
         destination_id: selectedDestinationId,
-        quantity: transferQuantity,
+        quantity: parsedQty,
         lot_id: selectedProduct.requires_expiration ? selectedLotId : null,
         cold_chain_acknowledged: coldChainAck,
         electrical_safety_acknowledged: electricalSafetyAck,
       })
 
-      setSuccessMsg(`Traslado de ${transferQuantity} unidades de "${selectedProduct.name}" registrado correctamente.`)
+      setSuccessMsg(`Traslado de ${parsedQty} unidades de "${selectedProduct.name}" registrado correctamente.`)
       setIsCreateOpen(false)
       setCurrentPage(1) // Return to page 1
       loadTransfers() // Reload list
@@ -1011,13 +1012,16 @@ const TransfersPage: React.FC = () => {
                         </label>
                         <input
                           id="qty-input"
-                          type="number"
-                          min={1}
-                          max={maxAllowedQuantity}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           value={transferQuantity}
-                          onChange={(e) => setTransferQuantity(Number(e.target.value))}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/[^0-9]/g, '')
+                            setTransferQuantity(raw)
+                          }}
                           style={{ width: '100%', padding: '0.625rem 0.75rem', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.875rem', outline: 'none' }}
-                          required
+                          placeholder="Ej. 5"
                         />
                       </div>
                     )}

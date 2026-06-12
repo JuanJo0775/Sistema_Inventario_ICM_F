@@ -13,7 +13,6 @@ import {
   Calendar,
   Globe,
   FileText,
-  ChevronDown,
 } from 'lucide-react'
 import AppShell from '../../components/layout/AppShell'
 import useSupplierStore from '../../store/useSupplierStore'
@@ -89,10 +88,6 @@ export const SuppliersPage: React.FC = () => {
     setActiveSearch(searchTerm)
   }
 
-  const handleClearFilter = () => {
-    setSearchTerm('')
-    setActiveSearch('')
-  }
 
   // Form Modal management
   const handleOpenCreateModal = () => {
