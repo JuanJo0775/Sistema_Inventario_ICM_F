@@ -5,7 +5,6 @@ import type {
   ReceptionMovement,
   ReceptionMovementResponse,
   ReceptionOverview,
-  ReceptionSubmitPayload,
   ReceptionCreatePayload,
 } from "../interfaces/reception";
 import type { PurchaseOrder } from "../interfaces/purchaseOrders";
@@ -79,69 +78,6 @@ export const fetchReceptionOverview = async (): Promise<ReceptionOverview> => {
     // Se mantienen desde el mock hasta que el backend las exponga
     expectedOrders: mockReceptionOverview.expectedOrders,
     recentMovements,
-  };
-};
-
-export const submitReception = async (
-  payload: ReceptionSubmitPayload,
-): Promise<ReceptionMovement> => {
-  if (useMocks) {
-    // Busca la orden en el mock para construir la respuesta visual
-    const order = mockReceptionOverview.expectedOrders.find(
-      (item) => item.productId === payload.productId,
-    );
-    const location = mockReceptionOverview.locations.find(
-      (item) => item.id === payload.locationId,
-    );
-
-    return {
-      id: `mov-in-${Date.now()}`,
-      productName: order?.productName ?? payload.productId,
-      sku: order?.sku ?? "-",
-      quantity: payload.quantity,
-      locationCode: location?.code ?? "-",
-      operator: "Usuario ICM",
-      confirmedAt: new Intl.DateTimeFormat("es-CO", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(new Date()),
-      discrepancyNote: payload.discrepancyNote,
-    };
-  }
-
-  // Construye el body exacto que espera EntryCreateSerializer
-  const requestBody = {
-    product_id: payload.productId,
-    location_id: payload.locationId,
-    quantity: payload.quantity,
-    serial_number: payload.serialNumber ?? null,
-    qty_invoiced: payload.qtyInvoiced ?? null,
-    discrepancy_note: payload.discrepancyNote ?? null,
-    cold_chain_acknowledged: payload.coldChainAcknowledged,
-    electrical_safety_acknowledged: payload.electricalSafetyAcknowledged,
-  };
-
-  const response = await api.post<ReceptionMovementResponse>(
-    "/movements/entries/",
-    requestBody,
-  );
-
-  const mov = response.data;
-
-  // Necesitamos el código de ubicación para mostrarlo en la UI
-  // Lo obtenemos de los locations que ya tenemos en el store o hacemos una llamada
-  return {
-    id: mov.id,
-    productName: mov.product_sku,
-    sku: mov.product_sku,
-    quantity: mov.quantity,
-    locationCode: mov.destination_location ?? "-",
-    operator: mov.executed_by,
-    confirmedAt: new Intl.DateTimeFormat("es-CO", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(mov.created_at)),
-    discrepancyNote: mov.discrepancy_note ?? undefined,
   };
 };
 

@@ -4428,3 +4428,14 @@ input.f-input[type="date"] {
   color: #fff;
 }
 
+/* ─── SkuInput (BR-12) ──────────────────────────────────────── */
+
+.sku-input {
+  font-family: var(--ff-mono);
+  letter-spacing: 0.5px;
+}
+
+.f-note--err {
+  color: var(--err);
+}
+
