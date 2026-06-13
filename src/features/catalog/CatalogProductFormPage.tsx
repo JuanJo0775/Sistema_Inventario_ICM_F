@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import AppShell from '../../components/layout/AppShell';
 import { SkuInput } from '../../components/ui/SkuInput';
 import useCatalogStore from '../../store/useCatalogStore';
+ 
 
 const SKU_REGEX = /^[A-Za-z]{1,4}-\d{1,4}$/;
 
