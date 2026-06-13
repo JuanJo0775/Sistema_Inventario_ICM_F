@@ -20,16 +20,12 @@ interface LocationSplit {
   id: string
   locationId: string
   quantity: string
-  lotCode: string
-  expirationDate: string
 }
 
 const newSplit = (): LocationSplit => ({
   id: crypto.randomUUID(),
   locationId: '',
   quantity: '',
-  lotCode: '',
-  expirationDate: '',
 })
 
 const itemStatusBadge = (received: number, ordered: number) => {
@@ -56,7 +52,7 @@ export default function ReceptionOrderDetailPage() {
   } = useReceptionStore()
 
   const { locations, fetchLocations } = useLocationStore()
-  const { products: catalogProducts, fetchProducts } = useCatalogStore()
+  const { products: catalogProducts, categories, fetchProducts, fetchCategories } = useCatalogStore()
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<PurchaseOrderItem | null>(null)
@@ -64,6 +60,7 @@ export default function ReceptionOrderDetailPage() {
   const [locationId, setLocationId] = useState<string>('')
   const [lotCode, setLotCode] = useState<string>('')
   const [expirationDate, setExpirationDate] = useState<string>('')
+  const [serialNumber, setSerialNumber] = useState<string>('')
   const [discrepancyNote, setDiscrepancyNote] = useState<string>('')
   const [splitEnabled, setSplitEnabled] = useState(false)
   const [splits, setSplits] = useState<LocationSplit[]>([])
@@ -77,7 +74,8 @@ export default function ReceptionOrderDetailPage() {
     }
     fetchLocations(true)
     fetchProducts()
-  }, [orderId, fetchOrderDetail, fetchLocations, fetchProducts])
+    fetchCategories(true)
+  }, [orderId, fetchOrderDetail, fetchLocations, fetchProducts, fetchCategories])
 
   const filteredLocations = useMemo(() => {
     return locations.filter(
@@ -92,6 +90,16 @@ export default function ReceptionOrderDetailPage() {
 
   const requiresExpiration = productConfig?.requires_expiration ?? false
   const lotRequired = requiresExpiration
+
+  const requiresSerial = useMemo(() => {
+    if (!productConfig) return false
+    const catId = typeof productConfig.category === 'object' && productConfig.category !== null
+      ? (productConfig.category as any).id
+      : productConfig.category
+    
+    const matchedCategory = categories.find((c) => String(c.id) === String(catId))
+    return matchedCategory ? matchedCategory.requires_serial_number : false
+  }, [productConfig, categories])
 
   const pendingQty = selectedItem
     ? Number(selectedItem.quantity_ordered) - Number(selectedItem.quantity_received)
@@ -111,6 +119,7 @@ export default function ReceptionOrderDetailPage() {
     setLocationId('')
     setLotCode('')
     setExpirationDate('')
+    setSerialNumber('')
     setDiscrepancyNote('')
     setSplitEnabled(false)
     setSplits([])
@@ -131,7 +140,7 @@ export default function ReceptionOrderDetailPage() {
     setSplits((prev) => prev.filter((s) => s.id !== id))
   }
 
-  const handleSplitChange = (id: string, field: 'locationId' | 'quantity' | 'lotCode' | 'expirationDate', value: string) => {
+  const handleSplitChange = (id: string, field: 'locationId' | 'quantity', value: string) => {
     setSplits((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)))
   }
 
@@ -199,14 +208,10 @@ export default function ReceptionOrderDetailPage() {
           setActionError('Todas las divisiones deben tener una cantidad mayor a 0.')
           return
         }
-        if (lotRequired && !s.lotCode.trim()) {
-          setActionError('Todas las divisiones deben tener un lote cuando el producto requiere vencimiento.')
-          return
-        }
-        if (requiresExpiration && !s.expirationDate) {
-          setActionError('Todas las divisiones deben tener fecha de vencimiento.')
-          return
-        }
+      }
+      if (requiresSerial && !serialNumber.trim()) {
+        setActionError('Debe ingresar el número de serie del producto (único para todas las ubicaciones).')
+        return
       }
       if (totalSplitQty !== enteredQty) {
         setActionError(
@@ -224,6 +229,10 @@ export default function ReceptionOrderDetailPage() {
         setActionError('Debe seleccionar una ubicación de destino.')
         return
       }
+      if (requiresSerial && !serialNumber.trim()) {
+        setActionError('El número de serie es obligatorio para este producto.')
+        return
+      }
     }
 
     setSaving(true)
@@ -233,6 +242,7 @@ export default function ReceptionOrderDetailPage() {
         quantity_received: enteredQty,
         lot_code: lotCode.trim() || undefined,
         lot_expiration_date: expirationDate || null,
+        serial_number: requiresSerial ? serialNumber.trim() : undefined,
         discrepancy_note: hasDiscrepancy ? discrepancyNote.trim() : undefined,
       }
 
@@ -246,11 +256,13 @@ export default function ReceptionOrderDetailPage() {
               purchase_order_item_id: selectedItem.id,
               quantity_received: enteredQty,
               discrepancy_note: hasDiscrepancy ? discrepancyNote.trim() : undefined,
+              serial_number: requiresSerial ? serialNumber.trim() : undefined,
               allocations: splits.map((s) => ({
                 location_id: s.locationId,
                 quantity_received: Number(s.quantity),
-                ...(lotRequired && s.lotCode.trim() ? { lot_code: s.lotCode.trim() } : {}),
-                ...(lotRequired && s.expirationDate ? { lot_expiration_date: s.expirationDate } : {}),
+                lot_code: lotRequired && lotCode.trim() ? lotCode.trim() : undefined,
+                lot_expiration_date: requiresExpiration && expirationDate ? expirationDate : null,
+                serial_number: requiresSerial ? serialNumber.trim() : undefined,
               })),
             },
           ],
@@ -697,8 +709,8 @@ export default function ReceptionOrderDetailPage() {
                 />
               </div>
 
-              {/* Lot + Expiration (oculto en split avanzado, va por fila) */}
-              {(!splitEnabled || !requiresExpiration) && (
+              {/* Lot + Expiration (always global) */}
+              {requiresExpiration && (
                 <div className="f-row f-row-2">
                   <div className="f-group">
                     <label className="f-label" htmlFor="lot-code-input">
@@ -720,24 +732,44 @@ export default function ReceptionOrderDetailPage() {
                     )}
                   </div>
 
-                  {requiresExpiration && (
-                    <div className="f-group">
-                      <label className="f-label" htmlFor="expiration-date-input">
-                        Vencimiento <span style={{ color: 'var(--err)' }}>*</span>
-                      </label>
-                      <input
-                        id="expiration-date-input"
-                        className="f-input"
-                        type="date"
-                        value={expirationDate}
-                        onChange={(e) => setExpirationDate(e.target.value)}
-                        required
-                      />
-                    </div>
-                  )}
+                  <div className="f-group">
+                    <label className="f-label" htmlFor="expiration-date-input">
+                      Vencimiento <span style={{ color: 'var(--err)' }}>*</span>
+                    </label>
+                    <input
+                      id="expiration-date-input"
+                      className="f-input"
+                      type="date"
+                      value={expirationDate}
+                      onChange={(e) => setExpirationDate(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
               )}
 
+
+              {requiresSerial && (
+                <div className="f-group">
+                  <label className="f-label" htmlFor="serial-number-input">
+                    Número de serie <span style={{ color: 'var(--err)' }}>*</span>
+                  </label>
+                  <input
+                    id="serial-number-input"
+                    className="f-input text-mono"
+                    type="text"
+                    placeholder="Ej. SN-001"
+                    value={serialNumber}
+                    onChange={(e) => setSerialNumber(e.target.value)}
+                    required
+                  />
+                  {splitEnabled && (
+                    <span className="f-note" style={{ color: 'var(--ink-40)', fontSize: 11.5 }}>
+                      Este número aplica para el producto completo, independientemente de cuántas ubicaciones se divida.
+                    </span>
+                  )}
+                </div>
+              )}
 
               {/* Split location toggle */}
               <div
@@ -843,6 +875,20 @@ export default function ReceptionOrderDetailPage() {
                               fontSize: 12,
                             }}
                           />
+                          {requiresSerial && (
+                            <span
+                              className="text-mono"
+                              style={{
+                                fontSize: 11,
+                                color: 'var(--ink-40)',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                                paddingLeft: 2,
+                              }}
+                            >
+                              SN ↑
+                            </span>
+                          )}
                           <button
                             type="button"
                             onClick={() => handleRemoveSplit(s.id)}
@@ -859,25 +905,6 @@ export default function ReceptionOrderDetailPage() {
                             <Trash2 size={14} />
                           </button>
                         </div>
-                        {requiresExpiration && (
-                          <div style={{ display: 'flex', gap: 6, marginTop: 6, paddingLeft: 26 }}>
-                            <input
-                              className="f-input text-mono"
-                              type="text"
-                              placeholder="Lote"
-                              value={s.lotCode}
-                              onChange={(e) => handleSplitChange(s.id, 'lotCode', e.target.value)}
-                              style={{ flex: 1, height: 36, fontSize: 12 }}
-                            />
-                            <input
-                              className="f-input"
-                              type="date"
-                              value={s.expirationDate}
-                              onChange={(e) => handleSplitChange(s.id, 'expirationDate', e.target.value)}
-                              style={{ flex: 1, height: 36, fontSize: 12 }}
-                            />
-                          </div>
-                        )}
                       </div>
                     ))}
 

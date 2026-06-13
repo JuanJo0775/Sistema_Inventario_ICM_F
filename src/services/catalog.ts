@@ -103,7 +103,7 @@ export const fetchBrands = async (
     }
     return list
   }
-  const response = await api.get<BackendListResponse<CatalogBrand>>('/catalog/subcategories/', {
+  const response = await api.get<BackendListResponse<CatalogBrand>>('/catalog/brands/', {
     params: {
       include_inactive: includeInactive ? 'true' : undefined,
       category: categoryId || undefined,
@@ -120,7 +120,7 @@ export const createBrand = async (data: {
   if (useMocks) {
     return mockCreateBrand(data)
   }
-  const response = await api.post<CatalogBrand>('/catalog/subcategories/', data)
+  const response = await api.post<CatalogBrand>('/catalog/brands/', data)
   return response.data
 }
 
@@ -131,7 +131,7 @@ export const updateBrand = async (
   if (useMocks) {
     return mockUpdateBrand(id, data)
   }
-  const response = await api.patch<CatalogBrand>(`/catalog/subcategories/${id}/`, data)
+  const response = await api.patch<CatalogBrand>(`/catalog/brands/${id}/`, data)
   return response.data
 }
 
@@ -139,14 +139,14 @@ export const deactivateBrand = async (id: string): Promise<void> => {
   if (useMocks) {
     return mockDeactivateBrand(id)
   }
-  await api.delete(`/catalog/subcategories/${id}/`)
+  await api.delete(`/catalog/brands/${id}/`)
 }
 
 export const restoreBrand = async (id: string): Promise<CatalogBrand> => {
   if (useMocks) {
     return mockRestoreBrand(id)
   }
-  const response = await api.post<CatalogBrand>(`/catalog/subcategories/${id}/restore/`)
+  const response = await api.post<CatalogBrand>(`/catalog/brands/${id}/restore/`)
   return response.data
 }
 

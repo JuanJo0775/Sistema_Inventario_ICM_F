@@ -48,7 +48,7 @@ export const fetchSubcategories = async (
   }
 
   const response = await api.get<ListResponse<InventorySubcategory>>(
-    "/catalog/subcategories/",
+    "/catalog/brands/",
     {
       params: categoryId ? { category: categoryId } : undefined,
     },

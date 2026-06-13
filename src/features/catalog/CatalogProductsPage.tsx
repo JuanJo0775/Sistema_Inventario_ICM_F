@@ -753,8 +753,8 @@ export default function CatalogProductsPage() {
                             )}
                           </td>
                           <td className="text-mono" style={{ fontSize: 12 }}>
-                            {(p as any).sale_price_retail
-                              ? `$${(p as any).sale_price_retail.toLocaleString('es-CO')}`
+                            {p.sale_price_retail != null
+                              ? `$${Number(p.sale_price_retail).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
                               : "—"}
                           </td>
                           <td className="text-mono">

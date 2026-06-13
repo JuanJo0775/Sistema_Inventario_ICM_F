@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { api } from '../services/api'
 import { 
   fetchCatalogProducts, 
   fetchCategories as fetchCategoriesService, 
@@ -83,6 +84,32 @@ const mapProductPayload = (productData: ProductFormPayload): CatalogProductCreat
   ) as CatalogProductCreateInput | CatalogProductUpdateInput
 }
 
+// Helper reutilizable: carga productos del catálogo y mezcla stockTotal desde /inventory/
+async function fetchProductsWithStock() {
+  const [products, inventoryResp] = await Promise.allSettled([
+    fetchCatalogProducts({ include_inactive: true }),
+    api.get<Array<{ product_id: string; total: number }>>('/inventory/'),
+  ])
+
+  const catalogProducts = products.status === 'fulfilled' ? products.value : []
+
+  let stockMap: Record<string, number> = {}
+  if (inventoryResp.status === 'fulfilled') {
+    const invData = inventoryResp.value.data
+    const rows = Array.isArray(invData)
+      ? invData
+      : (invData as any)?.results ?? []
+    rows.forEach((row: { product_id: string; total: number }) => {
+      stockMap[row.product_id] = row.total
+    })
+  }
+
+  return catalogProducts.map((p: any) => ({
+    ...p,
+    stockTotal: stockMap[p.id] ?? p.stockTotal ?? 0,
+  }))
+}
+
 const useCatalogStore = create<CatalogState>((set) => ({
   products: [],
   categories: [],
@@ -93,8 +120,8 @@ const useCatalogStore = create<CatalogState>((set) => ({
   fetchProducts: async () => {
     set({ loading: true, error: null })
     try {
-      const products = await fetchCatalogProducts({ include_inactive: true })
-      set({ products: products as any, loading: false })
+      const merged = await fetchProductsWithStock()
+      set({ products: merged as any, loading: false })
     } catch (err: any) {
       set({ error: err.message, loading: false })
     }
@@ -124,7 +151,7 @@ const useCatalogStore = create<CatalogState>((set) => ({
     set({ loading: true, error: null })
     try {
       await createCatalogProduct(mapProductPayload(productData) as CatalogProductCreateInput)
-      const products = await fetchCatalogProducts({ include_inactive: true })
+      const products = await fetchProductsWithStock()
       set({ products: products as any, loading: false })
     } catch (err: any) {
       set({ error: err.message, loading: false })
@@ -136,7 +163,7 @@ const useCatalogStore = create<CatalogState>((set) => ({
     set({ loading: true, error: null })
     try {
       await updateCatalogProduct(id.toString(), mapProductPayload(productData) as CatalogProductUpdateInput)
-      const products = await fetchCatalogProducts({ include_inactive: true })
+      const products = await fetchProductsWithStock()
       set({ products: products as any, loading: false })
     } catch (err: any) {
       set({ error: err.message, loading: false })
@@ -148,7 +175,7 @@ const useCatalogStore = create<CatalogState>((set) => ({
     set({ loading: true, error: null })
     try {
       await updateCatalogProductPrices(id, prices)
-      const products = await fetchCatalogProducts({ include_inactive: true })
+      const products = await fetchProductsWithStock()
       set({ products: products as any, loading: false })
     } catch (err: any) {
       set({ error: err.message, loading: false })
@@ -160,7 +187,7 @@ const useCatalogStore = create<CatalogState>((set) => ({
     set({ loading: true, error: null })
     try {
       await deactivateCatalogProduct(id.toString())
-      const products = await fetchCatalogProducts({ include_inactive: true })
+      const products = await fetchProductsWithStock()
       set({ products: products as any, loading: false })
     } catch (err: any) {
       set({ error: err.message, loading: false })
@@ -172,7 +199,7 @@ const useCatalogStore = create<CatalogState>((set) => ({
     set({ loading: true, error: null })
     try {
       await restoreCatalogProduct(id.toString())
-      const products = await fetchCatalogProducts({ include_inactive: true })
+      const products = await fetchProductsWithStock()
       set({ products: products as any, loading: false })
     } catch (err: any) {
       set({ error: err.message, loading: false })
