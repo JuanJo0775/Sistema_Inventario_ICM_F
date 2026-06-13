@@ -39,6 +39,10 @@ const CatalogProductFormPage: React.FC = () => {
     requires_serial: false,
     requires_lots: false,
   });
+  // Todas las marcas activas (independientes de la categoría)
+  const activeBrands = brands.filter(
+    (b: any) => b.is_active || String(b.id) === String(formData.subcategory_id)
+  );
 
   const [pricing, setPricing] = useState({
     unit_cost: '',
@@ -222,7 +226,9 @@ const CatalogProductFormPage: React.FC = () => {
               </div>
 
               <div className="form-field">
-                <label className="form-label" htmlFor="subcategory_id">{t('catalog.products.form.brand')}</label>
+                <label className="form-label" htmlFor="subcategory_id">
+                  {t('catalog.products.form.brand', 'Marca')}
+                </label>
                 <select
                   id="subcategory_id"
                   name="subcategory_id"
@@ -231,13 +237,11 @@ const CatalogProductFormPage: React.FC = () => {
                   onChange={handleChange}
                 >
                   <option value="">{t('catalog.products.form.selectBrand', 'Selecciona una marca')}</option>
-                  {brands
-                    .filter((b: any) => b.is_active || String(b.id) === String(formData.subcategory_id))
-                    .map((brand: any) => (
-                      <option key={brand.id} value={brand.id}>
-                        {brand.name}
-                      </option>
-                    ))}
+                  {activeBrands.map((brand: any) => (
+                    <option key={brand.id} value={brand.id}>
+                      {brand.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 

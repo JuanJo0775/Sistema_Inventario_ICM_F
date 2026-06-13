@@ -56,7 +56,7 @@ export default function ReceptionOrderDetailPage() {
   } = useReceptionStore()
 
   const { locations, fetchLocations } = useLocationStore()
-  const { products: catalogProducts, fetchProducts } = useCatalogStore()
+  const { products: catalogProducts, categories, fetchProducts, fetchCategories } = useCatalogStore()
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<PurchaseOrderItem | null>(null)
@@ -64,6 +64,7 @@ export default function ReceptionOrderDetailPage() {
   const [locationId, setLocationId] = useState<string>('')
   const [lotCode, setLotCode] = useState<string>('')
   const [expirationDate, setExpirationDate] = useState<string>('')
+  const [serialNumber, setSerialNumber] = useState<string>('')
   const [discrepancyNote, setDiscrepancyNote] = useState<string>('')
   const [splitEnabled, setSplitEnabled] = useState(false)
   const [splits, setSplits] = useState<LocationSplit[]>([])
@@ -77,7 +78,8 @@ export default function ReceptionOrderDetailPage() {
     }
     fetchLocations(true)
     fetchProducts()
-  }, [orderId, fetchOrderDetail, fetchLocations, fetchProducts])
+    fetchCategories(true)
+  }, [orderId, fetchOrderDetail, fetchLocations, fetchProducts, fetchCategories])
 
   const filteredLocations = useMemo(() => {
     return locations.filter(
@@ -92,6 +94,16 @@ export default function ReceptionOrderDetailPage() {
 
   const requiresExpiration = productConfig?.requires_expiration ?? false
   const lotRequired = requiresExpiration
+
+  const requiresSerial = useMemo(() => {
+    if (!productConfig) return false
+    const catId = typeof productConfig.category === 'object' && productConfig.category !== null
+      ? (productConfig.category as any).id
+      : productConfig.category
+    
+    const matchedCategory = categories.find((c) => String(c.id) === String(catId))
+    return matchedCategory ? matchedCategory.requires_serial_number : false
+  }, [productConfig, categories])
 
   const pendingQty = selectedItem
     ? Number(selectedItem.quantity_ordered) - Number(selectedItem.quantity_received)
@@ -111,6 +123,7 @@ export default function ReceptionOrderDetailPage() {
     setLocationId('')
     setLotCode('')
     setExpirationDate('')
+    setSerialNumber('')
     setDiscrepancyNote('')
     setSplitEnabled(false)
     setSplits([])
@@ -208,6 +221,10 @@ export default function ReceptionOrderDetailPage() {
           return
         }
       }
+      if (requiresSerial && !serialNumber.trim()) {
+        setActionError('Debe ingresar el número de serie del producto (único para todas las ubicaciones).')
+        return
+      }
       if (totalSplitQty !== enteredQty) {
         setActionError(
           `La suma de las cantidades divididas (${totalSplitQty}) debe ser igual a la cantidad recibida (${enteredQty}).`,
@@ -222,6 +239,10 @@ export default function ReceptionOrderDetailPage() {
     } else {
       if (!locationId) {
         setActionError('Debe seleccionar una ubicación de destino.')
+        return
+      }
+      if (requiresSerial && !serialNumber.trim()) {
+        setActionError('El número de serie es obligatorio para este producto.')
         return
       }
     }
@@ -243,14 +264,13 @@ export default function ReceptionOrderDetailPage() {
           notes: `Recepción de ${selectedItem.product_name} (división de ubicación)`,
           items: [
             {
-              purchase_order_item_id: selectedItem.id,
-              quantity_received: enteredQty,
-              discrepancy_note: hasDiscrepancy ? discrepancyNote.trim() : undefined,
+              ...baseItem,
               allocations: splits.map((s) => ({
                 location_id: s.locationId,
                 quantity_received: Number(s.quantity),
-                ...(lotRequired && s.lotCode.trim() ? { lot_code: s.lotCode.trim() } : {}),
+                ...(lotRequired && s.lotCode && s.lotCode.trim() ? { lot_code: s.lotCode.trim() } : {}),
                 ...(lotRequired && s.expirationDate ? { lot_expiration_date: s.expirationDate } : {}),
+                ...(requiresSerial ? { serial_number: serialNumber.trim() } : {}),
               })),
             },
           ],
@@ -260,7 +280,12 @@ export default function ReceptionOrderDetailPage() {
           po_id: orderId,
           destination_location_id: locationId,
           notes: `Recepción de ${selectedItem.product_name}`,
-          items: [baseItem],
+          items: [
+            {
+              ...baseItem,
+              serial_number: requiresSerial ? serialNumber.trim() : undefined,
+            },
+          ],
         })
       }
 
@@ -738,6 +763,27 @@ export default function ReceptionOrderDetailPage() {
                 </div>
               )}
 
+              {requiresSerial && (
+                <div className="f-group">
+                  <label className="f-label" htmlFor="serial-number-input">
+                    Número de serie <span style={{ color: 'var(--err)' }}>*</span>
+                  </label>
+                  <input
+                    id="serial-number-input"
+                    className="f-input text-mono"
+                    type="text"
+                    placeholder="Ej. SN-001"
+                    value={serialNumber}
+                    onChange={(e) => setSerialNumber(e.target.value)}
+                    required
+                  />
+                  {splitEnabled && (
+                    <span className="f-note" style={{ color: 'var(--ink-40)', fontSize: 11.5 }}>
+                      Este número aplica para el producto completo, independientemente de cuántas ubicaciones se divida.
+                    </span>
+                  )}
+                </div>
+              )}
 
               {/* Split location toggle */}
               <div
@@ -792,11 +838,91 @@ export default function ReceptionOrderDetailPage() {
                           border: '1px solid var(--ink-12)',
                         }}
                       >
+<<<<<<< HEAD
+                        <span
+                          className="text-mono"
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: 'var(--ink-40)',
+                            width: 20,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {idx + 1}.
+                        </span>
+                        <select
+                          value={s.locationId}
+                          onChange={(e) =>
+                            handleSplitChange(s.id, 'locationId', e.target.value)
+                          }
+                          className="f-input"
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            height: 36,
+                            fontSize: 12,
+                          }}
+                        >
+                          <option value="">Ubicación</option>
+                          {filteredLocations.map((loc) => (
+                            <option key={loc.id} value={loc.id}>
+                              {loc.code} - {loc.name}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          className="f-input text-mono"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          placeholder="Cant."
+                          value={s.quantity}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9]/g, '')
+                            handleSplitChange(s.id, 'quantity', val)
+                          }}
+                          style={{
+                            width: 80,
+                            flexShrink: 0,
+                            height: 36,
+                            fontSize: 12,
+                          }}
+                        />
+                        {requiresSerial && (
+=======
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+>>>>>>> develop
                           <span
                             className="text-mono"
                             style={{
                               fontSize: 11,
+<<<<<<< HEAD
+                              color: 'var(--ink-40)',
+                              whiteSpace: 'nowrap',
+                              flexShrink: 0,
+                              paddingLeft: 2,
+                            }}
+                          >
+                            SN ↑
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSplit(s.id)}
+                          className="btn btn--ghost btn--sm"
+                          style={{
+                            color: 'var(--err)',
+                            width: 32,
+                            height: 32,
+                            flexShrink: 0,
+                            padding: 0,
+                          }}
+                          title="Eliminar"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+=======
                               fontWeight: 700,
                               color: 'var(--ink-40)',
                               width: 20,
@@ -878,6 +1004,7 @@ export default function ReceptionOrderDetailPage() {
                             />
                           </div>
                         )}
+>>>>>>> develop
                       </div>
                     ))}
 
