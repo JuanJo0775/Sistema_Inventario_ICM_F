@@ -148,5 +148,8 @@ export const createAndConfirmReception = async (
 ): Promise<void> => {
   if (useMocks) return;
   const res = await api.post<ReceptionResponse>("/purchasing/receptions/", payload);
-  await api.post(`/purchasing/receptions/${res.data.id}/confirm/`);
+  await api.post(`/purchasing/receptions/${res.data.id}/confirm/`, {
+    cold_chain_acknowledged: true,
+    electrical_safety_acknowledged: true,
+  });
 };

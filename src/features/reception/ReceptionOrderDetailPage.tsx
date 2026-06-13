@@ -281,7 +281,8 @@ export default function ReceptionOrderDetailPage() {
       )
       setIsModalOpen(false)
     } catch (err: any) {
-      setActionError(err.message || 'Error al procesar la recepción.')
+      const data = err?.response?.data
+      setActionError(data?.message || data?.detail || err.message || 'Error al procesar la recepción.')
     } finally {
       setSaving(false)
     }
