@@ -1,19 +1,6 @@
-import React, { useEffect, useState, useMemo } from 'react'
-import {
-  Search,
-  Plus,
-  Edit2,
-  AlertTriangle,
-  X,
-  Building2,
-  Mail,
-  Phone,
-  MapPin,
-  Info,
-  Calendar,
-  Globe,
-  FileText,
-} from 'lucide-react'
+import { useEffect, useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
+import { AlertTriangle, X } from 'lucide-react'
 import AppShell from '../../components/layout/AppShell'
 import useSupplierStore from '../../store/useSupplierStore'
 import type { Supplier } from '../../interfaces/suppliers'
@@ -21,30 +8,23 @@ import type { Supplier } from '../../interfaces/suppliers'
 export const SuppliersPage: React.FC = () => {
   const {
     suppliers,
-    selectedSupplier,
     loading,
     error: storeError,
     fetchSuppliers,
-    fetchSupplierDetail,
     createSupplier,
     updateSupplier,
     deactivateSupplier,
     activateSupplier,
     clearError,
-    setSelectedSupplier,
   } = useSupplierStore()
 
-  // Search & Filter state
   const [searchTerm, setSearchTerm] = useState('')
   const [activeSearch, setActiveSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
 
-  // Modals state
   const [isFormModalOpen, setIsFormModalOpen] = useState(false)
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
 
-  // Form fields state
   const [formNombre, setFormNombre] = useState('')
   const [formRazonSocial, setFormRazonSocial] = useState('')
   const [formNit, setFormNit] = useState('')
@@ -56,29 +36,22 @@ export const SuppliersPage: React.FC = () => {
   const [formObservaciones, setFormObservaciones] = useState('')
   const [formIsActive, setFormIsActive] = useState(true)
 
-  // Local feedback & validation
   const [validationError, setValidationError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
-  // Fetch on mount
   useEffect(() => {
     fetchSuppliers()
   }, [fetchSuppliers])
 
-  // Filter & Search Logic (Client-side search to allow instant filter by Nombre, País, Correo)
   const filteredSuppliers = useMemo(() => {
     return suppliers.filter((supplier) => {
-      // 1. Status Filter
       if (statusFilter === 'active' && !supplier.is_active) return false
       if (statusFilter === 'inactive' && supplier.is_active) return false
-
-      // 2. Search query
       if (!activeSearch) return true
       const query = activeSearch.toLowerCase()
       const matchName = supplier.nombre_comercial.toLowerCase().includes(query)
       const matchCountry = supplier.pais.toLowerCase().includes(query)
       const matchEmail = (supplier.correo || '').toLowerCase().includes(query)
-
       return matchName || matchCountry || matchEmail
     })
   }, [suppliers, statusFilter, activeSearch])
@@ -88,8 +61,6 @@ export const SuppliersPage: React.FC = () => {
     setActiveSearch(searchTerm)
   }
 
-
-  // Form Modal management
   const handleOpenCreateModal = () => {
     setEditingSupplier(null)
     setFormNombre('')
@@ -122,19 +93,6 @@ export const SuppliersPage: React.FC = () => {
     setIsFormModalOpen(true)
   }
 
-  // Open detail panel
-  const handleOpenDetail = async (supplier: Supplier) => {
-    setSelectedSupplier(supplier)
-    setIsDetailModalOpen(true)
-    // Fetch latest detail from backend asynchronously to ensure fresh data
-    try {
-      await fetchSupplierDetail(supplier.id)
-    } catch (err) {
-      // Handled by store
-    }
-  }
-
-  // Toggle state using API
   const handleToggleStatus = async (supplier: Supplier) => {
     clearError()
     setSuccessMsg(null)
@@ -147,7 +105,7 @@ export const SuppliersPage: React.FC = () => {
         setSuccessMsg(`Proveedor "${supplier.nombre_comercial}" activado correctamente.`)
       }
     } catch (err: any) {
-      // Error msg will be handled by store/alert bar
+      // handled by store
     }
   }
 
@@ -157,7 +115,6 @@ export const SuppliersPage: React.FC = () => {
     setSuccessMsg(null)
     clearError()
 
-    // Validation
     const nameTrimmed = formNombre.trim()
     const phoneTrimmed = formTelefono.trim()
     const countryTrimmed = formPais.trim()
@@ -193,7 +150,7 @@ export const SuppliersPage: React.FC = () => {
     const payload = {
       nombre_comercial: nameTrimmed,
       razon_social: formRazonSocial.trim() || undefined,
-      nit: formNit.trim() || undefined, // NIT is optional, sent as undefined/blank if empty
+      nit: formNit.trim() || undefined,
       correo: emailTrimmed,
       telefono: phoneTrimmed,
       pais: countryTrimmed,
@@ -204,10 +161,8 @@ export const SuppliersPage: React.FC = () => {
 
     try {
       if (editingSupplier) {
-        // Update basic info
         await updateSupplier(editingSupplier.id, payload)
-        
-        // Update active/inactive state if changed
+
         if (formIsActive !== editingSupplier.is_active) {
           if (formIsActive) {
             await activateSupplier(editingSupplier.id)
@@ -217,7 +172,6 @@ export const SuppliersPage: React.FC = () => {
         }
         setSuccessMsg('Proveedor actualizado correctamente.')
       } else {
-        // Create
         await createSupplier(payload)
         setSuccessMsg('Proveedor creado correctamente.')
       }
@@ -227,208 +181,38 @@ export const SuppliersPage: React.FC = () => {
     }
   }
 
-  // Format Iso Dates nicely
-  const formatDate = (isoString?: string) => {
-    if (!isoString) return '--'
-    try {
-      const date = new Date(isoString)
-      return date.toLocaleDateString('es-ES', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    } catch (e) {
-      return isoString
-    }
-  }
-
   return (
-    <AppShell title="Proveedores" subtitle="Administra los proveedores del sistema">
-      <div className="catalog-page fade-slide-up" style={{ padding: '0 1rem' }}>
-        <header
-          className="catalog-header"
-          style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            marginBottom: '1.5rem',
-            marginTop: '0.75rem',
-          }}
-        >
-          <button className="btn btn--primary" type="button" onClick={handleOpenCreateModal}>
-            <Plus style={{ marginRight: '0.25rem', width: '18px', height: '18px', marginTop: '2px' }} />
-            Nuevo Proveedor
-          </button>
-        </header>
+    <AppShell
+      title="Proveedores"
+      subtitle="Administra los proveedores del sistema"
+      actions={
+        <button className="btn btn--primary btn--sm" type="button" onClick={handleOpenCreateModal}>
+          + Nuevo Proveedor
+        </button>
+      }
+    >
+      <div className="catalog-page fade-slide-up">
 
-        {/* Stats Cards Section */}
-        <section
-          className="catalog-stats"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '1.25rem',
-            marginBottom: '1.5rem',
-          }}
-        >
-          <div
-            className="stat-card"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1.25rem',
-              backgroundColor: '#fff',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#f3f0ff',
-                color: '#7048e8',
-                width: '48px',
-                height: '48px',
-                borderRadius: '10px',
-              }}
-            >
-              <Building2 style={{ width: '22px', height: '22px', strokeWidth: 2 }} />
-            </div>
-            <div>
-              <span
-                style={{
-                  fontSize: '1.85rem',
-                  fontWeight: 700,
-                  color: '#111827',
-                  lineHeight: 1,
-                  display: 'block',
-                }}
-              >
-                {suppliers.length}
-              </span>
-              <p
-                style={{
-                  fontSize: '0.875rem',
-                  color: '#6b7280',
-                  margin: '0.25rem 0 0 0',
-                  fontWeight: 500,
-                }}
-              >
-                Proveedores Totales
-              </p>
-            </div>
+        {/* Metric strip */}
+        <div className="metric-strip mb-4" style={{ maxWidth: 520 }}>
+          <div className="metric-cell metric-cell--hero">
+            <p className="metric-cell__eyebrow">Total proveedores</p>
+            <p className="metric-cell__val">{suppliers.length}</p>
+            <p className="metric-cell__sub">en el sistema</p>
           </div>
-
-          <div
-            className="stat-card"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1.25rem',
-              backgroundColor: '#fff',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#ebfbee',
-                color: '#0ca678',
-                width: '48px',
-                height: '48px',
-                borderRadius: '10px',
-              }}
-            >
-              <Building2 style={{ width: '22px', height: '22px', color: '#0ca678', strokeWidth: 2 }} />
-            </div>
-            <div>
-              <span
-                style={{
-                  fontSize: '1.85rem',
-                  fontWeight: 700,
-                  color: '#111827',
-                  lineHeight: 1,
-                  display: 'block',
-                }}
-              >
-                {suppliers.filter((s) => s.is_active).length}
-              </span>
-              <p
-                style={{
-                  fontSize: '0.875rem',
-                  color: '#6b7280',
-                  margin: '0.25rem 0 0 0',
-                  fontWeight: 500,
-                }}
-              >
-                Proveedores Activos
-              </p>
-            </div>
+          <div className="metric-cell metric-cell--light">
+            <p className="metric-cell__eyebrow">Activos</p>
+            <p className="metric-cell__val">{suppliers.filter(s => s.is_active).length}</p>
+            <p className="metric-cell__sub">proveedores activos</p>
           </div>
-
-          <div
-            className="stat-card"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1.25rem',
-              backgroundColor: '#fff',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#fff0f0',
-                color: '#e03131',
-                width: '48px',
-                height: '48px',
-                borderRadius: '10px',
-              }}
-            >
-              <Building2 style={{ width: '22px', height: '22px', color: '#f03e3e', strokeWidth: 2 }} />
-            </div>
-            <div>
-              <span
-                style={{
-                  fontSize: '1.85rem',
-                  fontWeight: 700,
-                  color: '#111827',
-                  lineHeight: 1,
-                  display: 'block',
-                }}
-              >
-                {suppliers.filter((s) => !s.is_active).length}
-              </span>
-              <p
-                style={{
-                  fontSize: '0.875rem',
-                  color: '#6b7280',
-                  margin: '0.25rem 0 0 0',
-                  fontWeight: 500,
-                }}
-              >
-                Proveedores Inactivos
-              </p>
-            </div>
+          <div className="metric-cell metric-cell--light">
+            <p className="metric-cell__eyebrow">Inactivos</p>
+            <p className="metric-cell__val" style={{ color: suppliers.filter(s => !s.is_active).length > 0 ? 'var(--err)' : undefined }}>
+              {suppliers.filter(s => !s.is_active).length}
+            </p>
+            <p className="metric-cell__sub">proveedores inactivos</p>
           </div>
-        </section>
+        </div>
 
         {/* Alerts */}
         {successMsg && (
@@ -440,7 +224,7 @@ export const SuppliersPage: React.FC = () => {
           </div>
         )}
 
-        {(storeError) && (
+        {storeError && (
           <div className="alert-bar alert-bar--warn" role="alert" style={{ marginBottom: '1.5rem' }}>
             <AlertTriangle style={{ marginRight: '0.5rem', width: '18px', height: '18px' }} />
             <span>{storeError}</span>
@@ -450,1062 +234,406 @@ export const SuppliersPage: React.FC = () => {
           </div>
         )}
 
-        {/* Filters Toolbar */}
-        <div
-          style={{
-            backgroundColor: '#fff',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            padding: '1.25rem',
-            marginBottom: '1.5rem',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-          }}
-        >
+        {/* Filter toolbar — no white background box */}
+        <div className="flex gap-10 mb-4" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
           <form
             onSubmit={handleSearchSubmit}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '3fr 1fr auto',
-              gap: '1rem',
-              alignItems: 'end',
-            }}
+            style={{ display: 'flex', flex: 1, gap: 8, alignItems: 'center' }}
           >
-            {/* Buscar proveedor */}
-            <div>
-              <label
+            <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+              <svg
                 style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  color: '#94a3b8',
-                  textTransform: 'uppercase',
+                  position: 'absolute',
+                  left: 11,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: 14,
+                  height: 14,
+                  stroke: 'var(--teal-600)',
+                  strokeWidth: 1.8,
                 }}
+                viewBox="0 0 24 24"
+                fill="none"
               >
-                Buscar proveedor
-              </label>
-
-              <div style={{ position: 'relative' }}>
-                <Search
-                  style={{
-                    position: 'absolute',
-                    left: '0.75rem',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: '16px',
-                    height: '16px',
-                    color: '#9ca3af',
-                  }}
-                />
-
-                <input
-                  type="text"
-                  placeholder="Nombre, país o correo..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  style={{
-                    width: '100%',
-                    height: '46px',
-                    paddingLeft: '2.5rem',
-                    borderRadius: '8px',
-                    border: '1px solid #d1d5db',
-                    fontSize: '0.95rem',
-                    backgroundColor: '#fff',
-                  }}
-                />
-              </div>
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+              <input
+                className="f-input"
+                style={{ paddingLeft: 34 }}
+                placeholder="Nombre, país o correo..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                aria-label="Buscar proveedor"
+              />
             </div>
-
-            {/* Estado */}
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  color: '#94a3b8',
-                  textTransform: 'uppercase',
-                }}
-              >
-                Estado
-              </label>
-
-              <select
-                value={statusFilter}
-                onChange={(e) =>
-                  setStatusFilter(
-                    e.target.value as 'all' | 'active' | 'inactive'
-                  )
-                }
-                style={{
-                  width: '100%',
-                  height: '46px',
-                  borderRadius: '8px',
-                  border: '1px solid #d1d5db',
-                  padding: '0 0.75rem',
-                  fontSize: '0.95rem',
-                  backgroundColor: '#fff',
-                }}
-              >
-                <option value="all">Todos</option>
-                <option value="active">Activos</option>
-                <option value="inactive">Inactivos</option>
-              </select>
-            </div>
-
-            {/* Botón */}
-            <button
-              type="submit"
-              className="btn btn--primary"
-              style={{
-                height: '46px',
-                minWidth: '120px',
-                borderRadius: '8px',
-              }}
+            <select
+              className="f-input"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+              style={{ maxWidth: 140 }}
+              aria-label="Filtrar por estado"
             >
+              <option value="all">Todos</option>
+              <option value="active">Activos</option>
+              <option value="inactive">Inactivos</option>
+            </select>
+            <button type="submit" className="btn btn--primary">
               Buscar
             </button>
           </form>
+          {activeSearch && (
+            <button
+              onClick={() => { setSearchTerm(''); setActiveSearch(''); }}
+              className="btn btn--ghost btn--sm"
+            >
+              Limpiar filtro
+            </button>
+          )}
         </div>
 
-        {/* Suppliers List Table */}
+        {/* Table */}
         {loading && suppliers.length === 0 ? (
-          <div
-            className="empty-state"
-            style={{
-              padding: '4rem 2rem',
-              textAlign: 'center',
-              backgroundColor: '#fff',
-              borderRadius: '12px',
-              border: '1px solid #e5e7eb',
-            }}
-          >
-            <p style={{ color: '#4b5563', fontWeight: 500 }}>Cargando proveedores...</p>
+          <div className="empty-state">
+            <p>Cargando proveedores...</p>
           </div>
         ) : filteredSuppliers.length === 0 ? (
-          <div
-            className="empty-state"
-            style={{
-              padding: '4rem 2rem',
-              textAlign: 'center',
-              backgroundColor: '#fff',
-              borderRadius: '12px',
-              border: '1px solid #e5e7eb',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Building2
-              style={{
-                width: '48px',
-                height: '48px',
-                strokeWidth: 1.25,
-                color: '#9ca3af',
-                marginBottom: '1rem',
-              }}
-            />
-            <p style={{ color: '#6b7280', fontSize: '0.925rem' }}>
-              No se encontraron proveedores registrados o que coincidan con la búsqueda.
-            </p>
+          <div className="empty-state">
+            <p>No se encontraron proveedores registrados o que coincidan con la búsqueda.</p>
           </div>
         ) : (
-          <div
-            className="table-surface"
-            style={{
-              borderRadius: '12px',
-              overflow: 'hidden',
-              border: '1px solid #e5e7eb',
-              background: '#fff',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-            }}
-          >
-            <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                  <th
-                    style={{
-                      padding: '1rem 1.25rem',
-                      fontWeight: 600,
-                      color: '#374151',
-                      fontSize: '0.875rem',
-                    }}
-                  >
-                    Nombre del proveedor
-                  </th>
-                  <th
-                    style={{
-                      padding: '1rem 1.25rem',
-                      fontWeight: 600,
-                      color: '#374151',
-                      fontSize: '0.875rem',
-                    }}
-                  >
-                    País
-                  </th>
-                  <th
-                    style={{
-                      padding: '1rem 1.25rem',
-                      fontWeight: 600,
-                      color: '#374151',
-                      fontSize: '0.875rem',
-                    }}
-                  >
-                    Correo electrónico
-                  </th>
-                  <th
-                    style={{
-                      padding: '1rem 1.25rem',
-                      fontWeight: 600,
-                      color: '#374151',
-                      fontSize: '0.875rem',
-                    }}
-                  >
-                    Teléfono
-                  </th>
-                  <th
-                    style={{
-                      padding: '1rem 1.25rem',
-                      fontWeight: 600,
-                      color: '#374151',
-                      fontSize: '0.875rem',
-                      textAlign: 'center',
-                    }}
-                  >
-                    Estado
-                  </th>
-                  <th
-                    style={{
-                      padding: '1rem 1.25rem',
-                      fontWeight: 600,
-                      color: '#374151',
-                      fontSize: '0.875rem',
-                      textAlign: 'center',
-                    }}
-                  >
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredSuppliers.map((supplier) => (
-                  <tr
-                    key={supplier.id}
-                    style={{
-                      borderBottom: '1px solid #f3f4f6',
-                      transition: 'background-color 0.15s ease-in-out',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f9fafb'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent'
-                    }}
-                  >
-                    <td
-                      style={{
-                        padding: '1rem 1.25rem',
-                        fontWeight: 600,
-                        color: '#111827',
-                        fontSize: '0.925rem',
-                      }}
-                    >
-                      {supplier.nombre_comercial}
-                      {supplier.nit && (
-                        <span
-                          style={{
-                            display: 'block',
-                            fontSize: '0.75rem',
-                            color: '#6b7280',
-                            fontWeight: 400,
-                            marginTop: '0.125rem',
-                          }}
-                        >
-                          NIT: {supplier.nit}
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ padding: '1rem 1.25rem', color: '#4b5563', fontSize: '0.875rem' }}>
-                      {supplier.pais}
-                      {supplier.ciudad && (
-                        <span
-                          style={{
-                            display: 'block',
-                            fontSize: '0.75rem',
-                            color: '#868e96',
-                            marginTop: '0.125rem',
-                          }}
-                        >
-                          {supplier.ciudad}
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ padding: '1rem 1.25rem', color: '#4b5563', fontSize: '0.875rem' }}>
-                      {supplier.correo || <span style={{ color: '#adb5bd', fontStyle: 'italic' }}>--</span>}
-                    </td>
-                    <td style={{ padding: '1rem 1.25rem', color: '#4b5563', fontSize: '0.875rem' }}>
-                      {supplier.telefono}
-                    </td>
-                    <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
-                      <span
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          padding: '0.25rem 0.625rem',
-                          borderRadius: '9999px',
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          lineHeight: 1,
-                          backgroundColor: supplier.is_active ? '#ebfbee' : '#fff0f0',
-                          color: supplier.is_active ? '#0ca678' : '#e03131',
-                          border: `1px solid ${supplier.is_active ? '#b2f2bb' : '#ffc9c9'}`,
-                        }}
-                      >
-                        {supplier.is_active ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
-                      <div
-                        style={{
-                          display: 'inline-flex',
-                          gap: '0.5rem',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <button
-                          className="btn btn--secondary"
-                          type="button"
-                          onClick={() => handleOpenDetail(supplier)}
-                          style={{
-                            padding: '0.375rem 0.75rem',
-                            fontSize: '0.825rem',
-                            borderRadius: '6px',
-                            fontWeight: 600,
-                            height: '30px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                          }}
-                        >
-                          Ver
-                        </button>
-                        <button
-                          className="btn btn--icon"
-                          title="Editar Proveedor"
-                          onClick={() => handleOpenEditModal(supplier)}
-                          style={{
-                            padding: '0.375rem',
-                            borderRadius: '6px',
-                            color: '#4b5563',
-                            border: '1px solid #d1d5db',
-                            backgroundColor: '#fff',
-                            height: '30px',
-                            width: '30px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <Edit2 style={{ width: '14px', height: '14px' }} />
-                        </button>
-
-                        <button
-                          className="btn"
-                          title={supplier.is_active ? 'Desactivar Proveedor' : 'Activar Proveedor'}
-                          onClick={() => handleToggleStatus(supplier)}
-                          style={{
-                            padding: '0.375rem 0.75rem',
-                            borderRadius: '6px',
-                            fontSize: '0.825rem',
-                            fontWeight: 500,
-                            height: '30px',
-                            lineHeight: '1.25rem',
-                            backgroundColor: supplier.is_active ? '#fff0f0' : '#ebfbee',
-                            color: supplier.is_active ? '#e03131' : '#099268',
-                            border: `1px solid ${supplier.is_active ? '#ffc9c9' : '#b2f2bb'}`,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {supplier.is_active ? 'Desactivar' : 'Activar'}
-                        </button>
-                      </div>
-                    </td>
+          <div className="table-surface">
+            <div className="table-wrap">
+              <table className="data-table" style={{ minWidth: 800 }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: '22%' }}>Proveedor</th>
+                    <th style={{ width: '18%' }}>Ubicación</th>
+                    <th style={{ width: '22%' }}>Contacto</th>
+                    <th style={{ width: '12%', textAlign: 'center' }}>Estado</th>
+                    <th style={{ width: '26%' }}><span className="sr-only">Acciones</span></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredSuppliers.map((supplier) => (
+                    <tr key={supplier.id}>
+                      <td style={{ fontWeight: 600, color: 'var(--ink)' }}>
+                        {supplier.nombre_comercial}
+                        {supplier.nit && (
+                          <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 400, color: 'var(--ink-40)', marginTop: '0.125rem' }}>
+                            NIT: {supplier.nit}
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ color: 'var(--ink-70)', fontSize: '0.875rem' }}>
+                        {supplier.pais}
+                        {supplier.ciudad && (
+                          <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--ink-40)', marginTop: '0.125rem' }}>
+                            {supplier.ciudad}
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ color: 'var(--ink-70)', fontSize: '0.875rem' }}>
+                        <span style={{ display: 'block' }}>{supplier.correo || <span style={{ color: 'var(--ink-40)', fontStyle: 'italic' }}>--</span>}</span>
+                        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--ink-40)', marginTop: '0.125rem' }}>
+                          {supplier.telefono}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span className={`pill ${supplier.is_active ? 'pill--active' : 'pill--inactive'}`}>
+                          {supplier.is_active ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex gap-4" style={{ whiteSpace: 'nowrap' }}>
+                          <Link
+                            to={`/app/purchasing/suppliers/${supplier.id}`}
+                            className="btn btn--sm"
+                            style={{ background: 'rgba(25, 113, 194, 0.08)', color: '#1971c2', border: '1px solid rgba(25, 113, 194, 0.2)' }}
+                          >
+                            Ver detalle
+                          </Link>
+                          <button
+                            className="btn btn--ghost btn--sm"
+                            onClick={() => handleOpenEditModal(supplier)}
+                          >
+                            Editar
+                          </button>
+                          {supplier.is_active ? (
+                            <button
+                              className="btn btn--danger btn--sm"
+                              onClick={() => handleToggleStatus(supplier)}
+                            >
+                              Desactivar
+                            </button>
+                          ) : (
+                            <button
+                              className="btn btn--sm"
+                              style={{ background: 'rgba(45, 139, 111, 0.08)', color: 'var(--ok)', border: '1px solid rgba(45, 139, 111, 0.2)' }}
+                              onClick={() => handleToggleStatus(supplier)}
+                            >
+                              Activar
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
-        {/* Create / Edit Form Modal */}
+        {/* Create / Edit Modal */}
         {isFormModalOpen && (
           <div
             style={{
               position: 'fixed',
               inset: 0,
-              zIndex: 9999,
+              zIndex: 50,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: 'rgba(0, 0, 0, 0.45)',
-              backdropFilter: 'blur(4px)',
+              background: 'rgba(15,30,32,.45)',
+              padding: 24,
             }}
+            role="dialog"
+            aria-modal="true"
           >
             <div
-              className="fade-slide-up"
               style={{
-                backgroundColor: '#fff',
-                borderRadius: '12px',
+                background: 'var(--white)',
+                borderRadius: 18,
                 width: '100%',
-                maxWidth: '560px',
+                maxWidth: 560,
                 maxHeight: '90vh',
-                overflowY: 'auto',
-                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
-                padding: '1.75rem',
-                border: '1px solid #e5e7eb',
+                overflow: 'auto',
+                boxShadow: '0 24px 64px rgba(15,30,32,.2)',
               }}
             >
+              {/* header */}
               <div
                 style={{
+                  padding: '20px 24px',
+                  borderBottom: '1px solid var(--ink-06)',
                   display: 'flex',
-                  justifyContent: 'space-between',
                   alignItems: 'center',
-                  marginBottom: '1.25rem',
-                  borderBottom: '1px solid #f3f4f6',
-                  paddingBottom: '0.75rem',
+                  justifyContent: 'space-between',
+                  position: 'sticky',
+                  top: 0,
+                  background: 'var(--white)',
+                  zIndex: 1,
                 }}
               >
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#111827', margin: 0 }}>
+                <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 400, margin: 0 }}>
                   {editingSupplier ? 'Editar Proveedor' : 'Crear Proveedor'}
-                </h3>
+                </h2>
                 <button
+                  className="btn btn--ghost btn--sm"
                   onClick={() => setIsFormModalOpen(false)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: '#9ca3af',
-                    padding: '0.25rem',
-                  }}
+                  aria-label="Cerrar"
                 >
-                  <X style={{ width: '20px', height: '20px' }} />
+                  ✕
                 </button>
               </div>
 
-              {validationError && (
-                <div
-                  style={{
-                    background: '#fff5f5',
-                    border: '1px solid #fed7d7',
-                    borderRadius: '8px',
-                    padding: '0.75rem',
-                    marginBottom: '1rem',
-                    color: '#c53030',
-                    fontSize: '0.825rem',
-                    display: 'flex',
-                    gap: '0.5rem',
-                    alignItems: 'center',
-                  }}
-                >
-                  <AlertTriangle style={{ width: '16px', height: '16px', flexShrink: 0 }} />
-                  <span>{validationError}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                {/* Basic Info Section */}
-                <div>
-                  <h4
-                    style={{
-                      fontSize: '0.875rem',
-                      color: '#4f46e5',
-                      fontWeight: 600,
-                      margin: '0 0 0.75rem 0',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                    }}
-                  >
-                    Información básica
-                  </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                      <label style={{ fontSize: '0.825rem', fontWeight: 600, color: '#374151' }}>
-                        Nombre del proveedor <span style={{ color: '#ef4444' }}>*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={formNombre}
-                        onChange={(e) => setFormNombre(e.target.value)}
-                        placeholder="Ej. Medical SAS"
-                        style={{
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '8px',
-                          border: '1px solid #d1d5db',
-                          fontSize: '0.875rem',
-                          outline: 'none',
-                        }}
-                        required
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                      <label style={{ fontSize: '0.825rem', fontWeight: 600, color: '#374151' }}>
-                        Razón social <span style={{ color: '#9ca3af', fontWeight: 'normal', fontSize: '0.75rem' }}>(Opcional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={formRazonSocial}
-                        onChange={(e) => setFormRazonSocial(e.target.value)}
-                        placeholder="Ej. Distribuidora Médica S.A.S."
-                        style={{
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '8px',
-                          border: '1px solid #d1d5db',
-                          fontSize: '0.875rem',
-                          outline: 'none',
-                        }}
-                      />
-                    </div>
+              {/* body */}
+              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {validationError && (
+                  <div className="alert-bar alert-bar--err" role="alert" style={{ margin: 0 }}>
+                    <AlertTriangle style={{ width: 14, height: 14 }} />
+                    {validationError}
                   </div>
-                  <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                    <label style={{ fontSize: '0.825rem', fontWeight: 600, color: '#374151' }}>
-                      NIT o identificación <span style={{ color: '#9ca3af', fontWeight: 'normal', fontSize: '0.75rem' }}>(Opcional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formNit}
-                      onChange={(e) => setFormNit(e.target.value)}
-                      placeholder="Ej. 900123456-1"
-                      style={{
-                        padding: '0.5rem 0.75rem',
-                        borderRadius: '8px',
-                        border: '1px solid #d1d5db',
-                        fontSize: '0.875rem',
-                        outline: 'none',
-                      }}
-                    />
-                  </div>
-                </div>
+                )}
 
-                {/* Contact Section */}
-                <div>
-                  <h4
-                    style={{
-                      fontSize: '0.875rem',
-                      color: '#4f46e5',
-                      fontWeight: 600,
-                      margin: '0 0 0.75rem 0',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                    }}
-                  >
-                    Información de contacto
-                  </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                      <label style={{ fontSize: '0.825rem', fontWeight: 600, color: '#374151' }}>
-                        Correo electrónico <span style={{ color: '#ef4444' }}>*</span>
-                      </label>
-                      <input
-                        type="email"
-                        value={formCorreo}
-                        onChange={(e) => setFormCorreo(e.target.value)}
-                        placeholder="ventas@proveedor.com"
-                        style={{
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '8px',
-                          border: '1px solid #d1d5db',
-                          fontSize: '0.875rem',
-                          outline: 'none',
-                        }}
-                        required
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                      <label style={{ fontSize: '0.825rem', fontWeight: 600, color: '#374151' }}>
-                        Teléfono <span style={{ color: '#ef4444' }}>*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={formTelefono}
-                        onChange={(e) => setFormTelefono(e.target.value)}
-                        placeholder="Ej. 3001234567"
-                        style={{
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '8px',
-                          border: '1px solid #d1d5db',
-                          fontSize: '0.875rem',
-                          outline: 'none',
-                        }}
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Location Section */}
-                <div>
-                  <h4
-                    style={{
-                      fontSize: '0.875rem',
-                      color: '#4f46e5',
-                      fontWeight: 600,
-                      margin: '0 0 0.75rem 0',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                    }}
-                  >
-                    Ubicación
-                  </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                      <label style={{ fontSize: '0.825rem', fontWeight: 600, color: '#374151' }}>
-                        País <span style={{ color: '#ef4444' }}>*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={formPais}
-                        onChange={(e) => setFormPais(e.target.value)}
-                        placeholder="Ej. Colombia"
-                        style={{
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '8px',
-                          border: '1px solid #d1d5db',
-                          fontSize: '0.875rem',
-                          outline: 'none',
-                        }}
-                        required
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                      <label style={{ fontSize: '0.825rem', fontWeight: 600, color: '#374151' }}>
-                        Ciudad <span style={{ color: '#ef4444' }}>*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={formCiudad}
-                        onChange={(e) => setFormCiudad(e.target.value)}
-                        placeholder="Ej. Bogotá"
-                        style={{
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '8px',
-                          border: '1px solid #d1d5db',
-                          fontSize: '0.875rem',
-                          outline: 'none',
-                        }}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                    <label style={{ fontSize: '0.825rem', fontWeight: 600, color: '#374151' }}>
-                      Dirección <span style={{ color: '#9ca3af', fontWeight: 'normal', fontSize: '0.75rem' }}>(Opcional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formDireccion}
-                      onChange={(e) => setFormDireccion(e.target.value)}
-                      placeholder="Ej. Calle 100 # 15-30"
-                      style={{
-                        padding: '0.5rem 0.75rem',
-                        borderRadius: '8px',
-                        border: '1px solid #d1d5db',
-                        fontSize: '0.875rem',
-                        outline: 'none',
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Status & Observaciones */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {editingSupplier && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.25rem 0' }}>
-                      <label style={{ fontSize: '0.825rem', fontWeight: 600, color: '#374151' }}>
-                        Estado del proveedor
-                      </label>
-                      <select
-                        value={formIsActive ? 'active' : 'inactive'}
-                        onChange={(e) => setFormIsActive(e.target.value === 'active')}
-                        style={{
-                          padding: '0.375rem 0.75rem',
-                          borderRadius: '6px',
-                          border: '1px solid #d1d5db',
-                          fontSize: '0.875rem',
-                          backgroundColor: '#fff',
-                        }}
-                      >
-                        <option value="active">Activo</option>
-                        <option value="inactive">Inactivo</option>
-                      </select>
-                    </div>
-                  )}
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                    <label style={{ fontSize: '0.825rem', fontWeight: 600, color: '#374151' }}>
-                      Observaciones <span style={{ color: '#9ca3af', fontWeight: 'normal', fontSize: '0.75rem' }}>(Opcional)</span>
-                    </label>
-                    <textarea
-                      value={formObservaciones}
-                      onChange={(e) => setFormObservaciones(e.target.value)}
-                      placeholder="Información adicional sobre el proveedor..."
-                      rows={3}
-                      style={{
-                        padding: '0.5rem 0.75rem',
-                        borderRadius: '8px',
-                        border: '1px solid #d1d5db',
-                        fontSize: '0.875rem',
-                        outline: 'none',
-                        resize: 'vertical',
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: '0.5rem',
-                    width: '100%',
-                    justifyContent: 'flex-end',
-                    marginTop: '0.5rem',
-                    borderTop: '1px solid #f3f4f6',
-                    paddingTop: '1rem',
-                  }}
-                >
-                  <button
-                    type="button"
-                    className="btn btn--secondary"
-                    onClick={() => setIsFormModalOpen(false)}
-                    style={{ padding: '0.5rem 1rem', borderRadius: '8px' }}
-                    disabled={loading}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    
-                    className="btn btn--primary"
-                    style={{ padding: '0.5rem 1.25rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                    disabled={loading}
-                  >
-                    {loading && <span className="spinner-mini" />}
-                    Guardar
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* View Details Modal */}
-        {isDetailModalOpen && selectedSupplier && (
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 9999,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'rgba(0, 0, 0, 0.45)',
-              backdropFilter: 'blur(4px)',
-            }}
-          >
-            <div
-              className="fade-slide-up"
-              style={{
-                backgroundColor: '#fff',
-                borderRadius: '16px',
-                width: '100%',
-                maxWidth: '680px',
-                maxHeight: '90vh',
-                overflowY: 'auto',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
-                border: '1px solid #e5e7eb',
-              }}
-            >
-              {/* Header */}
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '1.25rem 1.5rem',
-                  borderBottom: '1px solid #f3f4f6',
-                  backgroundColor: '#f9fafb',
-                  borderTopLeftRadius: '16px',
-                  borderTopRightRadius: '16px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: '#e8f2ff',
-                      color: '#1971c2',
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '8px',
-                    }}
-                  >
-                    <Building2 style={{ width: '20px', height: '20px' }} />
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#111827', margin: 0 }}>
-                      Detalle del Proveedor
-                    </h3>
-                    <p style={{ fontSize: '0.8rem', color: '#6b7280', margin: 0 }}>
-                      Ficha técnica y estado del proveedor
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setIsDetailModalOpen(false)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: '#9ca3af',
-                    padding: '0.25rem',
-                  }}
-                >
-                  <X style={{ width: '20px', height: '20px' }} />
-                </button>
-              </div>
-
-              {/* Body */}
-              <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                
-                {/* General Info Grid */}
-                <div>
-                  <h4
-                    style={{
-                      fontSize: '0.85rem',
-                      color: '#4f46e5',
-                      fontWeight: 700,
-                      margin: '0 0 1rem 0',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                      borderBottom: '2px solid #e5e7eb',
-                      paddingBottom: '0.25rem',
-                    }}
-                  >
-                    Información general
-                  </h4>
-
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: '1.25rem',
-                    }}
-                  >
-                    <div>
-                      <p style={{ margin: 0, fontSize: '0.75rem', color: '#868e96', fontWeight: 500 }}>
-                        Nombre comercial
-                      </p>
-                      <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.925rem', fontWeight: 600, color: '#111827' }}>
-                        {selectedSupplier.nombre_comercial}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p style={{ margin: 0, fontSize: '0.75rem', color: '#868e96', fontWeight: 500 }}>
-                        Razón social
-                      </p>
-                      <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.925rem', color: '#212529' }}>
-                        {selectedSupplier.razon_social || <span style={{ color: '#adb5bd', fontStyle: 'italic' }}>No provisto</span>}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p style={{ margin: 0, fontSize: '0.75rem', color: '#868e96', fontWeight: 500 }}>
-                        NIT o Identificación
-                      </p>
-                      <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.925rem', color: '#212529', fontWeight: 500 }}>
-                        {selectedSupplier.nit || <span style={{ color: '#adb5bd', fontStyle: 'italic' }}>No provisto</span>}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p style={{ margin: 0, fontSize: '0.75rem', color: '#868e96', fontWeight: 500 }}>
-                        Estado
-                      </p>
-                      <div style={{ marginTop: '0.25rem' }}>
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            padding: '0.2rem 0.5rem',
-                            borderRadius: '9999px',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            backgroundColor: selectedSupplier.is_active ? '#ebfbee' : '#fff0f0',
-                            color: selectedSupplier.is_active ? '#0ca678' : '#e03131',
-                            border: `1px solid ${selectedSupplier.is_active ? '#b2f2bb' : '#ffc9c9'}`,
-                          }}
-                        >
-                          {selectedSupplier.is_active ? 'Activo' : 'Inactivo'}
-                        </span>
+                <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  <fieldset>
+                    <legend>Información básica</legend>
+                    <div className="f-row f-row-2">
+                      <div className="f-group f-group--full">
+                        <label className="f-label" htmlFor="supplier-name">
+                          Nombre del proveedor <span style={{ color: 'var(--err)' }}>*</span>
+                        </label>
+                        <input
+                          id="supplier-name"
+                          className="f-input"
+                          placeholder="Ej. Medical SAS"
+                          value={formNombre}
+                          onChange={(e) => setFormNombre(e.target.value)}
+                          required
+                        />
                       </div>
                     </div>
-
-                    <div>
-                      <p style={{ margin: 0, fontSize: '0.75rem', color: '#868e96', fontWeight: 500 }}>
-                        Teléfono
-                      </p>
-                      <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.925rem', color: '#212529', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                        <Phone style={{ width: '14px', height: '14px', color: '#868e96' }} />
-                        {selectedSupplier.telefono}
-                      </p>
+                    <div className="f-row f-row-2">
+                      <div className="f-group">
+                        <label className="f-label" htmlFor="supplier-rs">
+                          Razón social <span style={{ color: 'var(--ink-40)', fontWeight: 'normal', fontSize: '0.75rem' }}>(Opcional)</span>
+                        </label>
+                        <input
+                          id="supplier-rs"
+                          className="f-input"
+                          placeholder="Ej. Distribuidora Médica S.A.S."
+                          value={formRazonSocial}
+                          onChange={(e) => setFormRazonSocial(e.target.value)}
+                        />
+                      </div>
+                      <div className="f-group">
+                        <label className="f-label" htmlFor="supplier-nit">
+                          NIT o identificación <span style={{ color: 'var(--ink-40)', fontWeight: 'normal', fontSize: '0.75rem' }}>(Opcional)</span>
+                        </label>
+                        <input
+                          id="supplier-nit"
+                          className="f-input"
+                          placeholder="Ej. 900123456-1"
+                          value={formNit}
+                          onChange={(e) => setFormNit(e.target.value)}
+                        />
+                      </div>
                     </div>
+                  </fieldset>
 
-                    <div>
-                      <p style={{ margin: 0, fontSize: '0.75rem', color: '#868e96', fontWeight: 500 }}>
-                        Correo electrónico
-                      </p>
-                      <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.925rem', color: '#212529', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                        <Mail style={{ width: '14px', height: '14px', color: '#868e96' }} />
-                        {selectedSupplier.correo || <span style={{ color: '#adb5bd', fontStyle: 'italic' }}>No provisto</span>}
-                      </p>
+                  <fieldset>
+                    <legend>Información de contacto</legend>
+                    <div className="f-row f-row-2">
+                      <div className="f-group">
+                        <label className="f-label" htmlFor="supplier-email">
+                          Correo electrónico <span style={{ color: 'var(--err)' }}>*</span>
+                        </label>
+                        <input
+                          id="supplier-email"
+                          className="f-input"
+                          type="email"
+                          placeholder="ventas@proveedor.com"
+                          value={formCorreo}
+                          onChange={(e) => setFormCorreo(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="f-group">
+                        <label className="f-label" htmlFor="supplier-phone">
+                          Teléfono <span style={{ color: 'var(--err)' }}>*</span>
+                        </label>
+                        <input
+                          id="supplier-phone"
+                          className="f-input"
+                          placeholder="Ej. 3001234567"
+                          value={formTelefono}
+                          onChange={(e) => setFormTelefono(e.target.value)}
+                          required
+                        />
+                      </div>
                     </div>
+                  </fieldset>
 
-                    <div>
-                      <p style={{ margin: 0, fontSize: '0.75rem', color: '#868e96', fontWeight: 500 }}>
-                        País / Ciudad
-                      </p>
-                      <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.925rem', color: '#212529', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                        <Globe style={{ width: '14px', height: '14px', color: '#868e96' }} />
-                        {selectedSupplier.pais}
-                        {selectedSupplier.ciudad ? ` / ${selectedSupplier.ciudad}` : ''}
-                      </p>
+                  <fieldset>
+                    <legend>Ubicación</legend>
+                    <div className="f-row f-row-2">
+                      <div className="f-group">
+                        <label className="f-label" htmlFor="supplier-country">
+                          País <span style={{ color: 'var(--err)' }}>*</span>
+                        </label>
+                        <input
+                          id="supplier-country"
+                          className="f-input"
+                          placeholder="Ej. Colombia"
+                          value={formPais}
+                          onChange={(e) => setFormPais(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="f-group">
+                        <label className="f-label" htmlFor="supplier-city">
+                          Ciudad <span style={{ color: 'var(--err)' }}>*</span>
+                        </label>
+                        <input
+                          id="supplier-city"
+                          className="f-input"
+                          placeholder="Ej. Bogotá"
+                          value={formCiudad}
+                          onChange={(e) => setFormCiudad(e.target.value)}
+                          required
+                        />
+                      </div>
                     </div>
+                    <div className="f-row f-row-2" style={{ marginTop: '0.75rem' }}>
+                      <div className="f-group f-group--full">
+                        <label className="f-label" htmlFor="supplier-address">
+                          Dirección <span style={{ color: 'var(--ink-40)', fontWeight: 'normal', fontSize: '0.75rem' }}>(Opcional)</span>
+                        </label>
+                        <input
+                          id="supplier-address"
+                          className="f-input"
+                          placeholder="Ej. Calle 100 # 15-30"
+                          value={formDireccion}
+                          onChange={(e) => setFormDireccion(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </fieldset>
 
-                    <div>
-                      <p style={{ margin: 0, fontSize: '0.75rem', color: '#868e96', fontWeight: 500 }}>
-                        Dirección
-                      </p>
-                      <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.925rem', color: '#212529', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                        <MapPin style={{ width: '14px', height: '14px', color: '#868e96' }} />
-                        {selectedSupplier.direccion || <span style={{ color: '#adb5bd', fontStyle: 'italic' }}>No provista</span>}
-                      </p>
+                  <fieldset>
+                    <legend>Observaciones</legend>
+                    <div className="f-row f-row-2">
+                      <div className="f-group f-group--full">
+                        <label className="f-label" htmlFor="supplier-obs">
+                          Observaciones <span style={{ color: 'var(--ink-40)', fontWeight: 'normal', fontSize: '0.75rem' }}>(Opcional)</span>
+                        </label>
+                        <textarea
+                          id="supplier-obs"
+                          className="f-input"
+                          placeholder="Información adicional sobre el proveedor..."
+                          rows={3}
+                          value={formObservaciones}
+                          onChange={(e) => setFormObservaciones(e.target.value)}
+                          style={{ resize: 'vertical' }}
+                        />
+                      </div>
                     </div>
+                  </fieldset>
+
+                  {editingSupplier && (
+                    <fieldset>
+                      <legend>Estado</legend>
+                      <div className="f-row f-row-2">
+                        <div className="f-group">
+                          <label className="f-label" htmlFor="supplier-status">Estado del proveedor</label>
+                          <select
+                            id="supplier-status"
+                            className="f-input"
+                            value={formIsActive ? 'active' : 'inactive'}
+                            onChange={(e) => setFormIsActive(e.target.value === 'active')}
+                          >
+                            <option value="active">Activo</option>
+                            <option value="inactive">Inactivo</option>
+                          </select>
+                        </div>
+                      </div>
+                    </fieldset>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      className="btn btn--outline"
+                      onClick={() => setIsFormModalOpen(false)}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn--primary"
+                      disabled={loading}
+                    >
+                      {loading && <span className="spinner-mini" />}
+                      Guardar
+                    </button>
                   </div>
-
-                  <div style={{ marginTop: '1.25rem' }}>
-                    <p style={{ margin: 0, fontSize: '0.75rem', color: '#868e96', fontWeight: 500 }}>
-                      Observaciones
-                    </p>
-                    <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', color: '#4b5563', lineHeight: 1.4, backgroundColor: '#f8f9fa', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e9ecef' }}>
-                      {selectedSupplier.observaciones || <span style={{ color: '#adb5bd', fontStyle: 'italic' }}>Sin observaciones registradas</span>}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Futuras Integraciones Section (Mandatory Placeholder) */}
-                <div
-                  style={{
-                    backgroundColor: '#f8f9fa',
-                    border: '1px solid #e9ecef',
-                    borderRadius: '12px',
-                    padding: '1.25rem',
-                  }}
-                >
-                  <h4
-                    style={{
-                      fontSize: '0.85rem',
-                      color: '#495057',
-                      fontWeight: 700,
-                      margin: '0 0 1rem 0',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                    }}
-                  >
-                    <FileText style={{ width: '16px', height: '16px', color: '#4f46e5' }} />
-                    Compras (Módulo futuro)
-                  </h4>
-
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: '1rem',
-                    }}
-                  >
-                    <div style={{ backgroundColor: '#fff', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #dee2e6' }}>
-                      <p style={{ margin: 0, fontSize: '0.75rem', color: '#868e96', fontWeight: 500 }}>
-                        Órdenes de compra
-                      </p>
-                      <p style={{ margin: '0.25rem 0 0 0', fontSize: '1.25rem', fontWeight: 700, color: '#4f46e5' }}>
-                        0
-                      </p>
-                    </div>
-
-                    <div style={{ backgroundColor: '#fff', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #dee2e6' }}>
-                      <p style={{ margin: 0, fontSize: '0.75rem', color: '#868e96', fontWeight: 500 }}>
-                        Última recepción
-                      </p>
-                      <p style={{ margin: '0.25rem 0 0 0', fontSize: '1rem', fontWeight: 600, color: '#495057' }}>
-                        --
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Audit Dates */}
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: '1.5rem',
-                    borderTop: '1px solid #f3f4f6',
-                    paddingTop: '1rem',
-                    fontSize: '0.75rem',
-                    color: '#868e96',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <Calendar style={{ width: '12px', height: '12px' }} />
-                    Creado: {formatDate(selectedSupplier.created_at)}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <Info style={{ width: '12px', height: '12px' }} />
-                    Actualizado: {formatDate(selectedSupplier.updated_at)}
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Footer */}
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  padding: '1rem 1.5rem',
-                  borderTop: '1px solid #f3f4f6',
-                  backgroundColor: '#f9fafb',
-                  borderBottomLeftRadius: '16px',
-                  borderBottomRightRadius: '16px',
-                }}
-              >
-                <button
-                  className="btn btn--secondary"
-                  onClick={() => setIsDetailModalOpen(false)}
-                  style={{ padding: '0.5rem 1.25rem', borderRadius: '8px' }}
-                >
-                  Cerrar ficha
-                </button>
+                </form>
               </div>
             </div>
           </div>
         )}
-
       </div>
     </AppShell>
   )

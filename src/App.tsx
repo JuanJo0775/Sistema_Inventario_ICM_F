@@ -20,6 +20,7 @@ import CatalogBrandsPage from './features/catalog/CatalogBrandsPage'
 import LocationsPage from './features/locations/LocationsPage'
 import TransfersPage from './features/locations/TransfersPage'
 import SuppliersPage from './features/purchasing/SuppliersPage'
+import SupplierDetailPage from './features/purchasing/SupplierDetailPage'
 import PurchaseOrdersPage from './features/purchasing/PurchaseOrdersPage'
 import AuditPage from './features/admin/AuditPage'
 import UsersPage from './features/admin/UsersPage'
@@ -177,6 +178,14 @@ function App() {
           element={
             <ProtectedRoute>
               <SuppliersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/purchasing/suppliers/:id"
+          element={
+            <ProtectedRoute>
+              <SupplierDetailPage />
             </ProtectedRoute>
           }
         />
