@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import AppShell from "../../components/layout/AppShell";
 import { BarcodeDisplay } from "../../components/ui/BarcodeDisplay";
@@ -776,6 +777,13 @@ export default function CatalogProductsPage() {
                           </td>
                           <td>
                             <div className="flex gap-4">
+                              <Link
+                                to={`/app/catalog/products/${p.id}`}
+                                className="btn btn--outline btn--sm"
+                                style={{ textDecoration: 'none' }}
+                              >
+                                Ver detalle
+                              </Link>
                               <button
                                 className="btn btn--ghost btn--sm"
                                 onClick={() => openEdit(p)}
