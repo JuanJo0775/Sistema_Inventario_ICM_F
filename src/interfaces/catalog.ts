@@ -13,7 +13,6 @@ export interface CatalogCategory {
 
 export interface CatalogBrand {
   id: string
-  category?: string // Category UUID (optional)
   name: string
   description?: string
   slug: string

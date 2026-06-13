@@ -23,7 +23,7 @@ function stockPill(stock: number | undefined, reorder: number) {
 interface ProductFormProps {
   initial?: Partial<CatalogProduct>;
   categories: { id: string; name: string }[];
-  brands: { id: string; name: string; category?: string }[];
+  brands: { id: string; name: string }[];
   onSave: (data: Partial<CatalogProduct>) => Promise<void>;
   onClose: () => void;
 }
@@ -50,10 +50,7 @@ function ProductForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const filteredBrands = useMemo(
-    () => brands.filter((b) => !form.category || b.category === form.category),
-    [brands, form.category],
-  );
+
 
   async function handleSubmit() {
     if (!form.name?.trim()) return setError("El nombre es obligatorio");
@@ -237,7 +234,7 @@ function ProductForm({
                   }
                 >
                   <option value="">Sin marca específica</option>
-                  {filteredBrands.map((b) => (
+                  {brands.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}
                     </option>
