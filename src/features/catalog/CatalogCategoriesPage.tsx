@@ -1,16 +1,6 @@
-import React, { useEffect, useState, useMemo } from 'react';
-
-import { 
-  Search, 
-  Plus, 
-  Edit2,
-  AlertTriangle, 
-  X, 
-  Folder,
-  ChevronDown,
-  ChevronUp,
-  Hash
-} from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { AlertTriangle, X, ChevronDown, ChevronUp, Hash, Folder } from 'lucide-react';
 import AppShell from '../../components/layout/AppShell';
 import useCatalogStore from '../../store/useCatalogStore';
 
@@ -29,7 +19,7 @@ export const CatalogCategoriesPage: React.FC = () => {
   } = useCatalogStore();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeSearch, setActiveSearch] = useState(''); // Used for the search button
+  const [activeSearch, setActiveSearch] = useState('');
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -74,11 +64,6 @@ export const CatalogCategoriesPage: React.FC = () => {
       return matchName || matchDesc;
     });
   }, [categories, activeSearch]);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setActiveSearch(searchTerm);
-  };
 
   const handleOpenCreateModal = () => {
     setEditingCategory(null);
@@ -189,53 +174,34 @@ export const CatalogCategoriesPage: React.FC = () => {
     <AppShell 
       title="Categorías" 
       subtitle="Organiza los productos por familia"
+      actions={
+        <button className="btn btn--primary btn--sm" onClick={handleOpenCreateModal}>
+          + Nueva Categoría
+        </button>
+      }
     >
       <div className="catalog-page fade-slide-up">
-        <header className="catalog-header" style={{ marginBottom: '1.5rem' }}>
-          <div className="catalog-header__info">
-          </div>
-          <button 
-            className="btn btn--primary" 
-            type="button"
-            onClick={handleOpenCreateModal}
-          >
-            <Plus style={{ marginRight: '0.25rem', width: '18px', height: '18px' }} />
-            Nueva Categoría
-          </button>
-        </header>
 
-        {/* Stats Cards Section */}
-        <section className="catalog-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
-          <div className="stat-card" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#e8f2ff', color: '#1971c2', width: '48px', height: '48px', borderRadius: '10px' }}>
-              <Folder style={{ width: '22px', height: '22px', strokeWidth: 2 }} />
-            </div>
-            <div>
-              <span style={{ fontSize: '1.85rem', fontWeight: 700, color: '#111827', lineHeight: 1, display: 'block' }}>{categories.length}</span>
-              <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '0.25rem 0 0 0', fontWeight: 500 }}>Categorías Totales</p>
-            </div>
+        {/* Metric strip */}
+        <div className="metric-strip mb-4" style={{ maxWidth: 520 }}>
+          <div className="metric-cell metric-cell--hero">
+            <p className="metric-cell__eyebrow">Total categorías</p>
+            <p className="metric-cell__val">{categories.length}</p>
+            <p className="metric-cell__sub">en el catálogo</p>
           </div>
-          
-          <div className="stat-card" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ebfbee', color: '#099268', width: '48px', height: '48px', borderRadius: '10px' }}>
-              <Folder style={{ width: '22px', height: '22px', color: '#0ca678', strokeWidth: 2 }} />
-            </div>
-            <div>
-              <span style={{ fontSize: '1.85rem', fontWeight: 700, color: '#111827', lineHeight: 1, display: 'block' }}>{categories.filter(c => c.is_active).length}</span>
-              <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '0.25rem 0 0 0', fontWeight: 500 }}>Categorías Activas</p>
-            </div>
+          <div className="metric-cell metric-cell--light">
+            <p className="metric-cell__eyebrow">Activas</p>
+            <p className="metric-cell__val">{categories.filter(c => c.is_active).length}</p>
+            <p className="metric-cell__sub">categorías activas</p>
           </div>
-          
-          <div className="stat-card" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff0f0', color: '#e03131', width: '48px', height: '48px', borderRadius: '10px' }}>
-              <Folder style={{ width: '22px', height: '22px', color: '#f03e3e', strokeWidth: 2 }} />
-            </div>
-            <div>
-              <span style={{ fontSize: '1.85rem', fontWeight: 700, color: '#111827', lineHeight: 1, display: 'block' }}>{categories.filter(c => !c.is_active).length}</span>
-              <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '0.25rem 0 0 0', fontWeight: 500 }}>Categorías Inactivas</p>
-            </div>
+          <div className="metric-cell metric-cell--light">
+            <p className="metric-cell__eyebrow">Inactivas</p>
+            <p className="metric-cell__val" style={{ color: categories.filter(c => !c.is_active).length > 0 ? 'var(--err)' : undefined }}>
+              {categories.filter(c => !c.is_active).length}
+            </p>
+            <p className="metric-cell__sub">categorías inactivas</p>
           </div>
-        </section>
+        </div>
 
         {/* Alerts for feedback */}
         {successMsg && (
@@ -257,32 +223,50 @@ export const CatalogCategoriesPage: React.FC = () => {
           </div>
         )}
 
-        {/* Toolbar with Spanish Search and Button */}
-        <div className="catalog-toolbar" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', alignItems: 'stretch' }}>
-          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', width: '100%', maxWidth: '450px', gap: '0.5rem' }}>
-            <div className="catalog-toolbar__search" style={{ flexGrow: 1, position: 'relative' }}>
-              <Search className="catalog-toolbar__search-icon" style={{ position: 'absolute', left: '0.75rem', top: '45%', transform: 'translateY(-50%)', width: '16px', height: '16px', color: '#6b7280' }} />
-              <input 
-                type="text" 
-                placeholder="Buscar categorías..." 
+        {/* filters */}
+        <div
+          className="flex gap-10 mb-4"
+          style={{ alignItems: "center", flexWrap: "wrap" }}
+        >
+          <form
+            onSubmit={(e) => { e.preventDefault(); setActiveSearch(searchTerm); }}
+            style={{ display: 'flex', flex: 1, gap: 8, alignItems: 'center' }}
+          >
+            <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
+              <svg
+                style={{
+                  position: "absolute",
+                  left: 11,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  width: 14,
+                  height: 14,
+                  stroke: "var(--teal-600)",
+                  strokeWidth: 1.8,
+                }}
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+              <input
+                className="f-input"
+                style={{ paddingLeft: 34 }}
+                placeholder="Buscar categorías..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ width: '100%', paddingLeft: '2.5rem', height: '42px', borderRadius: '8px', border: '1px solid #d1d5db', outline: 'none' }}
+                aria-label="Buscar categoría"
               />
             </div>
-            <button 
-              type="submit" 
-              className="btn btn--primary" 
-              style={{ height: '42px', padding: '0 1.25rem', whiteSpace: 'nowrap', borderRadius: '8px', marginTop: '-1px' }}
-            >
+            <button type="submit" className="btn btn--primary">
               Buscar
             </button>
           </form>
           {activeSearch && (
-            <button 
+            <button
               onClick={() => { setSearchTerm(''); setActiveSearch(''); }}
-              className="btn btn--secondary"
-              style={{ height: '42px', borderRadius: '8px' }}
+              className="btn btn--ghost btn--sm"
             >
               Limpiar filtro
             </button>
@@ -296,145 +280,114 @@ export const CatalogCategoriesPage: React.FC = () => {
           </div>
         ) : filteredCategories.length === 0 ? (
           <div className="empty-state">
-            <Folder style={{ width: '48px', height: '48px', strokeWidth: 1, color: '#9ca3af', marginBottom: '1rem' }} />
+            <Folder style={{ width: '48px', height: '48px', strokeWidth: 1, color: 'var(--ink-40)', marginBottom: '1rem' }} />
             <p>No se encontraron categorías que coincidan con la búsqueda.</p>
           </div>
         ) : (
-          <div className="table-surface" style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #e5e7eb', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-            <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>Nombre</th>
-                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>Descripción</th>
-                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem', textAlign: 'center' }}>Estado</th>
-                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem', textAlign: 'center' }}>Productos Asociados</th>
-                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem', textAlign: 'center' }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCategories.map((category) => {
-                  const prodCount = categoryProductCounts[category.id] || 0;
-                  return (
-                    <tr 
-                      key={category.id} 
-                      style={{ borderBottom: '1px solid #f3f4f6', transition: 'background-color 0.15s ease-in-out' }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f9fafb'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                    >
-                      <td style={{ padding: '1rem 1.25rem', fontWeight: 500, color: '#111827', fontSize: '0.925rem' }}>{category.name}</td>
-                      <td style={{ padding: '1rem 1.25rem', color: '#4b5563', fontSize: '0.875rem', maxWidth: '350px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {category.description || <span style={{ color: '#d1d5db', fontStyle: 'italic' }}>Sin descripción</span>}
-                      </td>
-                      <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
-                        <span 
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            padding: '0.25rem 0.625rem',
-                            borderRadius: '9999px',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            lineHeight: 1,
-                            backgroundColor: category.is_active ? '#e6fcf5' : '#fff0f6',
-                            color: category.is_active ? '#0ca678' : '#f03e3e',
-                            border: `1px solid ${category.is_active ? '#c3fae8' : '#ffdeeb'}`
-                          }}
-                        >
-                          {category.is_active ? 'Activa' : 'Inactiva'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
-                        <span 
-                          style={{
-                            display: 'inline-flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            minWidth: '24px',
-                            height: '24px',
-                            padding: '0 0.375rem',
-                            borderRadius: '12px',
-                            backgroundColor: prodCount > 0 ? '#e8f2ff' : '#f3f4f6',
-                            color: prodCount > 0 ? '#1971c2' : '#868e96',
-                            fontSize: '0.825rem',
-                            fontWeight: 600
-                          }}
-                        >
+          <div className="table-surface">
+            <div className="table-wrap">
+              <table className="data-table" style={{ minWidth: 640 }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: '28%' }}>Nombre</th>
+                    <th style={{ width: '30%' }}>Descripción</th>
+                    <th style={{ width: '14%', textAlign: 'center' }}>Estado</th>
+                    <th style={{ width: '12%', textAlign: 'center' }}>Productos</th>
+                    <th style={{ width: '16%' }}><span className="sr-only">Acciones</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCategories.map((category) => {
+                    const prodCount = categoryProductCounts[category.id] || 0;
+                    return (
+                      <tr key={category.id}>
+                        <td style={{ fontWeight: 600, color: 'var(--ink)' }}>{category.name}</td>
+                        <td style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {category.description || <span style={{ color: 'var(--ink-40)', fontStyle: 'italic' }}>Sin descripción</span>}
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <span className={`pill ${category.is_active ? 'pill--active' : 'pill--inactive'}`}>
+                            {category.is_active ? 'Activa' : 'Inactiva'}
+                          </span>
+                        </td>
+                        <td style={{ fontFamily: 'var(--ff-mono)', fontSize: 12, textAlign: 'center' }}>
                           {prodCount}
-                        </span>
-                      </td>
-                      <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
-                        <div style={{ display: 'inline-flex', gap: '0.75rem', justifyContent: 'center', alignItems: 'center' }}>
-                          <button 
-                            className="btn btn--icon" 
-                            title="Editar Categoría"
-                            onClick={() => handleOpenEditModal(category)}
-                            style={{ padding: '0.375rem', borderRadius: '6px', color: '#4b5563' }}
-                          >
-                            <Edit2 style={{ width: '16px', height: '16px' }} />
-                          </button>
-                          
-                          <button 
-                            className="btn"
-                            title={category.is_active ? 'Desactivar Categoría' : 'Activar Categoría'}
-                            onClick={() => handleToggleStatus(category)}
-                            style={{ 
-                              padding: '0.375rem 0.75rem', 
-                              borderRadius: '6px', 
-                              fontSize: '0.825rem',
-                              fontWeight: 500,
-                              height: '30px',
-                              lineHeight: '1.25rem',
-                              backgroundColor: category.is_active ? '#fff0f0' : '#ebfbee',
-                              color: category.is_active ? '#e03131' : '#099268',
-                              border: `1px solid ${category.is_active ? '#ffc9c9' : '#b2f2bb'}`
-                            }}
-                          >
-                            {category.is_active ? 'Desactivar' : 'Activar'}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td>
+                          <div className="flex gap-4" style={{ whiteSpace: 'nowrap' }}>
+                            <Link
+                              to={`/app/catalog/categories/${category.id}`}
+                              className="btn btn--outline btn--sm"
+                              style={{ textDecoration: 'none' }}
+                            >
+                              Ver detalle
+                            </Link>
+                            <button
+                              className="btn btn--ghost btn--sm"
+                              onClick={() => handleOpenEditModal(category)}
+                            >
+                              Editar
+                            </button>
+                            {category.is_active ? (
+                              <button
+                                className="btn btn--danger btn--sm"
+                                onClick={() => handleToggleStatus(category)}
+                              >
+                                Desactivar
+                              </button>
+                            ) : (
+                              <button
+                                className="btn btn--ghost btn--sm"
+                                onClick={() => handleToggleStatus(category)}
+                              >
+                                Activar
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
         {/* Confirmation Deactivate Modal */}
         {categoryToDeactivate && (
-          <div 
+          <div
             style={{
-              position: 'fixed',
+              position: "fixed",
               inset: 0,
-              zIndex: 9999,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'rgba(0, 0, 0, 0.45)',
-              backdropFilter: 'blur(4px)'
+              zIndex: 50,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(15,30,32,.45)",
+              padding: 24,
             }}
+            role="dialog"
+            aria-modal="true"
           >
-            <div 
-              className="fade-slide-up"
+            <div
               style={{
-                backgroundColor: '#fff',
-                borderRadius: '12px',
-                width: '100%',
-                maxWidth: '440px',
-                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
-                padding: '1.5rem',
-                border: '1px solid #e5e7eb'
+                background: "var(--white)",
+                borderRadius: 18,
+                width: "100%",
+                maxWidth: 440,
+                padding: 24,
+                boxShadow: "0 24px 64px rgba(15,30,32,.2)",
               }}
             >
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff0f6', padding: '0.5rem', borderRadius: '9999px', color: '#f03e3e' }}>
-                  <AlertTriangle style={{ width: '24px', height: '24px' }} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(179,58,42,0.08)', padding: '0.5rem', borderRadius: '9999px', color: 'var(--err)' }}>
+                  <AlertTriangle style={{ width: 24, height: 24 }} />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', margin: 0 }}>¿Está seguro de desactivar esta categoría?</h3>
-                  <p style={{ fontSize: '0.875rem', color: '#4b5563', marginTop: '0.25rem', marginBottom: 0 }}>
-                    La categoría <strong>"{categoryToDeactivate.name}"</strong> se marcará como inactiva. No aparecerá para la creación de nuevos productos.
+                  <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--ink)', margin: 0 }}>¿Está seguro de desactivar esta categoría?</h3>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--ink-40)', marginTop: '0.25rem', marginBottom: 0 }}>
+                    La categoría <strong>{categoryToDeactivate.name}</strong> se marcará como inactiva. No aparecerá para la creación de nuevos productos.
                   </p>
                 </div>
               </div>
@@ -442,18 +395,18 @@ export const CatalogCategoriesPage: React.FC = () => {
               {categoryProductCounts[categoryToDeactivate.id] > 0 && (
                 <div 
                   style={{
-                    backgroundColor: '#fff9db',
-                    border: '1px solid #ffe066',
-                    borderRadius: '8px',
+                    background: 'rgba(201, 120, 32, 0.08)',
+                    border: '1px solid rgba(201, 120, 32, 0.2)',
+                    borderRadius: 8,
                     padding: '0.75rem',
                     marginBottom: '1.25rem',
                     display: 'flex',
                     gap: '0.5rem',
                     fontSize: '0.825rem',
-                    color: '#862e00'
+                    color: 'var(--warn)'
                   }}
                 >
-                  <AlertTriangle style={{ width: '18px', height: '18px', flexShrink: 0, marginTop: '1px' }} />
+                  <AlertTriangle style={{ width: 18, height: 18, flexShrink: 0, marginTop: '1px' }} />
                   <div>
                     <strong>Regla de negocio:</strong> Esta categoría tiene <strong>{categoryProductCounts[categoryToDeactivate.id]} producto(s)</strong> asociado(s). 
                     No es posible desactivarla en este momento a menos que desactives o cambies de categoría los productos asociados primero.
@@ -461,26 +414,17 @@ export const CatalogCategoriesPage: React.FC = () => {
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: '0.5rem', width: '100%', justifyContent: 'flex-end' }}>
-                <button 
-                  className="btn btn--secondary" 
+              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                <button
+                  className="btn btn--ghost btn--sm"
                   onClick={() => setCategoryToDeactivate(null)}
-                  style={{ padding: '0.5rem 1rem', borderRadius: '8px' }}
                 >
                   Cancelar
                 </button>
-                <button 
-                  className="btn" 
+                <button
+                  className="btn btn--danger btn--sm"
                   disabled={categoryProductCounts[categoryToDeactivate.id] > 0}
                   onClick={confirmDeactivate}
-                  style={{ 
-                    padding: '0.5rem 1rem', 
-                    borderRadius: '8px', 
-                    backgroundColor: '#f03e3e', 
-                    color: '#fff',
-                    opacity: categoryProductCounts[categoryToDeactivate.id] > 0 ? 0.5 : 1,
-                    cursor: categoryProductCounts[categoryToDeactivate.id] > 0 ? 'not-allowed' : 'pointer'
-                  }}
                 >
                   Confirmar Desactivación
                 </button>
@@ -491,231 +435,153 @@ export const CatalogCategoriesPage: React.FC = () => {
 
         {/* Create / Edit Dialog Modal */}
         {isModalOpen && (
-          <div 
+          <div
             style={{
-              position: 'fixed',
+              position: "fixed",
               inset: 0,
-              zIndex: 9999,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'rgba(0, 0, 0, 0.45)',
-              backdropFilter: 'blur(4px)'
+              zIndex: 50,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(15,30,32,.45)",
+              padding: 24,
             }}
+            role="dialog"
+            aria-modal="true"
           >
-            <div 
-              className="fade-slide-up"
+            <div
               style={{
-                backgroundColor: '#fff',
-                borderRadius: '12px',
-                width: '100%',
-                maxWidth: '480px',
-                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
-                padding: '1.5rem',
-                border: '1px solid #e5e7eb'
+                background: "var(--white)",
+                borderRadius: 18,
+                width: "100%",
+                maxWidth: 480,
+                maxHeight: "90vh",
+                overflow: "auto",
+                boxShadow: "0 24px 64px rgba(15,30,32,.2)",
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#111827', margin: 0 }}>
+              {/* header */}
+              <div
+                style={{
+                  padding: "20px 24px",
+                  borderBottom: "1px solid var(--ink-06)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  position: "sticky",
+                  top: 0,
+                  background: "var(--white)",
+                  zIndex: 1,
+                }}
+              >
+                <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 400, margin: 0 }}>
                   {editingCategory ? 'Editar Categoría' : 'Crear Categoría'}
-                </h3>
-                <button 
+                </h2>
+                <button
+                  className="btn btn--ghost btn--sm"
                   onClick={() => setIsModalOpen(false)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '0.25rem' }}
+                  aria-label="Cerrar"
                 >
-                  <X style={{ width: '20px', height: '20px' }} />
+                  ✕
                 </button>
               </div>
 
-              {validationError && (
-                <div style={{ background: '#fff5f5', border: '1px solid #fed7d7', borderRadius: '8px', padding: '0.75rem', marginBottom: '1rem', color: '#c53030', fontSize: '0.825rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <AlertTriangle style={{ width: '16px', height: '16px', flexShrink: 0 }} />
-                  <span>{validationError}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div className="form-field" style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                  <label style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }} htmlFor="cat-name">
-                    Nombre <span style={{ color: '#ef4444' }}>*</span>
-                  </label>
-                  <input 
-                    id="cat-name"
-                    type="text"
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    placeholder="Ej. Electroterapia"
-                    style={{ width: '100%', padding: '0.625rem 0.75rem', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.875rem', outline: 'none' }}
-                    required
-                  />
-                </div>
-
-                <div className="form-field" style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                  <label style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }} htmlFor="cat-desc">
-                    Descripción <span style={{ color: '#9ca3af', fontWeight: 'normal', fontSize: '0.75rem' }}>(Opcional)</span>
-                  </label>
-                  <textarea 
-                    id="cat-desc"
-                    value={formDescription}
-                    onChange={(e) => setFormDescription(e.target.value)}
-                    placeholder="Descripción detallada de la categoría de productos..."
-                    rows={4}
-                    style={{ width: '100%', padding: '0.625rem 0.75rem', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.875rem', outline: 'none', resize: 'vertical' }}
-                  />
-                </div>
-
-                {/* ── Opciones avanzadas ───────────────────────────────── */}
-                <div
-                  style={{
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '10px',
-                    overflow: 'hidden',
-                  }}
-                >
-                  {/* Collapsible header */}
-                  <button
-                    type="button"
-                    onClick={() => setAdvancedOpen((prev) => !prev)}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '0.65rem 0.875rem',
-                      background: advancedOpen ? '#f8fafc' : '#f9fafb',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontSize: '0.825rem',
-                      fontWeight: 600,
-                      color: '#374151',
-                      letterSpacing: '0.01em',
-                      transition: 'background 0.15s',
-                    }}
-                  >
-                    <span>Opciones avanzadas</span>
-                    {advancedOpen
-                      ? <ChevronDown style={{ width: '16px', height: '16px', color: '#6b7280' }} />
-                      : <ChevronUp style={{ width: '16px', height: '16px', color: '#6b7280' }} />
-                    }
-                  </button>
-
-                  {/* Collapsible body */}
-                  {advancedOpen && (
-                    <div
-                       style={{
-                        padding: '1rem 0.875rem',
-                        borderTop: '1px solid #e5e7eb',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0.75rem',
-                        background: '#fff',
-                      }}
-                    >
-                      {/* Requires serial number toggle */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
-                          Código serial
-                        </span>
-                        <label
-                          htmlFor="cat-requires-serial"
-                          style={{
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: '0.75rem',
-                            cursor: 'pointer',
-                            marginTop: '0.25rem'
-                          }}
-                        >
-                          <input
-                            id="cat-requires-serial"
-                            type="checkbox"
-                            checked={formRequiresSerial}
-                            onChange={(e) => setFormRequiresSerial(e.target.checked)}
-                            style={{
-                              width: '16px',
-                              height: '16px',
-                              marginTop: '2px',
-                              accentColor: '#1971c2',
-                              cursor: 'pointer',
-                              flexShrink: 0,
-                            }}
-                          />
-                          <div>
-                            <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#111827' }}>
-                              Ingresar un código
-                            </span>
-                            <p
-                              style={{
-                                fontSize: '0.775rem',
-                                color: '#6b7280',
-                                margin: '0.25rem 0 0 0',
-                                lineHeight: '1.45',
-                              }}
-                            >
-                              Esta categoría necesita un código serial. Este código se aplica a todos los productos que estén dentro de esta categoría.
-                            </p>
-                            {/* Inline preview badge when enabled */}
-                            {formRequiresSerial && (
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '0.4rem',
-                                  padding: '0.45rem 0.7rem',
-                                  marginTop: '0.75rem',
-                                  borderRadius: '8px',
-                                  backgroundColor: '#e8f2ff',
-                                  border: '1px solid #bfdbfe',
-                                  fontSize: '0.775rem',
-                                  color: '#1971c2',
-                                  fontWeight: 500,
-                                }}
-                              >
-                                <Hash style={{ width: '13px', height: '13px' }} />
-                                Los movimientos de esta categoría exigirán un número de serie válido.
-                              </div>
-                            )}
-                          </div>
-                        </label>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {editingCategory && (
-                  <div className="form-field" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0' }}>
-                    <label style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
-                      Estado de la categoría
-                    </label>
-                    <select
-                      value={formIsActive ? 'active' : 'inactive'}
-                      onChange={(e) => setFormIsActive(e.target.value === 'active')}
-                      style={{ padding: '0.375rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '0.875rem' }}
-                    >
-                      <option value="active">Activo</option>
-                      <option value="inactive">Inactivo</option>
-                    </select>
+              {/* body */}
+              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {validationError && (
+                  <div className="alert-bar alert-bar--err" role="alert" style={{ margin: 0 }}>
+                    <AlertTriangle style={{ width: 14, height: 14 }} />
+                    {validationError}
                   </div>
                 )}
 
-                <div style={{ display: 'flex', gap: '0.5rem', width: '100%', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-                  <button 
-                    type="button"
-                    className="btn btn--secondary" 
-                    onClick={() => setIsModalOpen(false)}
-                    style={{ padding: '0.5rem 1rem', borderRadius: '8px' }}
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="submit" 
-                    className="btn btn--primary" 
-                    style={{ padding: '0.5rem 1.25rem', borderRadius: '8px' }}
-                  >
-                    Guardar
-                  </button>
-                </div>
-              </form>
+                <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  <fieldset>
+                    <legend>Información de la categoría</legend>
+                    <div className="f-row f-row-2">
+                      <div className="f-group f-group--full">
+                        <label className="f-label" htmlFor="cat-name">
+                          Nombre *
+                        </label>
+                        <input
+                          id="cat-name"
+                          className="f-input"
+                          placeholder="Ej: Electroterapia"
+                          value={formName}
+                          onChange={(e) => setFormName(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="f-row f-row-2">
+                      <div className="f-group f-group--full">
+                        <label className="f-label" htmlFor="cat-desc">
+                          Descripción
+                        </label>
+                        <textarea
+                          id="cat-desc"
+                          className="f-input"
+                          placeholder="Descripción detallada de la categoría de productos..."
+                          rows={3}
+                          value={formDescription}
+                          onChange={(e) => setFormDescription(e.target.value)}
+                          style={{ resize: 'vertical' }}
+                        />
+                      </div>
+                    </div>
+                  </fieldset>
+
+                  <fieldset>
+                    <legend>Configuración</legend>
+                    <div className="f-row f-row-1">
+                      <div className="f-group">
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <span className="f-label" style={{ margin: 0 }}>Código serial</span>
+                          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer' }}>
+                            <input
+                              id="cat-requires-serial"
+                              type="checkbox"
+                              checked={formRequiresSerial}
+                              onChange={(e) => setFormRequiresSerial(e.target.checked)}
+                              style={{ width: 16, height: 16, marginTop: 2, cursor: 'pointer', flexShrink: 0 }}
+                            />
+                            <div>
+                              <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--ink)' }}>
+                                Requerir número de serie
+                              </span>
+                              <p style={{ fontSize: '0.775rem', color: 'var(--ink-40)', margin: '0.25rem 0 0 0', lineHeight: 1.4 }}>
+                                Esta categoría necesita un código serial aplicado a todos los productos que estén dentro de ella.
+                              </p>
+                              {formRequiresSerial && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.45rem 0.7rem', marginTop: '0.75rem', borderRadius: 8, background: 'rgba(42,157,166,0.1)', border: '1px solid var(--teal-100)', fontSize: '0.775rem', color: 'var(--teal-700)', fontWeight: 500 }}>
+                                  <Hash style={{ width: 13, height: 13 }} />
+                                  Los movimientos de esta categoría exigirán un número de serie válido.
+                                </div>
+                              )}
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </fieldset>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      className="btn btn--outline"
+                      onClick={() => setIsModalOpen(false)}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn--primary"
+                    >
+                      Guardar
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           </div>
         )}

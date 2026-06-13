@@ -15,6 +15,7 @@ import CatalogProductsPage from './features/catalog/CatalogProductsPage'
 import CatalogProductDetailPage from './features/catalog/CatalogProductDetailPage'
 import CatalogProductFormPage from './features/catalog/CatalogProductFormPage'
 import CatalogCategoriesPage from './features/catalog/CatalogCategoriesPage'
+import CatalogCategoryDetailPage from './features/catalog/CatalogCategoryDetailPage'
 import CatalogBrandsPage from './features/catalog/CatalogBrandsPage'
 import LocationsPage from './features/locations/LocationsPage'
 import TransfersPage from './features/locations/TransfersPage'
@@ -134,6 +135,14 @@ function App() {
           element={
             <ProtectedRoute>
               <CatalogCategoriesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/catalog/categories/:id"
+          element={
+            <ProtectedRoute>
+              <CatalogCategoryDetailPage />
             </ProtectedRoute>
           }
         />

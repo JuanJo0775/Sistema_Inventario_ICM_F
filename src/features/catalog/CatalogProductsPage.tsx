@@ -586,7 +586,7 @@ export default function CatalogProductsPage() {
 
         {/* filters */}
         <div
-          className="flex gap-10 mb-20"
+          className="flex gap-10 mb-8"
           style={{ alignItems: "center", flexWrap: "wrap" }}
         >
           <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
@@ -632,13 +632,6 @@ export default function CatalogProductsPage() {
           </select>
         </div>
 
-        <div className="flex gap-8 mb-16">
-          <span className="pill pill--teal">{filtered.length} productos</span>
-          {reorderCount > 0 && (
-            <span className="pill pill--warn">{reorderCount} bajo reorden</span>
-          )}
-        </div>
-
         {error && (
           <div className="alert-bar alert-bar--err mb-16" role="alert">
             <svg
@@ -654,12 +647,6 @@ export default function CatalogProductsPage() {
             {error}
           </div>
         )}
-
-        {/* table */}
-        <div className="s-head">
-          <span className="s-head__label">Productos</span>
-          <div className="s-head__rule" />
-        </div>
 
         {loading ? (
           <p
