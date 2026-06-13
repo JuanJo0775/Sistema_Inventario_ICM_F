@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, X, ChevronDown, ChevronUp, Hash, Folder } from 'lucide-react';
+import { AlertTriangle, X, Hash, Folder } from 'lucide-react';
 import AppShell from '../../components/layout/AppShell';
 import useCatalogStore from '../../store/useCatalogStore';
 
@@ -31,9 +31,6 @@ export const CatalogCategoriesPage: React.FC = () => {
   const [formIsActive, setFormIsActive] = useState(true);
   const [formRequiresSerial, setFormRequiresSerial] = useState(false);
 
-  // Advanced section state
-  const [advancedOpen, setAdvancedOpen] = useState(false);
-  
   // Feedback states
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -71,7 +68,6 @@ export const CatalogCategoriesPage: React.FC = () => {
     setFormDescription('');
     setFormIsActive(true);
     setFormRequiresSerial(false);
-    setAdvancedOpen(false);
     setValidationError(null);
     setIsModalOpen(true);
   };
@@ -82,8 +78,6 @@ export const CatalogCategoriesPage: React.FC = () => {
     setFormDescription(category.description || '');
     setFormIsActive(category.is_active);
     setFormRequiresSerial(!!category.requires_serial_number);
-    // Auto-expand advanced section if the flag is already set
-    setAdvancedOpen(!!category.requires_serial_number);
     setValidationError(null);
     setIsModalOpen(true);
   };

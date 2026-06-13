@@ -1,33 +1,37 @@
+import React, { Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import LoginPage from './features/auth/LoginPage'
-import RegisterPage from './features/auth/RegisterPage'
-import ForgotPasswordPage from './features/auth/ForgotPasswordPage'
-import DashboardPage from './features/dashboard/DashboardPage'
-import InventoryPage from './features/inventory/InventoryPage'
-import ReceptionPage from './features/reception/ReceptionPage'
-import ReceptionOrderDetailPage from './features/reception/ReceptionOrderDetailPage'
-import DispatchPage from './features/dispatch/DispatchPage'
-import ReturnsPage from './features/returns/ReturnsPage'
-import AdjustmentsPage from './features/adjustments/AdjustmentsPage'
-import AlertsPage from './features/alerts/AlertsPage'
 import ProtectedRoute from './router/ProtectedRoute'
-import CatalogProductsPage from './features/catalog/CatalogProductsPage'
-import CatalogProductDetailPage from './features/catalog/CatalogProductDetailPage'
-import CatalogProductFormPage from './features/catalog/CatalogProductFormPage'
-import CatalogCategoriesPage from './features/catalog/CatalogCategoriesPage'
-import CatalogCategoryDetailPage from './features/catalog/CatalogCategoryDetailPage'
-import CatalogBrandsPage from './features/catalog/CatalogBrandsPage'
-import LocationsPage from './features/locations/LocationsPage'
-import TransfersPage from './features/locations/TransfersPage'
-import SuppliersPage from './features/purchasing/SuppliersPage'
-import SupplierDetailPage from './features/purchasing/SupplierDetailPage'
-import PurchaseOrdersPage from './features/purchasing/PurchaseOrdersPage'
-import AuditPage from './features/admin/AuditPage'
-import UsersPage from './features/admin/UsersPage'
+import PageLoader from './components/ui/PageLoader'
+
+const LoginPage = React.lazy(() => import('./features/auth/LoginPage'))
+const RegisterPage = React.lazy(() => import('./features/auth/RegisterPage'))
+const ForgotPasswordPage = React.lazy(() => import('./features/auth/ForgotPasswordPage'))
+const DashboardPage = React.lazy(() => import('./features/dashboard/DashboardPage'))
+const InventoryPage = React.lazy(() => import('./features/inventory/InventoryPage'))
+const ReceptionPage = React.lazy(() => import('./features/reception/ReceptionPage'))
+const ReceptionOrderDetailPage = React.lazy(() => import('./features/reception/ReceptionOrderDetailPage'))
+const DispatchPage = React.lazy(() => import('./features/dispatch/DispatchPage'))
+const ReturnsPage = React.lazy(() => import('./features/returns/ReturnsPage'))
+const AdjustmentsPage = React.lazy(() => import('./features/adjustments/AdjustmentsPage'))
+const AlertsPage = React.lazy(() => import('./features/alerts/AlertsPage'))
+const CatalogProductsPage = React.lazy(() => import('./features/catalog/CatalogProductsPage'))
+const CatalogProductDetailPage = React.lazy(() => import('./features/catalog/CatalogProductDetailPage'))
+const CatalogProductFormPage = React.lazy(() => import('./features/catalog/CatalogProductFormPage'))
+const CatalogCategoriesPage = React.lazy(() => import('./features/catalog/CatalogCategoriesPage'))
+const CatalogCategoryDetailPage = React.lazy(() => import('./features/catalog/CatalogCategoryDetailPage'))
+const CatalogBrandsPage = React.lazy(() => import('./features/catalog/CatalogBrandsPage'))
+const LocationsPage = React.lazy(() => import('./features/locations/LocationsPage'))
+const TransfersPage = React.lazy(() => import('./features/locations/TransfersPage'))
+const SuppliersPage = React.lazy(() => import('./features/purchasing/SuppliersPage'))
+const SupplierDetailPage = React.lazy(() => import('./features/purchasing/SupplierDetailPage'))
+const PurchaseOrdersPage = React.lazy(() => import('./features/purchasing/PurchaseOrdersPage'))
+const AuditPage = React.lazy(() => import('./features/admin/AuditPage'))
+const UsersPage = React.lazy(() => import('./features/admin/UsersPage'))
 
 function App() {
   return (
     <BrowserRouter>
+      <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
@@ -216,6 +220,7 @@ function App() {
         />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }
