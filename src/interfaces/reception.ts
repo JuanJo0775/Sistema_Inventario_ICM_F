@@ -68,12 +68,14 @@ export interface ReceptionCreateItemPayload {
   quantity_received: number;
   lot_code?: string;
   lot_expiration_date?: string | null;
+  serial_number?: string | null;
   discrepancy_note?: string;
   allocations?: Array<{
     location_id: string;
     quantity_received: number;
     lot_code?: string;
     lot_expiration_date?: string | null;
+    serial_number?: string | null;
   }>;
 }
 
