@@ -5,6 +5,7 @@ import type {
   CatalogProduct,
   CatalogProductCreateInput,
   CatalogProductUpdateInput,
+  CatalogProductPricesInput,
 } from '../interfaces/catalog'
 import { useMocks } from '../mocks/config'
 import {
@@ -24,6 +25,7 @@ import {
   mockUpdateProduct,
   mockDeactivateProduct,
   mockRestoreProduct,
+  mockUpdateProductPrices,
 } from '../mocks/catalog'
 
 // Helper to handle pagination if returned from backend, else return array
@@ -237,5 +239,17 @@ export const fetchCatalogProductBarcode = async (id: string) => {
     }
   }
   const response = await api.get(`/catalog/products/${id}/barcode/`)
+  return response.data
+}
+
+/** PATCH /catalog/products/{id}/prices/ — Configurar precios del producto */
+export const updateCatalogProductPrices = async (
+  id: string,
+  data: CatalogProductPricesInput,
+): Promise<CatalogProduct> => {
+  if (useMocks) {
+    return mockUpdateProductPrices(id, data)
+  }
+  const response = await api.patch<CatalogProduct>(`/catalog/products/${id}/prices/`, data)
   return response.data
 }

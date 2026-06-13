@@ -2,7 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import AppShell from '../../components/layout/AppShell';
+import { SkuInput } from '../../components/ui/SkuInput';
 import useCatalogStore from '../../store/useCatalogStore';
+
+const SKU_REGEX = /^[A-Za-z]{1,4}-\d{1,4}$/;
 
 const CatalogProductFormPage: React.FC = () => {
   const { t } = useTranslation();
@@ -13,6 +16,7 @@ const CatalogProductFormPage: React.FC = () => {
   const {
     createProduct,
     updateProduct,
+    updateProductPrices,
     categories,
     brands,
     fetchCategories,
@@ -35,11 +39,20 @@ const CatalogProductFormPage: React.FC = () => {
     requires_serial: false,
     requires_lots: false,
   });
-
   // Todas las marcas activas (independientes de la categoría)
   const activeBrands = brands.filter(
     (b: any) => b.is_active || String(b.id) === String(formData.subcategory_id)
   );
+
+  const [pricing, setPricing] = useState({
+    unit_cost: '',
+    sale_price_retail: '',
+    sale_price_wholesale: '',
+    tax_rate_pct: '',
+    currency: 'COP',
+  });
+
+  const [pricingExpanded, setPricingExpanded] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState('');
@@ -70,6 +83,15 @@ const CatalogProductFormPage: React.FC = () => {
           requires_serial: (productToEdit as any).requires_serial || false,
           requires_lots: (productToEdit as any).requires_lots || false,
         });
+        const p = productToEdit as any;
+        setPricing({
+          unit_cost: p.unit_cost != null ? String(p.unit_cost) : '',
+          sale_price_retail: p.sale_price_retail != null ? String(p.sale_price_retail) : '',
+          sale_price_wholesale: p.sale_price_wholesale != null ? String(p.sale_price_wholesale) : '',
+          tax_rate_pct: p.tax_rate_pct != null ? String(p.tax_rate_pct) : '',
+          currency: p.currency || 'COP',
+        });
+        setPricingExpanded(!!p.unit_cost || !!p.sale_price_retail);
       }
     }
   }, [isEditMode, id, products]);
@@ -89,6 +111,11 @@ const CatalogProductFormPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!SKU_REGEX.test(formData.sku)) {
+      setFormError('El SKU debe tener formato: 1–4 letras + guion + 1–4 dígitos (BR-12)');
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setFormError('');
     try {
@@ -110,6 +137,16 @@ const CatalogProductFormPage: React.FC = () => {
       };
       if (isEditMode && id) {
         await updateProduct(id as any, payload);
+        // Save prices separately via /prices/ endpoint
+        if (pricing.unit_cost || pricing.sale_price_retail || pricing.sale_price_wholesale) {
+          await updateProductPrices(id, {
+            unit_cost: pricing.unit_cost ? Number(pricing.unit_cost) : null,
+            sale_price_retail: pricing.sale_price_retail ? Number(pricing.sale_price_retail) : null,
+            sale_price_wholesale: pricing.sale_price_wholesale ? Number(pricing.sale_price_wholesale) : null,
+            tax_rate_pct: pricing.tax_rate_pct ? Number(pricing.tax_rate_pct) : null,
+            currency: pricing.currency || 'COP',
+          });
+        }
       } else {
         await createProduct(payload);
       }
@@ -161,15 +198,11 @@ const CatalogProductFormPage: React.FC = () => {
               </div>
 
               <div className="form-field">
-                <label className="form-label" htmlFor="sku">{t('catalog.products.form.sku')}</label>
-                <input
-                  type="text"
+                <SkuInput
                   id="sku"
-                  name="sku"
-                  className="form-input"
+                  label={t('catalog.products.form.sku')}
                   value={formData.sku}
-                  onChange={handleChange}
-                  required
+                  onChange={(v) => setFormData(prev => ({ ...prev, sku: v }))}
                 />
               </div>
 
@@ -320,6 +353,103 @@ const CatalogProductFormPage: React.FC = () => {
               </div>
 
             </div>
+          </div>
+
+          {/* Pricing section — optional, no bloqueante */}
+          <div className="form-section">
+            <h3
+              className="form-section__title"
+              style={{ cursor: 'pointer', userSelect: 'none', display: 'flex', alignItems: 'center', gap: 8 }}
+              onClick={() => setPricingExpanded(!pricingExpanded)}
+            >
+              <span style={{ fontSize: 12, color: 'var(--ink-40)', transition: 'transform 0.15s', display: 'inline-block', transform: pricingExpanded ? 'rotate(90deg)' : 'none' }}>▶</span>
+              Precios (opcional)
+              {!pricingExpanded && (
+                <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--ink-40)' }}>
+                  — {isEditMode ? 'configurar precios de venta' : 'disponible al editar'}
+                </span>
+              )}
+            </h3>
+            {pricingExpanded && (
+              <div className="catalog-form-grid">
+                {!isEditMode && (
+                  <div className="form-field form-field--full" style={{ color: 'var(--ink-40)', fontSize: 12 }}>
+                    Guarda el producto primero para poder configurar los precios.
+                  </div>
+                )}
+                <div className="form-field" style={{ opacity: isEditMode ? 1 : 0.5 }}>
+                  <label className="form-label" htmlFor="unit_cost">Costo unitario</label>
+                  <input
+                    type="number"
+                    id="unit_cost"
+                    className="form-input"
+                    placeholder="0"
+                    min="0"
+                    step="0.01"
+                    value={pricing.unit_cost}
+                    onChange={(e) => setPricing(prev => ({ ...prev, unit_cost: e.target.value }))}
+                    disabled={!isEditMode}
+                  />
+                </div>
+                <div className="form-field" style={{ opacity: isEditMode ? 1 : 0.5 }}>
+                  <label className="form-label" htmlFor="sale_price_retail">Precio venta al público</label>
+                  <input
+                    type="number"
+                    id="sale_price_retail"
+                    className="form-input"
+                    placeholder="0"
+                    min="0"
+                    step="0.01"
+                    value={pricing.sale_price_retail}
+                    onChange={(e) => setPricing(prev => ({ ...prev, sale_price_retail: e.target.value }))}
+                    disabled={!isEditMode}
+                  />
+                </div>
+                <div className="form-field" style={{ opacity: isEditMode ? 1 : 0.5 }}>
+                  <label className="form-label" htmlFor="sale_price_wholesale">Precio venta por mayor</label>
+                  <input
+                    type="number"
+                    id="sale_price_wholesale"
+                    className="form-input"
+                    placeholder="0"
+                    min="0"
+                    step="0.01"
+                    value={pricing.sale_price_wholesale}
+                    onChange={(e) => setPricing(prev => ({ ...prev, sale_price_wholesale: e.target.value }))}
+                    disabled={!isEditMode}
+                  />
+                </div>
+                <div className="form-field" style={{ opacity: isEditMode ? 1 : 0.5 }}>
+                  <label className="form-label" htmlFor="tax_rate_pct">IVA %</label>
+                  <input
+                    type="number"
+                    id="tax_rate_pct"
+                    className="form-input"
+                    placeholder="19"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={pricing.tax_rate_pct}
+                    onChange={(e) => setPricing(prev => ({ ...prev, tax_rate_pct: e.target.value }))}
+                    disabled={!isEditMode}
+                  />
+                </div>
+                <div className="form-field" style={{ opacity: isEditMode ? 1 : 0.5 }}>
+                  <label className="form-label" htmlFor="currency">Moneda</label>
+                  <select
+                    id="currency"
+                    className="form-select"
+                    value={pricing.currency}
+                    onChange={(e) => setPricing(prev => ({ ...prev, currency: e.target.value }))}
+                    disabled={!isEditMode}
+                  >
+                    <option value="COP">COP ($)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="catalog-form__actions">

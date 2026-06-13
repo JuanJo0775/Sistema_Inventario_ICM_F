@@ -50,18 +50,6 @@ export interface ReceptionOverview {
   recentMovements: ReceptionMovement[];
 }
 
-// Lo que el frontend envía al servicio
-export interface ReceptionSubmitPayload {
-  productId: string; // UUID del producto
-  locationId: string; // UUID de la ubicación destino
-  quantity: number; // cantidad recibida
-  qtyInvoiced?: number; // cantidad facturada (para detectar discrepancia)
-  serialNumber?: string; // solo el primero, backend acepta uno por movimiento
-  discrepancyNote?: string;
-  coldChainAcknowledged: boolean;
-  electricalSafetyAcknowledged: boolean;
-}
-
 /** Payload para createAndConfirmReception (basado en órdenes de compra) */
 export interface ReceptionCreateItemPayload {
   purchase_order_item_id: string;

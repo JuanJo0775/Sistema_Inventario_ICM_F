@@ -20,12 +20,16 @@ interface LocationSplit {
   id: string
   locationId: string
   quantity: string
+  lotCode: string
+  expirationDate: string
 }
 
 const newSplit = (): LocationSplit => ({
   id: crypto.randomUUID(),
   locationId: '',
   quantity: '',
+  lotCode: '',
+  expirationDate: '',
 })
 
 const itemStatusBadge = (received: number, ordered: number) => {
@@ -140,11 +144,7 @@ export default function ReceptionOrderDetailPage() {
     setSplits((prev) => prev.filter((s) => s.id !== id))
   }
 
-  const handleSplitChange = (
-    id: string,
-    field: 'locationId' | 'quantity',
-    value: string
-  ) => {
+  const handleSplitChange = (id: string, field: 'locationId' | 'quantity' | 'lotCode' | 'expirationDate', value: string) => {
     setSplits((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)))
   }
 
@@ -212,6 +212,14 @@ export default function ReceptionOrderDetailPage() {
           setActionError('Todas las divisiones deben tener una cantidad mayor a 0.')
           return
         }
+        if (lotRequired && !s.lotCode.trim()) {
+          setActionError('Todas las divisiones deben tener un lote cuando el producto requiere vencimiento.')
+          return
+        }
+        if (requiresExpiration && !s.expirationDate) {
+          setActionError('Todas las divisiones deben tener fecha de vencimiento.')
+          return
+        }
       }
       if (requiresSerial && !serialNumber.trim()) {
         setActionError('Debe ingresar el número de serie del producto (único para todas las ubicaciones).')
@@ -257,13 +265,12 @@ export default function ReceptionOrderDetailPage() {
           items: [
             {
               ...baseItem,
-              serial_number: requiresSerial ? serialNumber.trim() : undefined,
               allocations: splits.map((s) => ({
                 location_id: s.locationId,
                 quantity_received: Number(s.quantity),
-                lot_code: lotCode.trim() || undefined,
-                lot_expiration_date: expirationDate || null,
-                serial_number: requiresSerial ? serialNumber.trim() : undefined,
+                ...(lotRequired && s.lotCode && s.lotCode.trim() ? { lot_code: s.lotCode.trim() } : {}),
+                ...(lotRequired && s.expirationDate ? { lot_expiration_date: s.expirationDate } : {}),
+                ...(requiresSerial ? { serial_number: serialNumber.trim() } : {}),
               })),
             },
           ],
@@ -715,44 +722,46 @@ export default function ReceptionOrderDetailPage() {
                 />
               </div>
 
-              {/* Lot + Expiration */}
-              <div className="f-row f-row-2">
-                <div className="f-group">
-                  <label className="f-label" htmlFor="lot-code-input">
-                    Lote {lotRequired && <span style={{ color: 'var(--err)' }}>*</span>}
-                  </label>
-                  <input
-                    id="lot-code-input"
-                    className="f-input text-mono"
-                    type="text"
-                    placeholder="Ej. LOT-2026"
-                    value={lotCode}
-                    onChange={(e) => setLotCode(e.target.value)}
-                    required={lotRequired}
-                  />
-                  {lotRequired && (
-                    <span className="f-note f-note--err">
-                      Obligatorio porque el producto requiere fecha de vencimiento.
-                    </span>
-                  )}
-                </div>
-
-                {requiresExpiration && (
+              {/* Lot + Expiration (oculto en split avanzado, va por fila) */}
+              {(!splitEnabled || !requiresExpiration) && (
+                <div className="f-row f-row-2">
                   <div className="f-group">
-                    <label className="f-label" htmlFor="expiration-date-input">
-                      Vencimiento <span style={{ color: 'var(--err)' }}>*</span>
+                    <label className="f-label" htmlFor="lot-code-input">
+                      Lote {lotRequired && <span style={{ color: 'var(--err)' }}>*</span>}
                     </label>
                     <input
-                      id="expiration-date-input"
-                      className="f-input"
-                      type="date"
-                      value={expirationDate}
-                      onChange={(e) => setExpirationDate(e.target.value)}
-                      required
+                      id="lot-code-input"
+                      className="f-input text-mono"
+                      type="text"
+                      placeholder="Ej. LOT-2026"
+                      value={lotCode}
+                      onChange={(e) => setLotCode(e.target.value)}
+                      required={lotRequired}
                     />
+                    {lotRequired && (
+                      <span className="f-note f-note--err">
+                        Obligatorio porque el producto requiere fecha de vencimiento.
+                      </span>
+                    )}
                   </div>
-                )}
-              </div>
+
+                  {requiresExpiration && (
+                    <div className="f-group">
+                      <label className="f-label" htmlFor="expiration-date-input">
+                        Vencimiento <span style={{ color: 'var(--err)' }}>*</span>
+                      </label>
+                      <input
+                        id="expiration-date-input"
+                        className="f-input"
+                        type="date"
+                        value={expirationDate}
+                        onChange={(e) => setExpirationDate(e.target.value)}
+                        required
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
 
               {requiresSerial && (
                 <div className="f-group">
@@ -823,15 +832,13 @@ export default function ReceptionOrderDetailPage() {
                       <div
                         key={s.id}
                         style={{
-                          display: 'flex',
-                          gap: 6,
-                          alignItems: 'center',
                           backgroundColor: 'var(--white)',
-                          padding: '6px 10px',
+                          padding: '8px 10px',
                           borderRadius: 6,
                           border: '1px solid var(--ink-12)',
                         }}
                       >
+<<<<<<< HEAD
                         <span
                           className="text-mono"
                           style={{
@@ -883,10 +890,14 @@ export default function ReceptionOrderDetailPage() {
                           }}
                         />
                         {requiresSerial && (
+=======
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+>>>>>>> develop
                           <span
                             className="text-mono"
                             style={{
                               fontSize: 11,
+<<<<<<< HEAD
                               color: 'var(--ink-40)',
                               whiteSpace: 'nowrap',
                               flexShrink: 0,
@@ -911,6 +922,89 @@ export default function ReceptionOrderDetailPage() {
                         >
                           <Trash2 size={14} />
                         </button>
+=======
+                              fontWeight: 700,
+                              color: 'var(--ink-40)',
+                              width: 20,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {idx + 1}.
+                          </span>
+                          <select
+                            value={s.locationId}
+                            onChange={(e) =>
+                              handleSplitChange(s.id, 'locationId', e.target.value)
+                            }
+                            className="f-input"
+                            style={{
+                              flex: 1,
+                              minWidth: 0,
+                              height: 36,
+                              fontSize: 12,
+                            }}
+                          >
+                            <option value="">Ubicación</option>
+                            {filteredLocations.map((loc) => (
+                              <option key={loc.id} value={loc.id}>
+                                {loc.code} - {loc.name}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            className="f-input text-mono"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder="Cant."
+                            value={s.quantity}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9]/g, '')
+                              handleSplitChange(s.id, 'quantity', val)
+                            }}
+                            style={{
+                              width: 80,
+                              flexShrink: 0,
+                              height: 36,
+                              fontSize: 12,
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSplit(s.id)}
+                            className="btn btn--ghost btn--sm"
+                            style={{
+                              color: 'var(--err)',
+                              width: 32,
+                              height: 32,
+                              flexShrink: 0,
+                              padding: 0,
+                            }}
+                            title="Eliminar"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                        {requiresExpiration && (
+                          <div style={{ display: 'flex', gap: 6, marginTop: 6, paddingLeft: 26 }}>
+                            <input
+                              className="f-input text-mono"
+                              type="text"
+                              placeholder="Lote"
+                              value={s.lotCode}
+                              onChange={(e) => handleSplitChange(s.id, 'lotCode', e.target.value)}
+                              style={{ flex: 1, height: 36, fontSize: 12 }}
+                            />
+                            <input
+                              className="f-input"
+                              type="date"
+                              value={s.expirationDate}
+                              onChange={(e) => handleSplitChange(s.id, 'expirationDate', e.target.value)}
+                              style={{ flex: 1, height: 36, fontSize: 12 }}
+                            />
+                          </div>
+                        )}
+>>>>>>> develop
                       </div>
                     ))}
 
