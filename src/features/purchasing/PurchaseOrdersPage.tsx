@@ -1,11 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import {
-  Plus,
-  Search,
   X,
-  FileText,
-  Clock,
-  TrendingUp,
   CheckCircle,
   XCircle,
   AlertTriangle,
@@ -52,10 +47,8 @@ const Combobox: React.FC<ComboboxProps> = ({
   const [searchTerm, setSearchTerm] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Find currently selected option
   const selectedOption = options.find((o) => o.value === value)
 
-  // Sync search term with selected option when not focused
   useEffect(() => {
     if (selectedOption) {
       setSearchTerm(selectedOption.label)
@@ -64,12 +57,10 @@ const Combobox: React.FC<ComboboxProps> = ({
     }
   }, [selectedOption, value])
 
-  // Click outside handler
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false)
-        // Reset search term to active selection if exists
         if (selectedOption) {
           setSearchTerm(selectedOption.label)
         } else {
@@ -81,7 +72,6 @@ const Combobox: React.FC<ComboboxProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [selectedOption])
 
-  // Filter options
   const filteredOptions = options.filter(
     (o) =>
       o.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -91,7 +81,6 @@ const Combobox: React.FC<ComboboxProps> = ({
   const handleInputFocus = () => {
     if (disabled) return
     setIsOpen(true)
-    // Clear search term on focus to let user see all options
     setSearchTerm('')
   }
 
@@ -255,7 +244,6 @@ const Combobox: React.FC<ComboboxProps> = ({
 // MAIN PAGE COMPONENT
 // ============================================================================
 export const PurchaseOrdersPage: React.FC = () => {
-  // Store states
   const {
     orders,
     loading,
@@ -271,14 +259,12 @@ export const PurchaseOrdersPage: React.FC = () => {
   const { suppliers, fetchSuppliers } = useSupplierStore()
   const { products, fetchProducts } = useCatalogStore()
 
-  // Local UI States
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
 
-  // Form Modal States
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingOrder, setEditingOrder] = useState<PurchaseOrder | null>(null)
   const [formSupplierId, setFormSupplierId] = useState('')
@@ -292,48 +278,37 @@ export const PurchaseOrdersPage: React.FC = () => {
     }>
   >([])
 
-  // Modal Sub-Form Product Add state
   const [addProductId, setAddProductId] = useState('')
   const [addQty, setAddQty] = useState('1')
   const [addCost, setAddCost] = useState(0)
 
-  // Action Confirmations
   const [confirmEmitId, setConfirmEmitId] = useState<string | null>(null)
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null)
   const [cancelReason, setCancelReason] = useState('')
   const [validationError, setValidationError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
-  // Initial load
   useEffect(() => {
     fetchOrders()
-    fetchSuppliers() // Load active suppliers
-    fetchProducts()  // Load catalog products
+    fetchSuppliers()
+    fetchProducts()
   }, [fetchOrders, fetchSuppliers, fetchProducts])
 
-  // Filtered orders list — reactive: filters update immediately as user types or changes select
   const filteredOrders = orders.filter((o) => {
-    // Search filter — live, uses searchTerm directly
     const matchesSearch =
       searchTerm.trim() === '' ||
       o.number.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
       o.supplier_nombre.toLowerCase().includes(searchTerm.trim().toLowerCase())
 
-    // Status filter — reactive to select change
     const matchesStatus = statusFilter === 'all' || o.status === statusFilter
 
     return matchesSearch && matchesStatus
   })
 
-  // Search form submit (kept for accessibility / Enter key)
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // no-op — filtering is already live via searchTerm
   }
 
-  // Clear search filter
-
-  // Active items for combobox options
   const supplierOptions: ComboboxOption[] = suppliers
     .filter((s) => s.is_active)
     .map((s) => ({
@@ -350,7 +325,6 @@ export const PurchaseOrdersPage: React.FC = () => {
       subLabel: `SKU: ${p.sku}`,
     }))
 
-  // Form management
   const handleOpenCreate = () => {
     setEditingOrder(null)
     setFormSupplierId('')
@@ -394,14 +368,12 @@ export const PurchaseOrdersPage: React.FC = () => {
       return
     }
 
-    // Check duplication
     const duplicate = formItems.some((item) => item.productId === addProductId)
     if (duplicate) {
       setValidationError('Este producto ya ha sido agregado a la orden.')
       return
     }
 
-    // Add to items list
     setFormItems([
       ...formItems,
       {
@@ -412,7 +384,6 @@ export const PurchaseOrdersPage: React.FC = () => {
       },
     ])
 
-    // Reset subform
     setAddProductId('')
     setAddQty('1')
     setAddCost(0)
@@ -456,7 +427,6 @@ export const PurchaseOrdersPage: React.FC = () => {
             : 'Observaciones de la orden actualizadas correctamente.'
         )
       } else {
-        // Create draft
         const payload = {
           supplier_id: formSupplierId,
           notes: formNotes.trim(),
@@ -488,7 +458,6 @@ export const PurchaseOrdersPage: React.FC = () => {
 
     try {
       if (editingOrder) {
-        // Update first, then confirm
         const payload: any = {
           notes: formNotes.trim(),
         }
@@ -504,7 +473,6 @@ export const PurchaseOrdersPage: React.FC = () => {
         await confirmOrder(editingOrder.id)
         setSuccessMsg(`Orden de compra ${editingOrder.number} emitida correctamente.`)
       } else {
-        // Create and emit immediately
         const payload = {
           supplier_id: formSupplierId,
           notes: formNotes.trim(),
@@ -531,7 +499,6 @@ export const PurchaseOrdersPage: React.FC = () => {
       setSuccessMsg(`Orden de compra ${order?.number || ''} emitida correctamente.`)
       setConfirmEmitId(null)
       if (selectedOrder && selectedOrder.id === confirmEmitId) {
-        // Refresh detail view
         const refreshed = orders.find((o) => o.id === confirmEmitId)
         if (refreshed) setSelectedOrder(refreshed)
       }
@@ -554,7 +521,6 @@ export const PurchaseOrdersPage: React.FC = () => {
       setCancelReason('')
       setValidationError(null)
       if (selectedOrder && selectedOrder.id === cancelOrderId) {
-        // Refresh detail view
         const refreshed = orders.find((o) => o.id === cancelOrderId)
         if (refreshed) setSelectedOrder(refreshed)
       }
@@ -566,7 +532,6 @@ export const PurchaseOrdersPage: React.FC = () => {
     setIsDetailOpen(true)
   }
 
-  // Format status pill
   const renderStatusPill = (status: string) => {
     switch (status) {
       case 'borrador':
@@ -674,7 +639,6 @@ export const PurchaseOrdersPage: React.FC = () => {
     }
   }
 
-  // Format Date
   const formatDate = (isoString?: string) => {
     if (!isoString) return '--'
     try {
@@ -689,251 +653,50 @@ export const PurchaseOrdersPage: React.FC = () => {
     }
   }
 
-  // Count order states
   const totalCount = orders.length
   const pendingCount = orders.filter((o) => o.status === 'pendiente').length
   const partialCount = orders.filter((o) => o.status === 'parcialmente_recibida').length
   const completedCount = orders.filter((o) => o.status === 'completada').length
 
   return (
-    <AppShell title="Órdenes de Compra" subtitle="Planificación y abastecimiento de insumos">
-      <div className="catalog-page fade-slide-up" style={{ padding: '0 1rem' }}>
-        <header
-          className="catalog-header"
-          style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            marginBottom: '1.5rem',
-            marginTop: '0.75rem',
-          }}
-        >
-          <button className="btn btn--primary" type="button" onClick={handleOpenCreate}>
-            <Plus style={{ marginRight: '0.25rem', width: '18px', height: '18px', marginTop: '2px' }} />
-            Nueva Orden
-          </button>
-        </header>
+    <AppShell
+      title="Órdenes de Compra"
+      subtitle="Planificación y abastecimiento de insumos"
+      actions={
+        <button className="btn btn--primary btn--sm" type="button" onClick={handleOpenCreate}>
+          + Nueva Orden
+        </button>
+      }
+    >
+      <div className="catalog-page fade-slide-up">
 
-        {/* Stats KPIs Panel */}
-        <section
-          className="catalog-stats"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '1.25rem',
-            marginBottom: '1.5rem',
-          }}
-        >
-          <div
-            className="stat-card"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1.25rem',
-              backgroundColor: '#fff',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#f3f0ff',
-                color: '#7048e8',
-                width: '48px',
-                height: '48px',
-                borderRadius: '10px',
-              }}
-            >
-              <FileText style={{ width: '22px', height: '22px', strokeWidth: 2 }} />
-            </div>
-            <div>
-              <span
-                style={{
-                  fontSize: '1.85rem',
-                  fontWeight: 700,
-                  color: '#111827',
-                  lineHeight: 1,
-                  display: 'block',
-                }}
-              >
-                {totalCount}
-              </span>
-              <p
-                style={{
-                  fontSize: '0.875rem',
-                  color: '#6b7280',
-                  margin: '0.25rem 0 0 0',
-                  fontWeight: 500,
-                }}
-              >
-                Órdenes Totales
-              </p>
-            </div>
+        {/* Metric strip */}
+        <div className="metric-strip mb-4" style={{ maxWidth: 700 }}>
+          <div className="metric-cell metric-cell--hero">
+            <p className="metric-cell__eyebrow">Órdenes Totales</p>
+            <p className="metric-cell__val">{totalCount}</p>
+            <p className="metric-cell__sub">en el sistema</p>
           </div>
-
-          <div
-            className="stat-card"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1.25rem',
-              backgroundColor: '#fff',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#fffbeb',
-                color: '#d97706',
-                width: '48px',
-                height: '48px',
-                borderRadius: '10px',
-              }}
-            >
-              <Clock style={{ width: '22px', height: '22px', strokeWidth: 2 }} />
-            </div>
-            <div>
-              <span
-                style={{
-                  fontSize: '1.85rem',
-                  fontWeight: 700,
-                  color: '#111827',
-                  lineHeight: 1,
-                  display: 'block',
-                }}
-              >
-                {pendingCount}
-              </span>
-              <p
-                style={{
-                  fontSize: '0.875rem',
-                  color: '#6b7280',
-                  margin: '0.25rem 0 0 0',
-                  fontWeight: 500,
-                }}
-              >
-                Pendientes
-              </p>
-            </div>
+          <div className="metric-cell metric-cell--light">
+            <p className="metric-cell__eyebrow">Pendientes</p>
+            <p className="metric-cell__val">{pendingCount}</p>
+            <p className="metric-cell__sub">órdenes pendientes</p>
           </div>
-
-          <div
-            className="stat-card"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1.25rem',
-              backgroundColor: '#fff',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#eff6ff',
-                color: '#2563eb',
-                width: '48px',
-                height: '48px',
-                borderRadius: '10px',
-              }}
-            >
-              <TrendingUp style={{ width: '22px', height: '22px', strokeWidth: 2 }} />
-            </div>
-            <div>
-              <span
-                style={{
-                  fontSize: '1.85rem',
-                  fontWeight: 700,
-                  color: '#111827',
-                  lineHeight: 1,
-                  display: 'block',
-                }}
-              >
-                {partialCount}
-              </span>
-              <p
-                style={{
-                  fontSize: '0.875rem',
-                  color: '#6b7280',
-                  margin: '0.25rem 0 0 0',
-                  fontWeight: 500,
-                }}
-              >
-                Parciales
-              </p>
-            </div>
+          <div className="metric-cell metric-cell--light">
+            <p className="metric-cell__eyebrow">Parciales</p>
+            <p className="metric-cell__val">{partialCount}</p>
+            <p className="metric-cell__sub">órdenes parciales</p>
           </div>
-
-          <div
-            className="stat-card"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1.25rem',
-              backgroundColor: '#fff',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#ecfdf5',
-                color: '#059669',
-                width: '48px',
-                height: '48px',
-                borderRadius: '10px',
-              }}
-            >
-              <CheckCircle style={{ width: '22px', height: '22px', strokeWidth: 2 }} />
-            </div>
-            <div>
-              <span
-                style={{
-                  fontSize: '1.85rem',
-                  fontWeight: 700,
-                  color: '#111827',
-                  lineHeight: 1,
-                  display: 'block',
-                }}
-              >
-                {completedCount}
-              </span>
-              <p
-                style={{
-                  fontSize: '0.875rem',
-                  color: '#6b7280',
-                  margin: '0.25rem 0 0 0',
-                  fontWeight: 500,
-                }}
-              >
-                Completadas
-              </p>
-            </div>
+          <div className="metric-cell metric-cell--light">
+            <p className="metric-cell__eyebrow">Completadas</p>
+            <p className="metric-cell__val" style={{ color: completedCount > 0 ? 'var(--ok)' : undefined }}>
+              {completedCount}
+            </p>
+            <p className="metric-cell__sub">órdenes completadas</p>
           </div>
-        </section>
+        </div>
 
-        {/* Alert Bars */}
+        {/* Alerts */}
         {successMsg && (
           <div className="alert-bar alert-bar--ok" role="status" style={{ marginBottom: '1.5rem' }}>
             <span>{successMsg}</span>
@@ -953,297 +716,157 @@ export const PurchaseOrdersPage: React.FC = () => {
           </div>
         )}
 
-        {/* Toolbar / Search & Filter */}
-        <div
-          style={{
-            background: '#fff',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            padding: '1.25rem',
-            marginBottom: '1.5rem',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-          }}
-        >
+        {/* Filter toolbar — no white background box */}
+        <div className="flex gap-10 mb-4" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
           <form
             onSubmit={handleSearchSubmit}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '3fr 1fr auto',
-              gap: '1rem',
-              alignItems: 'end',
-            }}
+            style={{ display: 'flex', flex: 1, gap: 8, alignItems: 'center' }}
           >
-            {/* Buscar Orden */}
-            <div>
-              <label
+            <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+              <svg
                 style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  color: '#94a3b8',
-                  textTransform: 'uppercase',
+                  position: 'absolute',
+                  left: 11,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: 14,
+                  height: 14,
+                  stroke: 'var(--teal-600)',
+                  strokeWidth: 1.8,
                 }}
+                viewBox="0 0 24 24"
+                fill="none"
               >
-                Buscar orden
-              </label>
-
-              <div style={{ position: 'relative' }}>
-                <Search
-                  style={{
-                    position: 'absolute',
-                    left: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: '18px',
-                    height: '18px',
-                    color: '#9ca3af',
-                  }}
-                />
-
-                <input
-                  type="text"
-                  placeholder="Número de orden o proveedor..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  style={{
-                    width: '100%',
-                    height: '46px',
-                    paddingLeft: '40px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '0.95rem',
-                  }}
-                />
-              </div>
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+              <input
+                className="f-input"
+                style={{ paddingLeft: 34 }}
+                placeholder="Número de orden o proveedor..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                aria-label="Buscar orden"
+              />
             </div>
-
-            {/* Estado */}
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  color: '#94a3b8',
-                  textTransform: 'uppercase',
-                }}
-              >
-                Estado
-              </label>
-
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                style={{
-                  width: '100%',
-                  height: '46px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  padding: '0 12px',
-                  fontSize: '0.95rem',
-                }}
-              >
-                <option value="all">Todas</option>
-                <option value="borrador">Borrador</option>
-                <option value="pendiente">Pendiente</option>
-                <option value="parcialmente_recibida">Parcialmente recibida</option>
-                <option value="completada">Completada</option>
-                <option value="cancelada">Cancelada</option>
-              </select>
-            </div>
-
-            {/* Botón */}
-            <button
-              type="submit"
-              style={{
-                height: '46px',
-                minWidth: '120px',
-              }}
-              className="btn btn--primary"
+            <select
+              className="f-input"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{ maxWidth: 200 }}
+              aria-label="Filtrar por estado"
             >
+              <option value="all">Todas</option>
+              <option value="borrador">Borrador</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="parcialmente_recibida">Parcialmente recibida</option>
+              <option value="completada">Completada</option>
+              <option value="cancelada">Cancelada</option>
+            </select>
+            <button type="submit" className="btn btn--primary">
               Buscar
             </button>
           </form>
-        </div>
-        {/* Table list */}
-        <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
-                  Orden
-                </th>
-                <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
-                  Proveedor
-                </th>
-                <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
-                  Fecha
-                </th>
-                <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
-                  Estado
-                </th>
-                <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem', textAlign: 'center' }}>
-                  Productos
-                </th>
-                <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem', textAlign: 'right' }}>
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: '#6b7280' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                      <span className="spinner" style={{ width: '24px', height: '24px', border: '3px solid #f3f3f3', borderTop: '3px solid #4f46e5', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                      <span>Cargando órdenes de compra...</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : filteredOrders.length > 0 ? (
-                filteredOrders.map((order) => (
-                  <tr
-                    key={order.id}
-                    style={{ borderBottom: '1px solid #f3f4f6', transition: 'background 0.15s' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f9fafb')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                  >
-                    <td style={{ padding: '1rem 1.25rem', fontSize: '0.875rem', fontWeight: 600, color: '#4f46e5' }}>
-                      {order.number}
-                    </td>
-                    <td style={{ padding: '1rem 1.25rem', fontSize: '0.875rem', color: '#111827' }}>
-                      {order.supplier_nombre}
-                    </td>
-                    <td style={{ padding: '1rem 1.25rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                      {formatDate(order.created_at)}
-                    </td>
-                    <td style={{ padding: '1rem 1.25rem', fontSize: '0.875rem' }}>
-                      {renderStatusPill(order.status)}
-                    </td>
-                    <td style={{ padding: '1rem 1.25rem', fontSize: '0.875rem', color: '#111827', textAlign: 'center' }}>
-                      <span
-                        style={{
-                          backgroundColor: '#f3f0ff',
-                          color: '#7048e8',
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '6px',
-                          fontWeight: 600,
-                          fontSize: '0.825rem',
-                        }}
-                      >
-                        {order.items?.length || 0}
-                      </span>
-                    </td>
-                    <td style={{ padding: '1rem 1.25rem', fontSize: '0.875rem', textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                        <button
-                          title="Ver detalle"
-                          onClick={() => handleOpenDetail(order)}
-                          style={{
-                            padding: '0.375rem',
-                            borderRadius: '6px',
-                            border: '1px solid #d1d5db',
-                            backgroundColor: '#fff',
-                            cursor: 'pointer',
-                            color: '#4b5563',
-                            display: 'flex',
-                            alignItems: 'center',
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f9fafb')}
-                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#fff')}
-                        >
-                          <Eye style={{ width: '16px', height: '16px' }} />
-                        </button>
-                        {order.status === 'borrador' && (
-                          <>
-                            <button
-                              onClick={() => handleOpenEdit(order)}
-                              style={{
-                                padding: '0.375rem 0.75rem',
-                                borderRadius: '6px',
-                                border: '1px solid #4f46e5',
-                                backgroundColor: '#fff',
-                                color: '#4f46e5',
-                                cursor: 'pointer',
-                                fontSize: '0.825rem',
-                                fontWeight: 500,
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = '#4f46e5'
-                                e.currentTarget.style.color = '#fff'
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = '#fff'
-                                e.currentTarget.style.color = '#4f46e5'
-                              }}
-                            >
-                              Editar
-                            </button>
-                            <button
-                              onClick={() => setConfirmEmitId(order.id)}
-                              style={{
-                                padding: '0.375rem 0.75rem',
-                                borderRadius: '6px',
-                                border: '1px solid #059669',
-                                backgroundColor: '#059669',
-                                color: '#fff',
-                                cursor: 'pointer',
-                                fontSize: '0.825rem',
-                                fontWeight: 500,
-                              }}
-                              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#047857')}
-                              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#059669')}
-                            >
-                              Emitir
-                            </button>
-                          </>
-                        )}
-                        {(order.status === 'borrador' || order.status === 'pendiente') && (
-                          <button
-                            onClick={() => {
-                              setCancelOrderId(order.id)
-                              setCancelReason('')
-                            }}
-                            style={{
-                              padding: '0.375rem 0.75rem',
-                              borderRadius: '6px',
-                              border: '1px solid #fee2e2',
-                              backgroundColor: '#fff0f0',
-                              color: '#dc2626',
-                              cursor: 'pointer',
-                              fontSize: '0.825rem',
-                              fontWeight: 500,
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#fecaca')}
-                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#fff0f0')}
-                          >
-                            Cancelar
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: '#6b7280' }}>
-                    No se encontraron órdenes de compra.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          {searchTerm && (
+            <button
+              onClick={() => { setSearchTerm(''); setStatusFilter('all') }}
+              className="btn btn--ghost btn--sm"
+            >
+              Limpiar filtro
+            </button>
+          )}
         </div>
 
-        {/* Styles injection for spinner animations */}
-        <style dangerouslySetInnerHTML={{__html: `
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}} />
+        {/* Table */}
+        {loading && orders.length === 0 ? (
+          <div className="empty-state">
+            <p>Cargando órdenes de compra...</p>
+          </div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="empty-state">
+            <p>No se encontraron órdenes de compra.</p>
+          </div>
+        ) : (
+          <div className="table-surface">
+            <div className="table-wrap">
+              <table className="data-table" style={{ minWidth: 800 }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: '20%' }}>Orden</th>
+                    <th style={{ width: '22%' }}>Proveedor</th>
+                    <th style={{ width: '16%' }}>Fecha</th>
+                    <th style={{ width: '14%' }}>Estado</th>
+                    <th style={{ width: '10%', textAlign: 'center' }}>Productos</th>
+                    <th style={{ width: '18%' }}><span className="sr-only">Acciones</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredOrders.map((order) => (
+                    <tr key={order.id}>
+                      <td style={{ color: 'var(--teal-600)', fontWeight: 600, fontFamily: 'var(--ff-mono)', fontSize: '0.8rem' }}>
+                        {order.number}
+                      </td>
+                      <td style={{ color: 'var(--ink)', fontWeight: 500 }}>
+                        {order.supplier_nombre}
+                      </td>
+                      <td style={{ color: 'var(--ink-40)', fontSize: '0.825rem' }}>
+                        {formatDate(order.created_at)}
+                      </td>
+                      <td>
+                        {renderStatusPill(order.status)}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span style={{ fontFamily: 'var(--ff-mono)', fontSize: '0.8rem', color: 'var(--ink-70)' }}>
+                          {order.items?.length || 0}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex gap-4" style={{ whiteSpace: 'nowrap', justifyContent: 'flex-end' }}>
+                          <button
+                            className="btn btn--ghost btn--sm"
+                            title="Ver detalle"
+                            onClick={() => handleOpenDetail(order)}
+                            style={{ padding: '0.375rem' }}
+                          >
+                            <Eye style={{ width: '16px', height: '16px' }} />
+                          </button>
+                          {order.status === 'borrador' && (
+                            <>
+                              <button
+                                className="btn btn--ghost btn--sm"
+                                onClick={() => handleOpenEdit(order)}
+                              >
+                                Editar
+                              </button>
+                              <button
+                                className="btn btn--sm"
+                                style={{ background: 'rgba(45, 139, 111, 0.08)', color: 'var(--ok)', border: '1px solid rgba(45, 139, 111, 0.2)' }}
+                                onClick={() => setConfirmEmitId(order.id)}
+                              >
+                                Emitir
+                              </button>
+                            </>
+                          )}
+                          {(order.status === 'borrador' || order.status === 'pendiente') && (
+                            <button
+                              className="btn btn--danger btn--sm"
+                              onClick={() => {
+                                setCancelOrderId(order.id)
+                                setCancelReason('')
+                              }}
+                            >
+                              Cancelar
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* ====================================================================
             FORM MODAL (CREATE/EDIT)
@@ -1253,102 +876,89 @@ export const PurchaseOrdersPage: React.FC = () => {
             style={{
               position: 'fixed',
               inset: 0,
-              backgroundColor: 'rgba(0,0,0,0.45)',
-              backdropFilter: 'blur(4px)',
-              zIndex: 9999,
+              zIndex: 50,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '1.5rem',
+              background: 'rgba(15,30,32,.45)',
+              padding: 24,
             }}
+            role="dialog"
+            aria-modal="true"
           >
             <div
               style={{
-                backgroundColor: '#fff',
-                borderRadius: '12px',
-                maxWidth: '680px',
+                background: 'var(--white)',
+                borderRadius: 18,
+                maxWidth: 680,
                 width: '100%',
                 maxHeight: '90vh',
-                overflowY: 'auto',
-                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                overflow: 'auto',
+                boxShadow: '0 24px 64px rgba(15,30,32,.2)',
                 display: 'flex',
                 flexDirection: 'column',
               }}
             >
+              {/* header */}
               <div
                 style={{
+                  padding: '20px 24px',
+                  borderBottom: '1px solid var(--ink-06)',
                   display: 'flex',
-                  justifyContent: 'space-between',
                   alignItems: 'center',
-                  padding: '1.25rem 1.5rem',
-                  borderBottom: '1px solid #f3f4f6',
+                  justifyContent: 'space-between',
+                  position: 'sticky',
+                  top: 0,
+                  background: 'var(--white)',
+                  zIndex: 1,
                 }}
               >
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#111827', margin: 0 }}>
+                <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 400, margin: 0 }}>
                   {editingOrder ? `Editar Orden — ${editingOrder.number}` : 'Nueva Orden de Compra'}
-                </h3>
+                </h2>
                 <button
-                  type="button"
+                  className="btn btn--ghost btn--sm"
                   onClick={() => setIsFormOpen(false)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: '#9ca3af',
-                    padding: '0.25rem',
-                  }}
+                  aria-label="Cerrar"
                 >
-                  <X style={{ width: '20px', height: '20px' }} />
+                  ✕
                 </button>
               </div>
 
-              <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {/* body */}
+              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
                 {validationError && (
-                  <div
-                    style={{
-                      background: '#fff5f5',
-                      border: '1px solid #fed7d7',
-                      borderRadius: '8px',
-                      padding: '0.75rem',
-                      color: '#c53030',
-                      fontSize: '0.825rem',
-                      display: 'flex',
-                      gap: '0.5rem',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <AlertTriangle style={{ width: '16px', height: '16px', flexShrink: 0 }} />
-                    <span>{validationError}</span>
+                  <div className="alert-bar alert-bar--err" role="alert" style={{ margin: 0 }}>
+                    <AlertTriangle style={{ width: 14, height: 14 }} />
+                    {validationError}
                   </div>
                 )}
 
                 {/* Supplier Field */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                  <label style={{ fontSize: '0.825rem', fontWeight: 600, color: '#374151' }}>
-                    Proveedor <span style={{ color: '#ef4444' }}>*</span>
+                <div className="f-group">
+                  <label className="f-label">
+                    Proveedor <span style={{ color: 'var(--err)' }}>*</span>
                   </label>
                   <Combobox
                     options={supplierOptions}
                     value={formSupplierId}
                     onChange={setFormSupplierId}
                     placeholder="Seleccione o busque un proveedor..."
-                    disabled={!!editingOrder} // Cannot change supplier after creation
+                    disabled={!!editingOrder}
                   />
                   {editingOrder && (
-                    <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--ink-40)' }}>
                       El proveedor no puede modificarse en una orden existente.
                     </span>
                   )}
                 </div>
 
-                {/* Products Table / Form */}
-                <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '1rem', backgroundColor: '#f9fafb' }}>
-                  <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.9rem', color: '#111827', fontWeight: 600 }}>
-                    Productos de la Orden
-                  </h4>
+                {/* Products Section */}
+                <fieldset>
+                  <legend>Productos de la Orden</legend>
 
-                  {/* Add Product Block (Visible when creating or editing a draft order) */}
-                  {!editingOrder || editingOrder.status === 'borrador' ? (
+                  {/* Add Product Block */}
+                  {(!editingOrder || editingOrder.status === 'borrador') ? (
                     <div
                       style={{
                         display: 'flex',
@@ -1356,12 +966,11 @@ export const PurchaseOrdersPage: React.FC = () => {
                         gap: '0.5rem',
                         marginBottom: '1rem',
                         paddingBottom: '1rem',
-                        borderBottom: '1px solid #e5e7eb',
+                        borderBottom: '1px solid var(--ink-06)',
                       }}
                     >
-                      {/* Row 1: Product full width */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                        <label style={{ fontSize: '0.75rem', fontWeight: 500, color: '#4b5563' }}>Producto</label>
+                      <div className="f-group f-group--full">
+                        <label className="f-label">Producto</label>
                         <Combobox
                           options={productOptions}
                           value={addProductId}
@@ -1369,10 +978,9 @@ export const PurchaseOrdersPage: React.FC = () => {
                           placeholder="Buscar producto..."
                         />
                       </div>
-                      {/* Row 2: Cantidad + Costo + Agregar */}
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '0.5rem', alignItems: 'flex-end' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 500, color: '#4b5563' }}>Cant. Esperada</label>
+                        <div className="f-group">
+                          <label className="f-label">Cant. Esperada</label>
                           <input
                             type="text"
                             inputMode="numeric"
@@ -1383,51 +991,25 @@ export const PurchaseOrdersPage: React.FC = () => {
                               const val = e.target.value.replace(/[^0-9]/g, '')
                               setAddQty(val)
                             }}
-                            style={{
-                              padding: '0.5rem 0.75rem',
-                              borderRadius: '8px',
-                              border: '1px solid #d1d5db',
-                              fontSize: '0.875rem',
-                              outline: 'none',
-                              height: '38px',
-                              width: '100%',
-                              boxSizing: 'border-box',
-                            }}
+                            className="f-input"
                           />
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 500, color: '#4b5563' }}>Costo (Opcional)</label>
+                        <div className="f-group">
+                          <label className="f-label">Costo (Opcional)</label>
                           <input
                             type="number"
                             min={0}
                             placeholder="0"
                             value={addCost || ''}
                             onChange={(e) => setAddCost(Math.max(0, parseFloat(e.target.value) || 0))}
-                            style={{
-                              padding: '0.5rem 0.75rem',
-                              borderRadius: '8px',
-                              border: '1px solid #d1d5db',
-                              fontSize: '0.875rem',
-                              outline: 'none',
-                              height: '38px',
-                              width: '100%',
-                              boxSizing: 'border-box',
-                            }}
+                            className="f-input"
                           />
                         </div>
                         <button
                           type="button"
                           onClick={handleAddProduct}
-                          className="btn btn--secondary"
-                          style={{
-                            height: '38px',
-                            padding: '0 1.25rem',
-                            borderRadius: '8px',
-                            backgroundColor: '#f3f0ff',
-                            color: '#7048e8',
-                            border: '1px solid #dbeafe',
-                            alignSelf: 'flex-end',
-                          }}
+                          className="btn btn--primary"
+                          style={{ height: '38px', padding: '0 1.25rem' }}
                         >
                           Agregar
                         </button>
@@ -1437,13 +1019,13 @@ export const PurchaseOrdersPage: React.FC = () => {
 
                   {/* Added Items List */}
                   {formItems.length > 0 ? (
-                    <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: '#fff' }}>
+                    <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--ink-06)', borderRadius: 6, backgroundColor: 'var(--white)' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.825rem' }}>
                         <thead>
-                          <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb', textAlign: 'left' }}>
-                            <th style={{ padding: '0.5rem 0.75rem', fontWeight: 600, color: '#4b5563' }}>Producto</th>
-                            <th style={{ padding: '0.5rem 0.75rem', fontWeight: 600, color: '#4b5563', textAlign: 'center' }}>Cantidad</th>
-                            <th style={{ padding: '0.5rem 0.75rem', fontWeight: 600, color: '#4b5563', textAlign: 'right' }}>Costo Unit.</th>
+                          <tr style={{ borderBottom: '1px solid var(--ink-06)' }}>
+                            <th style={{ padding: '0.5rem 0.75rem', fontWeight: 600, color: 'var(--ink-70)' }}>Producto</th>
+                            <th style={{ padding: '0.5rem 0.75rem', fontWeight: 600, color: 'var(--ink-70)', textAlign: 'center' }}>Cantidad</th>
+                            <th style={{ padding: '0.5rem 0.75rem', fontWeight: 600, color: 'var(--ink-70)', textAlign: 'right' }}>Costo Unit.</th>
                             {(!editingOrder || editingOrder.status === 'borrador') && <th style={{ padding: '0.5rem 0.75rem', textAlign: 'center' }} />}
                           </tr>
                         </thead>
@@ -1451,17 +1033,17 @@ export const PurchaseOrdersPage: React.FC = () => {
                           {formItems.map((item, idx) => {
                             const prod = products.find((p) => p.id === item.productId)
                             return (
-                              <tr key={idx} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                                <td style={{ padding: '0.5rem 0.75rem', color: '#111827' }}>
+                              <tr key={idx} style={{ borderBottom: '1px solid var(--ink-06)' }}>
+                                <td style={{ padding: '0.5rem 0.75rem', color: 'var(--ink)' }}>
                                   <span style={{ fontWeight: 500 }}>{prod?.name || 'Cargando...'}</span>
-                                  <span style={{ display: 'block', fontSize: '0.7rem', color: '#6b7280' }}>
+                                  <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--ink-40)' }}>
                                     {prod?.sku || ''}
                                   </span>
                                 </td>
                                 <td style={{ padding: '0.5rem 0.75rem', textAlign: 'center', fontWeight: 600 }}>
                                   {item.qtyOrdered}
                                 </td>
-                                <td style={{ padding: '0.5rem 0.75rem', textAlign: 'right', color: '#6b7280' }}>
+                                <td style={{ padding: '0.5rem 0.75rem', textAlign: 'right', color: 'var(--ink-40)' }}>
                                   ${item.unitCost.toLocaleString('es-CO')}
                                 </td>
                                 {(!editingOrder || editingOrder.status === 'borrador') && (
@@ -1473,7 +1055,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                                         border: 'none',
                                         background: 'none',
                                         cursor: 'pointer',
-                                        color: '#ef4444',
+                                        color: 'var(--err)',
                                         padding: '0.25rem',
                                       }}
                                     >
@@ -1488,65 +1070,50 @@ export const PurchaseOrdersPage: React.FC = () => {
                       </table>
                     </div>
                   ) : (
-                    <div style={{ textAlign: 'center', padding: '1.5rem', color: '#9ca3af', backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '6px' }}>
-                      No hay productos agregados en esta orden.
+                    <div className="empty-state" style={{ padding: '1.5rem' }}>
+                      <p>No hay productos agregados en esta orden.</p>
                     </div>
                   )}
-                </div>
+                </fieldset>
 
-                {/* Notes/Observaciones Field */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                  <label style={{ fontSize: '0.825rem', fontWeight: 600, color: '#374151' }}>
-                    Observaciones <span style={{ color: '#9ca3af', fontWeight: 'normal', fontSize: '0.75rem' }}>(Opcional)</span>
+                {/* Notes/Observaciones */}
+                <div className="f-group f-group--full">
+                  <label className="f-label">
+                    Observaciones <span style={{ color: 'var(--ink-40)', fontWeight: 'normal', fontSize: '0.75rem' }}>(Opcional)</span>
                   </label>
                   <textarea
+                    className="f-input"
                     rows={3}
                     value={formNotes}
                     onChange={(e) => setFormNotes(e.target.value)}
                     placeholder="Ingrese comentarios u observaciones para esta orden..."
-                    style={{
-                      padding: '0.5rem 0.75rem',
-                      borderRadius: '8px',
-                      border: '1px solid #d1d5db',
-                      fontSize: '0.875rem',
-                      outline: 'none',
-                      resize: 'vertical',
-                    }}
+                    style={{ resize: 'vertical' }}
                   />
                 </div>
               </div>
 
-              {/* Form Actions footer */}
+              {/* Footer */}
               <div
                 style={{
                   display: 'flex',
                   justifyContent: 'flex-end',
                   gap: '0.75rem',
                   padding: '1rem 1.5rem',
-                  borderTop: '1px solid #f3f4f6',
-                  backgroundColor: '#f9fafb',
-                  borderBottomLeftRadius: '12px',
-                  borderBottomRightRadius: '12px',
+                  borderTop: '1px solid var(--ink-06)',
+                  background: 'var(--white)',
                 }}
               >
                 <button
                   type="button"
                   onClick={() => setIsFormOpen(false)}
-                  className="btn btn--secondary"
-                  style={{ borderRadius: '8px' }}
+                  className="btn btn--outline"
                 >
                   Cancelar
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveDraft}
-                  className="btn btn--secondary"
-                  style={{
-                    borderRadius: '8px',
-                    borderColor: '#4f46e5',
-                    color: '#4f46e5',
-                    backgroundColor: '#fff',
-                  }}
+                  className="btn btn--ghost"
                 >
                   Guardar Borrador
                 </button>
@@ -1554,7 +1121,6 @@ export const PurchaseOrdersPage: React.FC = () => {
                   type="button"
                   onClick={handleEmitFromForm}
                   className="btn btn--primary"
-                  style={{ borderRadius: '8px' }}
                 >
                   Emitir Orden
                 </button>
@@ -1571,88 +1137,79 @@ export const PurchaseOrdersPage: React.FC = () => {
             style={{
               position: 'fixed',
               inset: 0,
-              backgroundColor: 'rgba(0,0,0,0.45)',
-              backdropFilter: 'blur(4px)',
-              zIndex: 9999,
+              zIndex: 50,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '1.5rem',
+              background: 'rgba(15,30,32,.45)',
+              padding: 24,
             }}
+            role="dialog"
+            aria-modal="true"
           >
             <div
               style={{
-                backgroundColor: '#fff',
-                borderRadius: '12px',
-                maxWidth: '650px',
+                background: 'var(--white)',
+                borderRadius: 18,
+                maxWidth: 650,
                 width: '100%',
                 maxHeight: '85vh',
-                overflowY: 'auto',
-                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                overflow: 'auto',
+                boxShadow: '0 24px 64px rgba(15,30,32,.2)',
                 display: 'flex',
                 flexDirection: 'column',
               }}
             >
+              {/* header */}
               <div
                 style={{
+                  padding: '20px 24px',
+                  borderBottom: '1px solid var(--ink-06)',
                   display: 'flex',
-                  justifyContent: 'space-between',
                   alignItems: 'center',
-                  padding: '1.25rem 1.5rem',
-                  borderBottom: '1px solid #f3f4f6',
+                  justifyContent: 'space-between',
+                  position: 'sticky',
+                  top: 0,
+                  background: 'var(--white)',
+                  zIndex: 1,
                 }}
               >
                 <div>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#111827', margin: 0 }}>
+                  <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 400, margin: 0 }}>
                     Detalle de Orden {selectedOrder.number}
-                  </h3>
-                  <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                  </h2>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--ink-40)' }}>
                     Creada el {formatDate(selectedOrder.created_at)}
                   </span>
                 </div>
                 <button
-                  type="button"
+                  className="btn btn--ghost btn--sm"
                   onClick={() => setIsDetailOpen(false)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: '#9ca3af',
-                    padding: '0.25rem',
-                  }}
+                  aria-label="Cerrar"
                 >
-                  <X style={{ width: '20px', height: '20px' }} />
+                  ✕
                 </button>
               </div>
 
-              {/* Details Body */}
-              <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: '1rem',
-                    backgroundColor: '#f9fafb',
-                    padding: '1rem',
-                    borderRadius: '8px',
-                    border: '1px solid #e5e7eb',
-                  }}
-                >
+              {/* body */}
+              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {/* Supplier & Status info */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div>
-                    <span style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280', fontWeight: 500, textTransform: 'uppercase' }}>
+                    <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--ink-40)', fontWeight: 500, textTransform: 'uppercase' }}>
                       Proveedor
                     </span>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#111827' }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--ink)' }}>
                       {selectedOrder.supplier_nombre}
                     </span>
                     {selectedOrder.supplier_nit && (
-                      <span style={{ display: 'block', fontSize: '0.8rem', color: '#4b5563' }}>
+                      <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--ink-70)' }}>
                         NIT: {selectedOrder.supplier_nit}
                       </span>
                     )}
                   </div>
                   <div>
-                    <span style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280', fontWeight: 500, textTransform: 'uppercase' }}>
+                    <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--ink-40)', fontWeight: 500, textTransform: 'uppercase' }}>
                       Estado de la Orden
                     </span>
                     <div style={{ marginTop: '0.25rem' }}>{renderStatusPill(selectedOrder.status)}</div>
@@ -1663,26 +1220,26 @@ export const PurchaseOrdersPage: React.FC = () => {
                 {selectedOrder.status === 'cancelada' && (
                   <div
                     style={{
-                      border: '1px solid #fecaca',
-                      backgroundColor: '#fdf2f2',
-                      borderRadius: '8px',
-                      padding: '1rem',
+                      background: 'rgba(179, 58, 42, 0.08)',
+                      border: '1px solid rgba(179, 58, 42, 0.2)',
+                      borderRadius: 8,
+                      padding: '0.75rem',
                       display: 'flex',
                       gap: '0.5rem',
                       alignItems: 'flex-start',
                     }}
                   >
-                    <XCircle style={{ width: '18px', height: '18px', color: '#dc2626', flexShrink: 0, marginTop: '2px' }} />
+                    <XCircle style={{ width: 18, height: 18, color: 'var(--err)', flexShrink: 0, marginTop: '2px' }} />
                     <div>
-                      <p style={{ margin: 0, fontSize: '0.825rem', fontWeight: 600, color: '#991b1b' }}>
+                      <p style={{ margin: 0, fontSize: '0.825rem', fontWeight: 600, color: 'var(--err)' }}>
                         Orden Cancelada
                       </p>
                       {selectedOrder.cancelled_at && (
-                        <span style={{ fontSize: '0.75rem', color: '#b91c1c', display: 'block', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--ink-40)', display: 'block', marginBottom: '4px' }}>
                           Cancelado el: {formatDate(selectedOrder.cancelled_at)}
                         </span>
                       )}
-                      <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: '#7f1d1d' }}>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--ink-70)' }}>
                         <strong>Motivo:</strong> {selectedOrder.cancellation_reason || 'Sin motivo especificado'}
                       </p>
                     </div>
@@ -1691,23 +1248,23 @@ export const PurchaseOrdersPage: React.FC = () => {
 
                 {/* Items list */}
                 <div>
-                  <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', color: '#111827', fontWeight: 600 }}>
-                    Productos Esperados
-                  </h4>
-                  <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
+                  <div className="s-head" style={{ marginBottom: '0.5rem' }}>
+                    <span className="s-head__label">Productos Esperados</span>
+                    <div className="s-head__rule" />
+                  </div>
+                  <div style={{ border: '1px solid var(--ink-06)', borderRadius: 8, overflow: 'hidden' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
                       <thead>
-                        <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb', textAlign: 'left' }}>
-                          <th style={{ padding: '0.75rem 1rem', fontWeight: 600, color: '#4b5563' }}>Producto</th>
-                          <th style={{ padding: '0.75rem 1rem', fontWeight: 600, color: '#4b5563', textAlign: 'center' }}>Esperado</th>
-                          <th style={{ padding: '0.75rem 1rem', fontWeight: 600, color: '#4b5563', textAlign: 'center' }}>Recibido</th>
-                          <th style={{ padding: '0.75rem 1rem', fontWeight: 600, color: '#4b5563', textAlign: 'center' }}>Estado</th>
+                        <tr style={{ borderBottom: '1px solid var(--ink-06)' }}>
+                          <th style={{ padding: '0.75rem 1rem', fontWeight: 600, color: 'var(--ink-70)' }}>Producto</th>
+                          <th style={{ padding: '0.75rem 1rem', fontWeight: 600, color: 'var(--ink-70)', textAlign: 'center' }}>Esperado</th>
+                          <th style={{ padding: '0.75rem 1rem', fontWeight: 600, color: 'var(--ink-70)', textAlign: 'center' }}>Recibido</th>
+                          <th style={{ padding: '0.75rem 1rem', fontWeight: 600, color: 'var(--ink-70)', textAlign: 'center' }}>Estado</th>
                         </tr>
                       </thead>
                       <tbody>
                         {selectedOrder.items && selectedOrder.items.length > 0 ? (
                           selectedOrder.items.map((item) => {
-                            // Determine item state
                             let itemStatus = 'pendiente'
                             if (item.quantity_received >= item.quantity_ordered) {
                               itemStatus = 'recibido'
@@ -1716,22 +1273,20 @@ export const PurchaseOrdersPage: React.FC = () => {
                             }
 
                             return (
-                              <tr key={item.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                                <td style={{ padding: '0.75rem 1rem', color: '#111827' }}>
+                              <tr key={item.id} style={{ borderBottom: '1px solid var(--ink-06)' }}>
+                                <td style={{ padding: '0.75rem 1rem', color: 'var(--ink)' }}>
                                   <span style={{ fontWeight: 500, display: 'block' }}>{item.product_name}</span>
-                                  <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>{item.product_sku}</span>
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--ink-40)' }}>{item.product_sku}</span>
                                 </td>
-                                <td style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 600, color: '#111827' }}>
+                                <td style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 600, color: 'var(--ink)' }}>
                                   {item.quantity_ordered}
                                 </td>
-                                <td style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 600, color: item.quantity_received > 0 ? '#059669' : '#6b7280' }}>
+                                <td style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 600, color: item.quantity_received > 0 ? 'var(--ok)' : 'var(--ink-40)' }}>
                                   {item.quantity_received}
                                 </td>
                                 <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
                                   {itemStatus === 'recibido' ? (
-                                    <span style={{ backgroundColor: '#ecfdf5', color: '#047857', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 500 }}>
-                                      Recibido
-                                    </span>
+                                    <span className="pill pill--ok">Recibido</span>
                                   ) : itemStatus === 'parcial' ? (
                                     <span style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 500 }}>
                                       Parcial
@@ -1747,7 +1302,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                           })
                         ) : (
                           <tr>
-                            <td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: '#9ca3af' }}>
+                            <td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--ink-40)' }}>
                               Sin productos en esta orden.
                             </td>
                           </tr>
@@ -1757,20 +1312,20 @@ export const PurchaseOrdersPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Observaciones detail */}
+                {/* Observaciones */}
                 {selectedOrder.notes && (
                   <div>
-                    <span style={{ display: 'block', fontSize: '0.75rem', color: '#6b7280', fontWeight: 500, textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+                    <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--ink-40)', fontWeight: 500, textTransform: 'uppercase', marginBottom: '0.25rem' }}>
                       Observaciones
                     </span>
                     <div
                       style={{
                         padding: '0.75rem',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '6px',
+                        border: '1px solid var(--ink-06)',
+                        borderRadius: 6,
                         fontSize: '0.875rem',
-                        color: '#4b5563',
-                        backgroundColor: '#fff',
+                        color: 'var(--ink-70)',
+                        backgroundColor: 'var(--white)',
                         whiteSpace: 'pre-line',
                       }}
                     >
@@ -1780,24 +1335,21 @@ export const PurchaseOrdersPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Detail Modal footer */}
+              {/* Footer */}
               <div
                 style={{
                   display: 'flex',
                   justifyContent: 'flex-end',
                   gap: '0.75rem',
                   padding: '1rem 1.5rem',
-                  borderTop: '1px solid #f3f4f6',
-                  backgroundColor: '#f9fafb',
-                  borderBottomLeftRadius: '12px',
-                  borderBottomRightRadius: '12px',
+                  borderTop: '1px solid var(--ink-06)',
+                  background: 'var(--white)',
                 }}
               >
                 <button
                   type="button"
                   onClick={() => setIsDetailOpen(false)}
-                  className="btn btn--secondary"
-                  style={{ borderRadius: '8px' }}
+                  className="btn btn--outline"
                 >
                   Cerrar
                 </button>
@@ -1809,7 +1361,6 @@ export const PurchaseOrdersPage: React.FC = () => {
                       setConfirmEmitId(selectedOrder.id)
                     }}
                     className="btn btn--primary"
-                    style={{ borderRadius: '8px' }}
                   >
                     Emitir Orden
                   </button>
@@ -1822,13 +1373,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                       setCancelOrderId(selectedOrder.id)
                       setCancelReason('')
                     }}
-                    className="btn btn--secondary"
-                    style={{
-                      borderRadius: '8px',
-                      backgroundColor: '#fff0f0',
-                      color: '#dc2626',
-                      borderColor: '#fca5a5',
-                    }}
+                    className="btn btn--danger"
                   >
                     Cancelar Orden
                   </button>
@@ -1846,64 +1391,51 @@ export const PurchaseOrdersPage: React.FC = () => {
             style={{
               position: 'fixed',
               inset: 0,
-              backgroundColor: 'rgba(0,0,0,0.45)',
-              backdropFilter: 'blur(4px)',
-              zIndex: 10000,
+              zIndex: 60,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '1.5rem',
+              background: 'rgba(15,30,32,.45)',
+              padding: 24,
             }}
+            role="dialog"
+            aria-modal="true"
           >
             <div
               style={{
-                backgroundColor: '#fff',
-                borderRadius: '12px',
-                maxWidth: '440px',
+                background: 'var(--white)',
+                borderRadius: 18,
+                maxWidth: 440,
                 width: '100%',
-                padding: '1.5rem',
-                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                padding: 24,
+                boxShadow: '0 24px 64px rgba(15,30,32,.2)',
               }}
             >
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: '#ebfbee',
-                    color: '#0ca678',
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '8px',
-                    flexShrink: 0,
-                  }}
-                >
-                  <CheckCircle style={{ width: '20px', height: '20px' }} />
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(45, 139, 111, 0.08)', padding: '0.5rem', borderRadius: '9999px', color: 'var(--ok)' }}>
+                  <CheckCircle style={{ width: 24, height: 24 }} />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#111827', margin: '0 0 0.5rem 0' }}>
+                  <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--ink)', margin: 0 }}>
                     ¿Desea emitir esta Orden de Compra?
                   </h3>
-                  <p style={{ fontSize: '0.875rem', color: '#4b5563', margin: 0 }}>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--ink-40)', marginTop: '0.25rem', marginBottom: 0 }}>
                     Una vez emitida, la orden quedará visible en Recepción y ya no podrá modificarse.
                   </p>
                 </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                 <button
                   type="button"
                   onClick={() => setConfirmEmitId(null)}
-                  className="btn btn--secondary"
-                  style={{ borderRadius: '6px' }}
+                  className="btn btn--ghost btn--sm"
                 >
                   Cancelar
                 </button>
                 <button
                   type="button"
                   onClick={handleEmitConfirmAction}
-                  className="btn btn--primary"
-                  style={{ borderRadius: '6px', backgroundColor: '#059669', borderColor: '#059669' }}
+                  className="btn btn--primary btn--sm"
                 >
                   Emitir
                 </button>
@@ -1920,104 +1452,75 @@ export const PurchaseOrdersPage: React.FC = () => {
             style={{
               position: 'fixed',
               inset: 0,
-              backgroundColor: 'rgba(0,0,0,0.45)',
-              backdropFilter: 'blur(4px)',
-              zIndex: 10000,
+              zIndex: 60,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '1.5rem',
+              background: 'rgba(15,30,32,.45)',
+              padding: 24,
             }}
+            role="dialog"
+            aria-modal="true"
           >
             <div
               style={{
-                backgroundColor: '#fff',
-                borderRadius: '12px',
-                maxWidth: '440px',
+                background: 'var(--white)',
+                borderRadius: 18,
+                maxWidth: 440,
                 width: '100%',
-                padding: '1.5rem',
-                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                padding: 24,
+                boxShadow: '0 24px 64px rgba(15,30,32,.2)',
               }}
             >
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: '#fff0f0',
-                    color: '#e03131',
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '8px',
-                    flexShrink: 0,
-                  }}
-                >
-                  <XCircle style={{ width: '20px', height: '20px' }} />
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(179,58,42,0.08)', padding: '0.5rem', borderRadius: '9999px', color: 'var(--err)' }}>
+                  <XCircle style={{ width: 24, height: 24 }} />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#111827', margin: '0 0 0.5rem 0' }}>
+                  <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--ink)', margin: 0 }}>
                     Cancelar Orden de Compra
                   </h3>
-                  <p style={{ fontSize: '0.875rem', color: '#4b5563', margin: 0 }}>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--ink-40)', marginTop: '0.25rem', marginBottom: 0 }}>
                     Esta acción cancelará la orden de compra definitivamente. Por favor ingrese el motivo obligatorio.
                   </p>
                 </div>
               </div>
 
               {validationError && (
-                <div
-                  style={{
-                    background: '#fff5f5',
-                    border: '1px solid #fed7d7',
-                    borderRadius: '6px',
-                    padding: '0.5rem 0.75rem',
-                    color: '#c53030',
-                    fontSize: '0.8rem',
-                    marginBottom: '0.75rem',
-                  }}
-                >
+                <div className="alert-bar alert-bar--err" role="alert" style={{ margin: '0 0 0.75rem 0' }}>
                   {validationError}
                 </div>
               )}
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', marginBottom: '1.5rem' }}>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4b5563' }}>
-                  Motivo de cancelación <span style={{ color: '#ef4444' }}>*</span>
+              <div className="f-group" style={{ marginBottom: '1.25rem' }}>
+                <label className="f-label">
+                  Motivo de cancelación <span style={{ color: 'var(--err)' }}>*</span>
                 </label>
                 <input
                   type="text"
+                  className="f-input"
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
                   placeholder="Ej. Cambio de cotización o proveedor"
                   required
-                  style={{
-                    padding: '0.5rem 0.75rem',
-                    borderRadius: '8px',
-                    border: '1px solid #d1d5db',
-                    fontSize: '0.875rem',
-                    outline: 'none',
-                  }}
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                 <button
                   type="button"
                   onClick={() => {
                     setCancelOrderId(null)
                     setValidationError(null)
                   }}
-                  className="btn btn--secondary"
-                  style={{ borderRadius: '6px' }}
+                  className="btn btn--ghost btn--sm"
                 >
                   Volver
                 </button>
                 <button
                   type="button"
                   onClick={handleCancelConfirmAction}
-                  className="btn btn--danger"
-                  style={{ borderRadius: '6px', backgroundColor: '#dc2626', color: '#fff', border: '1px solid #dc2626' }}
+                  className="btn btn--danger btn--sm"
                 >
                   Confirmar Cancelación
                 </button>
