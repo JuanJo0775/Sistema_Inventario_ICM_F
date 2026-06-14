@@ -1070,5 +1070,92 @@
       "deactivated": "Usuario {{username}} desactivado correctamente.",
       "reactivated": "Usuario {{username}} reactivado correctamente."
     }
+  },
+  "horarios": {
+    "title": "Gestión de Horarios",
+    "subtitle": "Administra los horarios de acceso de los auxiliares de despacho",
+    "stats": {
+      "total": "Usuarios Activos",
+      "withCustom": "Con horario personalizado",
+      "unrestricted": "Sin restricción"
+    },
+    "filters": {
+      "searchPlaceholder": "Buscar por nombre, usuario o correo…",
+      "allRoles": "Todos los roles"
+    },
+    "table": {
+      "user": "Usuario",
+      "role": "Rol",
+      "schedule": "Horario",
+      "status": "Estado",
+      "action": "Acción"
+    },
+    "schedule": {
+      "unrestricted": "Sin restricción de horario",
+      "default": "Lun–Vie 07:00-12:00 / 14:00-17:00",
+      "custom": "Lun–Vie {{morning}} / {{afternoon}}",
+      "customMorningOnly": "Lun–Vie {{morning}}",
+      "customAfternoonOnly": "Lun–Vie {{afternoon}}"
+    },
+    "modal": {
+      "title": "Configurar horario",
+      "tabs": {
+        "schedule": "Horario personalizado",
+        "permits": "Permisos temporales"
+      },
+      "schedule": {
+        "morningStart": "Inicio mañana",
+        "morningEnd": "Fin mañana",
+        "afternoonStart": "Inicio tarde",
+        "afternoonEnd": "Fin tarde",
+        "activeLabel": "Horario activo",
+        "saveBtn": "Guardar horario",
+        "resetBtn": "Restablecer horario por defecto",
+        "resetConfirm": "¿Restablecer horario por defecto?",
+        "noSchedule": "No tiene horario personalizado. Usa el horario por defecto.",
+        "saving": "Guardando…"
+      },
+      "permits": {
+        "title": "Permisos temporales activos",
+        "noPermits": "No hay permisos temporales activos.",
+        "newBtn": "Nuevo permiso temporal",
+        "startLabel": "Desde",
+        "endLabel": "Hasta",
+        "allow247": "Acceso 24/7 durante el período",
+        "morningStart": "Franja mañana inicio",
+        "morningEnd": "Franja mañana fin",
+        "afternoonStart": "Franja tarde inicio",
+        "afternoonEnd": "Franja tarde fin",
+        "reasonLabel": "Motivo",
+        "reasonPlaceholder": "Ej: Inventario nocturno programado",
+        "grantBtn": "Otorgar permiso",
+        "granting": "Otorgando…",
+        "revokeBtn": "Revocar",
+        "active": "Activo",
+        "expired": "Vencido",
+        "range": "{{start}} → {{end}}"
+      },
+      "closeBtn": "Cerrar"
+    },
+    "status": {
+      "active": "ACTIVO",
+      "inactive": "INACTIVO"
+    },
+    "actions": {
+      "extend": "Extender horario"
+    },
+    "errors": {
+      "load": "Error al cargar los datos de horarios.",
+      "saveSchedule": "Error al guardar el horario.",
+      "grantPermit": "Error al otorgar el permiso temporal.",
+      "revokePermit": "Error al revocar el permiso temporal.",
+      "noAuxiliar": "Solo se pueden configurar horarios para auxiliares de despacho."
+    },
+    "success": {
+      "scheduleSaved": "Horario guardado correctamente.",
+      "scheduleReset": "Horario restablecido al predeterminado.",
+      "permitGranted": "Permiso temporal otorgado correctamente.",
+      "permitRevoked": "Permiso temporal revocado correctamente."
+    }
   }
 }

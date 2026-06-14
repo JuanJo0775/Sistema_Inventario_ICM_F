@@ -1074,5 +1074,92 @@
       "deactivated": "User {{username}} deactivated successfully.",
       "reactivated": "User {{username}} reactivated successfully."
     }
+  },
+  "horarios": {
+    "title": "Schedule Management",
+    "subtitle": "Manage dispatch assistants' access schedules",
+    "stats": {
+      "total": "Active Users",
+      "withCustom": "With custom schedule",
+      "unrestricted": "Unrestricted"
+    },
+    "filters": {
+      "searchPlaceholder": "Search by name, user or email…",
+      "allRoles": "All roles"
+    },
+    "table": {
+      "user": "User",
+      "role": "Role",
+      "schedule": "Schedule",
+      "status": "Status",
+      "action": "Action"
+    },
+    "schedule": {
+      "unrestricted": "No schedule restrictions",
+      "default": "Mon–Fri 07:00-12:00 / 14:00-17:00",
+      "custom": "Mon–Fri {{morning}} / {{afternoon}}",
+      "customMorningOnly": "Mon–Fri {{morning}}",
+      "customAfternoonOnly": "Mon–Fri {{afternoon}}"
+    },
+    "modal": {
+      "title": "Configure schedule",
+      "tabs": {
+        "schedule": "Custom schedule",
+        "permits": "Temporary permits"
+      },
+      "schedule": {
+        "morningStart": "Morning start",
+        "morningEnd": "Morning end",
+        "afternoonStart": "Afternoon start",
+        "afternoonEnd": "Afternoon end",
+        "activeLabel": "Schedule active",
+        "saveBtn": "Save schedule",
+        "resetBtn": "Reset to default",
+        "resetConfirm": "Reset to default schedule?",
+        "noSchedule": "No custom schedule set. Uses default hours.",
+        "saving": "Saving…"
+      },
+      "permits": {
+        "title": "Active temporary permits",
+        "noPermits": "No active temporary permits.",
+        "newBtn": "New temporary permit",
+        "startLabel": "From",
+        "endLabel": "To",
+        "allow247": "24/7 access during period",
+        "morningStart": "Morning window start",
+        "morningEnd": "Morning window end",
+        "afternoonStart": "Afternoon window start",
+        "afternoonEnd": "Afternoon window end",
+        "reasonLabel": "Reason",
+        "reasonPlaceholder": "E.g.: Scheduled night inventory",
+        "grantBtn": "Grant permit",
+        "granting": "Granting…",
+        "revokeBtn": "Revoke",
+        "active": "Active",
+        "expired": "Expired",
+        "range": "{{start}} → {{end}}"
+      },
+      "closeBtn": "Close"
+    },
+    "status": {
+      "active": "ACTIVE",
+      "inactive": "INACTIVE"
+    },
+    "actions": {
+      "extend": "Extend schedule"
+    },
+    "errors": {
+      "load": "Error loading schedule data.",
+      "saveSchedule": "Error saving schedule.",
+      "grantPermit": "Error granting temporary permit.",
+      "revokePermit": "Error revoking temporary permit.",
+      "noAuxiliar": "Schedules can only be configured for dispatch assistants."
+    },
+    "success": {
+      "scheduleSaved": "Schedule saved successfully.",
+      "scheduleReset": "Schedule reset to default.",
+      "permitGranted": "Temporary permit granted successfully.",
+      "permitRevoked": "Temporary permit revoked successfully."
+    }
   }
 }

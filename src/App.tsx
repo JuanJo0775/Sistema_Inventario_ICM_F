@@ -28,6 +28,7 @@ const SupplierDetailPage = React.lazy(() => import('./features/purchasing/Suppli
 const PurchaseOrdersPage = React.lazy(() => import('./features/purchasing/PurchaseOrdersPage'))
 const AuditPage = React.lazy(() => import('./features/admin/AuditPage'))
 const UsersPage = React.lazy(() => import('./features/admin/UsersPage'))
+const HorariosPage = React.lazy(() => import('./features/admin/HorariosPage'))
 
 function App() {
   return (
@@ -217,6 +218,14 @@ function App() {
           element={
             <ProtectedRoute>
               <UsersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/admin/horarios"
+          element={
+            <ProtectedRoute>
+              <HorariosPage />
             </ProtectedRoute>
           }
         />

@@ -457,6 +457,12 @@ function SidebarAdminSection({
           >
             Usuarios
           </Link>
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/admin/horarios') ? ' active' : ''}`}
+            to="/app/admin/horarios"
+          >
+            Horarios
+          </Link>
         </div>
       ) : null}
     </div>
