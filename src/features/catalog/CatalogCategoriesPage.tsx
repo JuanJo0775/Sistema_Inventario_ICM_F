@@ -4,6 +4,7 @@ import { AlertTriangle, X, Hash, Folder } from 'lucide-react';
 import { ModalPortal } from '../../components/ui/ModalPortal';
 import AppShell from '../../components/layout/AppShell';
 import useCatalogStore from '../../store/useCatalogStore';
+import { useDebounce } from '../../hooks/useDebounce';
 
 export const CatalogCategoriesPage: React.FC = () => {
   const { 
@@ -20,7 +21,7 @@ export const CatalogCategoriesPage: React.FC = () => {
   } = useCatalogStore();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeSearch, setActiveSearch] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 150);
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,14 +55,13 @@ export const CatalogCategoriesPage: React.FC = () => {
     return counts;
   }, [categories, products]);
 
-  // Filter categories by search term
   const filteredCategories = useMemo(() => {
     return categories.filter(category => {
-      const matchName = category.name.toLowerCase().includes(activeSearch.toLowerCase());
-      const matchDesc = (category.description || '').toLowerCase().includes(activeSearch.toLowerCase());
+      const matchName = category.name.toLowerCase().includes(debouncedSearch.toLowerCase());
+      const matchDesc = (category.description || '').toLowerCase().includes(debouncedSearch.toLowerCase());
       return matchName || matchDesc;
     });
-  }, [categories, activeSearch]);
+  }, [categories, debouncedSearch]);
 
   const handleOpenCreateModal = () => {
     setEditingCategory(null);
@@ -223,44 +223,36 @@ export const CatalogCategoriesPage: React.FC = () => {
           className="flex gap-10 mb-4"
           style={{ alignItems: "center", flexWrap: "wrap" }}
         >
-          <form
-            onSubmit={(e) => { e.preventDefault(); setActiveSearch(searchTerm); }}
-            style={{ display: 'flex', flex: 1, gap: 8, alignItems: 'center' }}
-          >
-            <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
-              <svg
-                style={{
-                  position: "absolute",
-                  left: 11,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: 14,
-                  height: 14,
-                  stroke: "var(--teal-600)",
-                  strokeWidth: 1.8,
-                }}
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="M21 21l-4.35-4.35" />
-              </svg>
-              <input
-                className="f-input"
-                style={{ paddingLeft: 34 }}
-                placeholder="Buscar categorías..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                aria-label="Buscar categoría"
-              />
-            </div>
-            <button type="submit" className="btn btn--primary">
-              Buscar
-            </button>
-          </form>
-          {activeSearch && (
+          <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
+            <svg
+              style={{
+                position: "absolute",
+                left: 11,
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: 14,
+                height: 14,
+                stroke: "var(--teal-600)",
+                strokeWidth: 1.8,
+              }}
+              viewBox="0 0 24 24"
+              fill="none"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+            <input
+              className="f-input"
+              style={{ paddingLeft: 34 }}
+              placeholder="Buscar categorías..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Buscar categoría"
+            />
+          </div>
+          {searchTerm && (
             <button
-              onClick={() => { setSearchTerm(''); setActiveSearch(''); }}
+              onClick={() => setSearchTerm('')}
               className="btn btn--ghost btn--sm"
             >
               Limpiar filtro

@@ -6,6 +6,7 @@ import { BarcodeDisplay } from "../../components/ui/BarcodeDisplay";
 import { ModalPortal } from "../../components/ui/ModalPortal";
 import { SkuInput } from "../../components/ui/SkuInput";
 import useCatalogStore from "../../store/useCatalogStore";
+import { useDebounce } from "../../hooks/useDebounce";
 import type { CatalogProduct } from "../../interfaces/catalog";
 
 const SKU_REGEX = /^[A-Za-z]{1,4}-\d{1,4}$/;
@@ -481,6 +482,7 @@ export default function CatalogProductsPage() {
   } = useCatalogStore();
 
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 150);
   const [filterCat, setFilterCat] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<CatalogProduct | null>(null);
@@ -494,8 +496,8 @@ export default function CatalogProductsPage() {
   const filtered = useMemo(() => {
     let list = products;
     if (filterCat) list = list.filter((p) => p.category === filterCat);
-    if (search.trim()) {
-      const q = search.toLowerCase();
+    if (debouncedSearch.trim()) {
+      const q = debouncedSearch.toLowerCase();
       list = list.filter(
         (p) =>
           p.name.toLowerCase().includes(q) ||
@@ -504,7 +506,7 @@ export default function CatalogProductsPage() {
       );
     }
     return list;
-  }, [products, search, filterCat]);
+  }, [products, debouncedSearch, filterCat]);
 
   const activeCount = filtered.filter((p) => p.is_active).length;
   const reorderCount = filtered.filter(
