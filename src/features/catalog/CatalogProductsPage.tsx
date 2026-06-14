@@ -8,6 +8,7 @@ import { SkuInput } from "../../components/ui/SkuInput";
 import useCatalogStore from "../../store/useCatalogStore";
 import { useDebounce } from "../../hooks/useDebounce";
 import { Switch } from "../../components/ui/switch";
+import { createCatalogProduct, updateCatalogProductPrices } from "../../services/catalog";
 import type { CatalogProduct } from "../../interfaces/catalog";
 
 const SKU_REGEX = /^[A-Za-z]{1,4}-\d{1,4}$/;
@@ -327,92 +328,90 @@ function ProductForm({
             </div>
           </fieldset>
 
-          {/* precios — solo en edición */}
-          {initial?.id && (
-            <fieldset>
-              <legend>Precios (opcional)</legend>
-              <div className="f-row f-row-2">
-                <div className="f-group">
-                  <label className="f-label" htmlFor="pf-unit-cost">Costo unitario</label>
-                  <input
-                    id="pf-unit-cost"
-                    className="f-input text-mono"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    placeholder="0"
-                    value={(form as any).unit_cost ?? ''}
-                    onChange={(e) =>
-                      setForm({ ...form, unit_cost: e.target.value ? Number(e.target.value) : null } as any)
-                    }
-                  />
-                </div>
-                <div className="f-group">
-                  <label className="f-label" htmlFor="pf-price-retail">Precio venta público</label>
-                  <input
-                    id="pf-price-retail"
-                    className="f-input text-mono"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    placeholder="0"
-                    value={(form as any).sale_price_retail ?? ''}
-                    onChange={(e) =>
-                      setForm({ ...form, sale_price_retail: e.target.value ? Number(e.target.value) : null } as any)
-                    }
-                  />
-                </div>
-              </div>
-              <div className="f-row f-row-2" style={{ marginTop: 12 }}>
-                <div className="f-group">
-                  <label className="f-label" htmlFor="pf-price-wholesale">Precio venta mayor</label>
-                  <input
-                    id="pf-price-wholesale"
-                    className="f-input text-mono"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    placeholder="0"
-                    value={(form as any).sale_price_wholesale ?? ''}
-                    onChange={(e) =>
-                      setForm({ ...form, sale_price_wholesale: e.target.value ? Number(e.target.value) : null } as any)
-                    }
-                  />
-                </div>
-                <div className="f-group">
-                  <label className="f-label" htmlFor="pf-tax-rate">IVA %</label>
-                  <input
-                    id="pf-tax-rate"
-                    className="f-input text-mono"
-                    type="number"
-                    min={0}
-                    max={100}
-                    step="0.01"
-                    placeholder="19"
-                    value={(form as any).tax_rate_pct ?? ''}
-                    onChange={(e) =>
-                      setForm({ ...form, tax_rate_pct: e.target.value ? Number(e.target.value) : null } as any)
-                    }
-                  />
-                </div>
-              </div>
-              <div className="f-group" style={{ marginTop: 12 }}>
-                <label className="f-label" htmlFor="pf-currency">Moneda</label>
-                <select
-                  id="pf-currency"
-                  className="f-input"
-                  value={(form as any).currency || 'COP'}
+          {/* precios */}
+          <fieldset>
+            <legend>Precios (opcional)</legend>
+            <div className="f-row f-row-2">
+              <div className="f-group">
+                <label className="f-label" htmlFor="pf-unit-cost">Costo unitario</label>
+                <input
+                  id="pf-unit-cost"
+                  className="f-input text-mono"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder="0"
+                  value={(form as any).unit_cost ?? ''}
                   onChange={(e) =>
-                    setForm({ ...form, currency: e.target.value } as any)
+                    setForm({ ...form, unit_cost: e.target.value ? Number(e.target.value) : null } as any)
                   }
-                >
-                  <option value="COP">COP ($)</option>
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                </select>
+                />
               </div>
-            </fieldset>
-          )}
+              <div className="f-group">
+                <label className="f-label" htmlFor="pf-price-retail">Precio venta público</label>
+                <input
+                  id="pf-price-retail"
+                  className="f-input text-mono"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder="0"
+                  value={(form as any).sale_price_retail ?? ''}
+                  onChange={(e) =>
+                    setForm({ ...form, sale_price_retail: e.target.value ? Number(e.target.value) : null } as any)
+                  }
+                />
+              </div>
+            </div>
+            <div className="f-row f-row-2" style={{ marginTop: 12 }}>
+              <div className="f-group">
+                <label className="f-label" htmlFor="pf-price-wholesale">Precio venta mayor</label>
+                <input
+                  id="pf-price-wholesale"
+                  className="f-input text-mono"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder="0"
+                  value={(form as any).sale_price_wholesale ?? ''}
+                  onChange={(e) =>
+                    setForm({ ...form, sale_price_wholesale: e.target.value ? Number(e.target.value) : null } as any)
+                  }
+                />
+              </div>
+              <div className="f-group">
+                <label className="f-label" htmlFor="pf-tax-rate">IVA %</label>
+                <input
+                  id="pf-tax-rate"
+                  className="f-input text-mono"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.01"
+                  placeholder="19"
+                  value={(form as any).tax_rate_pct ?? ''}
+                  onChange={(e) =>
+                    setForm({ ...form, tax_rate_pct: e.target.value ? Number(e.target.value) : null } as any)
+                  }
+                />
+              </div>
+            </div>
+            <div className="f-group" style={{ marginTop: 12 }}>
+              <label className="f-label" htmlFor="pf-currency">Moneda</label>
+              <select
+                id="pf-currency"
+                className="f-input"
+                value={(form as any).currency || 'COP'}
+                onChange={(e) =>
+                  setForm({ ...form, currency: e.target.value } as any)
+                }
+              >
+                <option value="COP">COP ($)</option>
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+              </select>
+            </div>
+          </fieldset>
 
           {/* Código de barras visual – solo si ya tiene uno guardado */}
           {initial?.id && form.barcode && (
@@ -474,7 +473,6 @@ export default function CatalogProductsPage() {
     fetchProducts,
     fetchCategories,
     fetchBrands,
-    createProduct,
     updateProduct,
     updateProductPrices,
     deactivateProduct,
@@ -526,7 +524,18 @@ export default function CatalogProductsPage() {
         });
       }
     } else {
-      await createProduct(data as any);
+      const created = await createCatalogProduct(data as any);
+      // Save prices if any were set
+      if ((data as any).unit_cost || (data as any).sale_price_retail || (data as any).sale_price_wholesale) {
+        await updateCatalogProductPrices(created.id, {
+          unit_cost: (data as any).unit_cost ?? null,
+          sale_price_retail: (data as any).sale_price_retail ?? null,
+          sale_price_wholesale: (data as any).sale_price_wholesale ?? null,
+          tax_rate_pct: (data as any).tax_rate_pct ?? null,
+          currency: (data as any).currency || 'COP',
+        });
+      }
+      await fetchProducts(); // Re-fetch to sync store
     }
     setShowForm(false);
     setEditing(null);
