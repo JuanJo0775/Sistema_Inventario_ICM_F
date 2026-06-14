@@ -835,7 +835,8 @@ export const UsersPage: React.FC = () => {
                 boxShadow: '0 10px 25px -5px rgba(0,0,0,0.15)',
                 width: '100%',
                 maxWidth: '480px',
-                overflow: 'hidden',
+                maxHeight: '90vh',
+                overflow: 'auto',
                 animation: 'scaleUp 0.2s ease-out',
               }}
             >
@@ -1273,6 +1274,8 @@ export const UsersPage: React.FC = () => {
                 boxShadow: '0 10px 25px -5px rgba(0,0,0,0.15)',
                 width: '100%',
                 maxWidth: '420px',
+                maxHeight: '90vh',
+                overflow: 'auto',
                 padding: '1.5rem',
                 textAlign: 'center',
               }}

@@ -4042,7 +4042,8 @@ input.f-input[type="date"] {
   flex-direction: column;
   gap: 0;
   animation: barcode-slide-up 0.2s cubic-bezier(0.34, 1.4, 0.64, 1);
-  overflow: hidden;
+  max-height: 90vh;
+  overflow: auto;
 }
 
 @keyframes barcode-slide-up {

@@ -370,6 +370,8 @@ export const CatalogCategoriesPage: React.FC = () => {
                 borderRadius: 18,
                 width: "100%",
                 maxWidth: 440,
+                maxHeight: "90vh",
+                overflow: "auto",
                 padding: 24,
                 boxShadow: "0 24px 64px rgba(15,30,32,.2)",
               }}
