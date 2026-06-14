@@ -2,6 +2,7 @@ import React, { Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import ProtectedRoute from './router/ProtectedRoute'
 import PageLoader from './components/ui/PageLoader'
+import { Toaster } from 'sonner'
 
 const LoginPage = React.lazy(() => import('./features/auth/LoginPage'))
 const RegisterPage = React.lazy(() => import('./features/auth/RegisterPage'))
@@ -220,6 +221,7 @@ function App() {
         />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+      <Toaster position="top-right" duration={3000} />
       </Suspense>
     </BrowserRouter>
   )

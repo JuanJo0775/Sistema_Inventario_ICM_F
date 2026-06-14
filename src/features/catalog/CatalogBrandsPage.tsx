@@ -4,6 +4,7 @@ import { ModalPortal } from '../../components/ui/ModalPortal';
 import AppShell from '../../components/layout/AppShell';
 import useCatalogStore from '../../store/useCatalogStore';
 import { useDebounce } from '../../hooks/useDebounce';
+import { toast } from 'sonner';
 
 export const CatalogBrandsPage: React.FC = () => {
   const { 
@@ -104,12 +105,14 @@ export const CatalogBrandsPage: React.FC = () => {
           is_active: formIsActive
         });
         setSuccessMsg('Marca actualizada correctamente.');
+        toast.success('Marca actualizada correctamente');
       } else {
         await createBrand({
           name: nameTrimmed,
           description: formDescription.trim()
         });
         setSuccessMsg('Marca creada correctamente.');
+        toast.success('Marca creada correctamente');
       }
       setIsModalOpen(false);
     } catch (err: any) {
@@ -127,6 +130,7 @@ export const CatalogBrandsPage: React.FC = () => {
       try {
         await restoreBrand(brand.id);
         setSuccessMsg(`Marca "${brand.name}" activada correctamente.`);
+        toast.success(`Marca "${brand.name}" activada correctamente`);
       } catch (err: any) {
         setErrorMsg(err.message || 'Error al activar la marca.');
       }
@@ -141,6 +145,7 @@ export const CatalogBrandsPage: React.FC = () => {
     try {
       await deactivateBrand(brand.id);
       setSuccessMsg(`Marca "${brand.name}" desactivada correctamente.`);
+      toast.success(`Marca "${brand.name}" desactivada correctamente`);
     } catch (err: any) {
       setErrorMsg(err.message || 'No se pudo desactivar la marca porque tiene productos asociados.');
     }

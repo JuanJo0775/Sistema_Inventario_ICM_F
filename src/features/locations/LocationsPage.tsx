@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { toast } from 'sonner'
 import { ModalPortal } from '../../components/ui/ModalPortal';
 import {
   Search,
@@ -155,6 +156,7 @@ const LocationsPage: React.FC = () => {
           capacity_score: formCapacityScore,
         });
         setSuccessMsg(`Ubicación "${nameTrimmed}" actualizada correctamente.`);
+        toast.success(`Ubicación "${nameTrimmed}" actualizada correctamente`);
       } else {
         await createLocation({
           name: nameTrimmed,
@@ -163,6 +165,7 @@ const LocationsPage: React.FC = () => {
           capacity_score: formCapacityScore,
         });
         setSuccessMsg(`Ubicación "${nameTrimmed}" creada correctamente.`);
+        toast.success(`Ubicación "${nameTrimmed}" creada correctamente`);
       }
       setIsModalOpen(false);
     } catch (err: any) {
@@ -188,6 +191,7 @@ const LocationsPage: React.FC = () => {
     try {
       await updateLocation(loc.id, { is_active: true });
       setSuccessMsg(`Ubicación "${loc.name}" activada correctamente.`);
+      toast.success(`Ubicación "${loc.name}" activada correctamente`);
     } catch (err: any) {
       const msg = extractErrorMsg(err)
       setErrorMsg(msg)
@@ -201,6 +205,7 @@ const LocationsPage: React.FC = () => {
     try {
       await deactivateLocation(loc.id);
       setSuccessMsg(`Ubicación "${loc.name}" desactivada correctamente.`);
+      toast.success(`Ubicación "${loc.name}" desactivada correctamente`);
     } catch (err: any) {
       const msg = extractErrorMsg(err)
       setErrorMsg(msg)

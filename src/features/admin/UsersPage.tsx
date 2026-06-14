@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react'
+import { toast } from 'sonner'
 import { ModalPortal } from '../../components/ui/ModalPortal'
 import {
   Search,
@@ -200,6 +201,7 @@ export const UsersPage: React.FC = () => {
           role: formRole,
         })
         setSuccessMsg(t('users.success.updated'))
+        toast.success(t('users.success.updated'))
       } else {
         // Create User
         await createUser({
@@ -212,6 +214,7 @@ export const UsersPage: React.FC = () => {
           role: formRole,
         })
         setSuccessMsg(t('users.success.created'))
+        toast.success(t('users.success.created'))
       }
       setIsModalOpen(false)
       loadData() // Refresh list
@@ -241,6 +244,7 @@ export const UsersPage: React.FC = () => {
     try {
       await disableUser(userToDeactivate.id)
       setSuccessMsg(t('users.success.deactivated', { username: userToDeactivate.username }))
+      toast.success(t('users.success.deactivated', { username: userToDeactivate.username }))
       setUserToDeactivate(null)
       setIsModalOpen(false)
       loadData()
@@ -257,6 +261,7 @@ export const UsersPage: React.FC = () => {
     try {
       await enableUser(user.id)
       setSuccessMsg(t('users.success.reactivated', { username: user.username }))
+      toast.success(t('users.success.reactivated', { username: user.username }))
       loadData()
     } catch (err: any) {
       setErrorMsg(err.message || t('users.errors.reactivate'))

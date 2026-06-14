@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertTriangle, X } from 'lucide-react'
+import { toast } from 'sonner'
 import AppShell from '../../components/layout/AppShell'
 import { ModalPortal } from '../../components/ui/ModalPortal'
 import useSupplierStore from '../../store/useSupplierStore'
@@ -101,9 +102,11 @@ export const SuppliersPage: React.FC = () => {
       if (supplier.is_active) {
         await deactivateSupplier(supplier.id)
         setSuccessMsg(`Proveedor "${supplier.nombre_comercial}" desactivado correctamente.`)
+        toast.success(`Proveedor "${supplier.nombre_comercial}" desactivado correctamente`)
       } else {
         await activateSupplier(supplier.id)
         setSuccessMsg(`Proveedor "${supplier.nombre_comercial}" activado correctamente.`)
+        toast.success(`Proveedor "${supplier.nombre_comercial}" activado correctamente`)
       }
     } catch (err: any) {
       // handled by store
@@ -172,9 +175,11 @@ export const SuppliersPage: React.FC = () => {
           }
         }
         setSuccessMsg('Proveedor actualizado correctamente.')
+        toast.success('Proveedor actualizado correctamente')
       } else {
         await createSupplier(payload)
         setSuccessMsg('Proveedor creado correctamente.')
+        toast.success('Proveedor creado correctamente')
       }
       setIsFormModalOpen(false)
     } catch (err: any) {

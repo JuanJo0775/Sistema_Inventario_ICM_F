@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react'
+import { toast } from 'sonner'
 import { ModalPortal } from '../../components/ui/ModalPortal'
 import {
   Search,
@@ -374,6 +375,7 @@ const TransfersPage: React.FC = () => {
       })
 
       setSuccessMsg(`Traslado de ${parsedQty} unidades de "${selectedProduct.name}" registrado correctamente.`)
+      toast.success(`Traslado de ${parsedQty} unidades de "${selectedProduct.name}" registrado correctamente`)
       setIsCreateOpen(false)
       setCurrentPage(1) // Return to page 1
       loadTransfers() // Reload list

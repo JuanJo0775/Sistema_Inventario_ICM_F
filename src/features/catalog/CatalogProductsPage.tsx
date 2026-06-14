@@ -9,6 +9,7 @@ import useCatalogStore from "../../store/useCatalogStore";
 import { useDebounce } from "../../hooks/useDebounce";
 import { Switch } from "../../components/ui/switch";
 import { createCatalogProduct, updateCatalogProductPrices } from "../../services/catalog";
+import { toast } from "sonner";
 import type { CatalogProduct } from "../../interfaces/catalog";
 
 const SKU_REGEX = /^[A-Za-z]{1,4}-\d{1,4}$/;
@@ -513,7 +514,6 @@ export default function CatalogProductsPage() {
   async function handleSave(data: Partial<CatalogProduct>) {
     if (editing) {
       await updateProduct(editing.id, data);
-      // Save prices separately via /prices/ endpoint
       if ((data as any).unit_cost || (data as any).sale_price_retail || (data as any).sale_price_wholesale) {
         await updateProductPrices(editing.id, {
           unit_cost: (data as any).unit_cost ?? null,
@@ -523,9 +523,9 @@ export default function CatalogProductsPage() {
           currency: (data as any).currency || 'COP',
         });
       }
+      toast.success('Producto actualizado correctamente');
     } else {
       const created = await createCatalogProduct(data as any);
-      // Save prices if any were set
       if ((data as any).unit_cost || (data as any).sale_price_retail || (data as any).sale_price_wholesale) {
         await updateCatalogProductPrices(created.id, {
           unit_cost: (data as any).unit_cost ?? null,
@@ -535,7 +535,8 @@ export default function CatalogProductsPage() {
           currency: (data as any).currency || 'COP',
         });
       }
-      await fetchProducts(); // Re-fetch to sync store
+      await fetchProducts();
+      toast.success('Producto creado correctamente');
     }
     setShowForm(false);
     setEditing(null);

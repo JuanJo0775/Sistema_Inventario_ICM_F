@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { toast } from 'sonner'
 import { ModalPortal } from '../../components/ui/ModalPortal'
 import {
   X,
@@ -422,11 +423,12 @@ export const PurchaseOrdersPage: React.FC = () => {
           }))
         }
         await updateOrder(editingOrder.id, payload)
-        setSuccessMsg(
+        const msgA =
           editingOrder.status === 'borrador'
             ? 'Orden de compra borrador actualizada correctamente.'
             : 'Observaciones de la orden actualizadas correctamente.'
-        )
+        setSuccessMsg(msgA)
+        toast.success(msgA)
       } else {
         const payload = {
           supplier_id: formSupplierId,
@@ -440,6 +442,7 @@ export const PurchaseOrdersPage: React.FC = () => {
         }
         await createOrder(payload)
         setSuccessMsg('Orden de compra guardada en borrador.')
+        toast.success('Orden de compra guardada en borrador.')
       }
       setIsFormOpen(false)
     } catch (e) {}
@@ -473,6 +476,7 @@ export const PurchaseOrdersPage: React.FC = () => {
         await updateOrder(editingOrder.id, payload)
         await confirmOrder(editingOrder.id)
         setSuccessMsg(`Orden de compra ${editingOrder.number} emitida correctamente.`)
+        toast.success(`Orden de compra ${editingOrder.number} emitida correctamente`)
       } else {
         const payload = {
           supplier_id: formSupplierId,
@@ -487,6 +491,7 @@ export const PurchaseOrdersPage: React.FC = () => {
         const newOrder = await createOrder(payload)
         await confirmOrder(newOrder.id)
         setSuccessMsg(`Orden de compra ${newOrder.number} emitida correctamente.`)
+        toast.success(`Orden de compra ${newOrder.number} emitida correctamente`)
       }
       setIsFormOpen(false)
     } catch (e) {}
@@ -498,6 +503,7 @@ export const PurchaseOrdersPage: React.FC = () => {
       const order = orders.find((o) => o.id === confirmEmitId)
       await confirmOrder(confirmEmitId)
       setSuccessMsg(`Orden de compra ${order?.number || ''} emitida correctamente.`)
+      toast.success(`Orden de compra ${order?.number || ''} emitida correctamente`)
       setConfirmEmitId(null)
       if (selectedOrder && selectedOrder.id === confirmEmitId) {
         const refreshed = orders.find((o) => o.id === confirmEmitId)
@@ -518,6 +524,7 @@ export const PurchaseOrdersPage: React.FC = () => {
       const order = orders.find((o) => o.id === cancelOrderId)
       await cancelOrder(cancelOrderId, reasonTrimmed)
       setSuccessMsg(`Orden de compra ${order?.number || ''} cancelada.`)
+      toast.success(`Orden de compra ${order?.number || ''} cancelada`)
       setCancelOrderId(null)
       setCancelReason('')
       setValidationError(null)

@@ -10,6 +10,7 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import AppShell from '../../components/layout/AppShell'
 import { ModalPortal } from '../../components/ui/ModalPortal'
 import useReceptionStore from '../../store/useReceptionStore'
@@ -277,9 +278,9 @@ export default function ReceptionOrderDetailPage() {
         })
       }
 
-      setActionSuccess(
-        `Se ha registrado la recepción de ${enteredQty} unidades de ${selectedItem.product_name}.`,
-      )
+      const successMsg = `Se ha registrado la recepción de ${enteredQty} unidades de ${selectedItem.product_name}.`
+      setActionSuccess(successMsg)
+      toast.success(successMsg)
       setIsModalOpen(false)
     } catch (err: any) {
       const data = err?.response?.data

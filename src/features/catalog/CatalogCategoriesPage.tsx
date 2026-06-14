@@ -6,6 +6,7 @@ import AppShell from '../../components/layout/AppShell';
 import useCatalogStore from '../../store/useCatalogStore';
 import { useDebounce } from '../../hooks/useDebounce';
 import { Switch } from '../../components/ui/switch';
+import { toast } from 'sonner';
 
 export const CatalogCategoriesPage: React.FC = () => {
   const { 
@@ -117,6 +118,7 @@ export const CatalogCategoriesPage: React.FC = () => {
           requires_serial_number: formRequiresSerial
         });
         setSuccessMsg('Categoría actualizada correctamente.');
+        toast.success('Categoría actualizada correctamente');
       } else {
         // Create category
         await createCategory({
@@ -126,6 +128,7 @@ export const CatalogCategoriesPage: React.FC = () => {
           is_returnable: false
         });
         setSuccessMsg('Categoría creada correctamente.');
+        toast.success('Categoría creada correctamente');
       }
       setIsModalOpen(false);
     } catch (err: any) {
@@ -146,6 +149,7 @@ export const CatalogCategoriesPage: React.FC = () => {
       try {
         await restoreCategory(category.id);
         setSuccessMsg(`Categoría "${category.name}" activada correctamente.`);
+        toast.success(`Categoría "${category.name}" activada correctamente`);
       } catch (err: any) {
         setErrorMsg(err.message || 'Error al activar la categoría.');
       }
@@ -160,6 +164,7 @@ export const CatalogCategoriesPage: React.FC = () => {
     try {
       await deactivateCategory(cat.id);
       setSuccessMsg(`Categoría "${cat.name}" desactivada correctamente.`);
+      toast.success(`Categoría "${cat.name}" desactivada correctamente`);
     } catch (err: any) {
       // Show backend message
       setErrorMsg(err.message || 'No se pudo desactivar la categoría porque tiene productos asociados.');
