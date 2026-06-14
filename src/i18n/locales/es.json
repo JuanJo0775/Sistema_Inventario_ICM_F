@@ -126,6 +126,7 @@
     "errors": {
       "load": "No se pudo cargar el resumen del dashboard"
     },
+    "readOnlyMessage": "Modo solo lectura. No puedes realizar cambios en el sistema.",
     "roles": {
       "auxiliar_despacho": {
         "upper": "AUXILIAR DESPACHO",

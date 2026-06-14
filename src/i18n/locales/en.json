@@ -126,6 +126,7 @@
     "errors": {
       "load": "Could not load the dashboard overview"
     },
+    "readOnlyMessage": "Read-only mode. You cannot make changes to the system.",
     "roles": {
       "auxiliar_despacho": {
         "upper": "DISPATCH ASSISTANT",
