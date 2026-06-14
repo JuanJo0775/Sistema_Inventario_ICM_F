@@ -157,6 +157,7 @@ export type FetchCatalogProductsParams = {
   subcategory?: string
   include_inactive?: boolean
   page?: number
+  page_size?: number
 }
 
 export const fetchCatalogProducts = async (
@@ -171,6 +172,7 @@ export const fetchCatalogProducts = async (
       category: params?.category || undefined,
       include_inactive: params?.include_inactive ? 'true' : undefined,
       page: params?.page || undefined,
+      page_size: params?.page_size || undefined,
     },
   })
   return normalizeList(response.data)

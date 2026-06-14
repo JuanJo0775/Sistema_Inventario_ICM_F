@@ -87,7 +87,7 @@ const mapProductPayload = (productData: ProductFormPayload): CatalogProductCreat
 // Helper reutilizable: carga productos del catálogo y mezcla stockTotal desde /inventory/
 async function fetchProductsWithStock() {
   const [products, inventoryResp] = await Promise.allSettled([
-    fetchCatalogProducts({ include_inactive: true }),
+    fetchCatalogProducts({ include_inactive: true, page_size: 500 }),
     api.get<Array<{ product_id: string; total: number }>>('/inventory/'),
   ])
 
