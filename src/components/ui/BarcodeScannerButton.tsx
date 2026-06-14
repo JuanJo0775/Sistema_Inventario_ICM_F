@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useBarcodeScanner, type ScanStatus } from '../../lib/useBarcodeScanner'
 import type { BarcodeProductResult } from '../../services/barcodeScanner'
+import { ModalPortal } from './ModalPortal'
 
 interface BarcodeScannerButtonProps {
   /** Called when the scanner successfully resolves a product */
@@ -121,17 +122,9 @@ export function BarcodeScannerButton({
         {label}
       </button>
 
-      {/* Modal overlay */}
-      {modalOpen ? (
-        <div
-          className="barcode-modal-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Escáner de código de barras"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) handleClose()
-          }}
-        >
+      {/* Modal */}
+      {modalOpen && (
+        <ModalPortal onClose={handleClose}>
           <div className="barcode-modal">
             {/* Header */}
             <div className="barcode-modal__header">
@@ -247,8 +240,8 @@ export function BarcodeScannerButton({
               </button>
             </div>
           </div>
-        </div>
-      ) : null}
+        </ModalPortal>
+      )}
     </>
   )
 }

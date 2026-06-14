@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { AlertTriangle, X, Tag } from 'lucide-react';
+import { ModalPortal } from '../../components/ui/ModalPortal';
 import AppShell from '../../components/layout/AppShell';
 import useCatalogStore from '../../store/useCatalogStore';
 
@@ -324,28 +325,16 @@ export const CatalogBrandsPage: React.FC = () => {
 
         {/* Confirmation Deactivate Modal */}
         {brandToDeactivate && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 50,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "rgba(15,30,32,.45)",
-              padding: 24,
-            }}
-            role="dialog"
-            aria-modal="true"
-          >
+          <ModalPortal onClose={() => setBrandToDeactivate(null)}>
             <div
               style={{
+                position: "relative",
+                maxHeight: "90vh",
+                overflowY: "auto",
                 background: "var(--white)",
                 borderRadius: 18,
                 width: "100%",
                 maxWidth: 440,
-                maxHeight: "90vh",
-                overflow: "auto",
                 padding: 24,
                 boxShadow: "0 24px 64px rgba(15,30,32,.2)",
               }}
@@ -400,33 +389,21 @@ export const CatalogBrandsPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </ModalPortal>
         )}
 
         {/* Create / Edit Dialog Modal */}
         {isModalOpen && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 50,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "rgba(15,30,32,.45)",
-              padding: 24,
-            }}
-            role="dialog"
-            aria-modal="true"
-          >
+          <ModalPortal onClose={() => setIsModalOpen(false)}>
             <div
               style={{
+                position: "relative",
+                maxHeight: "90vh",
+                overflowY: "auto",
                 background: "var(--white)",
                 borderRadius: 18,
                 width: "100%",
                 maxWidth: 480,
-                maxHeight: "90vh",
-                overflow: "auto",
                 boxShadow: "0 24px 64px rgba(15,30,32,.2)",
               }}
             >
@@ -438,10 +415,7 @@ export const CatalogBrandsPage: React.FC = () => {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  position: "sticky",
-                  top: 0,
-                  background: "var(--white)",
-                  zIndex: 1,
+                  flexShrink: 0,
                 }}
               >
                 <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 400, margin: 0 }}>
@@ -457,15 +431,15 @@ export const CatalogBrandsPage: React.FC = () => {
               </div>
 
               {/* body */}
-              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div style={{ overflow: "auto", flex: 1, padding: 24 }}>
                 {validationError && (
-                  <div className="alert-bar alert-bar--err" role="alert" style={{ margin: 0 }}>
+                  <div className="alert-bar alert-bar--err" role="alert" style={{ marginBottom: 20 }}>
                     <AlertTriangle style={{ width: 14, height: 14 }} />
                     {validationError}
                   </div>
                 )}
 
-                <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <form id="brand-form" onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                   <fieldset>
                     <legend>Información de la marca</legend>
                     <div className="f-row f-row-2">
@@ -520,26 +494,38 @@ export const CatalogBrandsPage: React.FC = () => {
                       </div>
                     </fieldset>
                   )}
-
-                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                    <button
-                      type="button"
-                      className="btn btn--outline"
-                      onClick={() => setIsModalOpen(false)}
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="submit"
-                      className="btn btn--primary"
-                    >
-                      Guardar
-                    </button>
-                  </div>
                 </form>
               </div>
+
+              {/* footer */}
+              <div
+                style={{
+                  padding: "16px 24px",
+                  borderTop: "1px solid var(--ink-06)",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: "0.5rem",
+                  flexShrink: 0,
+                  background: "var(--white)",
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn btn--outline"
+                  onClick={() => setIsModalOpen(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  form="brand-form"
+                  className="btn btn--primary"
+                >
+                  Guardar
+                </button>
+              </div>
             </div>
-          </div>
+          </ModalPortal>
         )}
       </div>
     </AppShell>

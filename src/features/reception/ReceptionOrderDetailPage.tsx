@@ -11,6 +11,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import AppShell from '../../components/layout/AppShell'
+import { ModalPortal } from '../../components/ui/ModalPortal'
 import useReceptionStore from '../../store/useReceptionStore'
 import useLocationStore from '../../store/useLocationStore'
 import useCatalogStore from '../../store/useCatalogStore'
@@ -596,21 +597,11 @@ export default function ReceptionOrderDetailPage() {
 
       {/* Modal: Recibir Producto */}
       {isModalOpen && selectedItem && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(15, 30, 32, 0.45)',
-            backdropFilter: 'blur(4px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-          }}
-        >
+        <ModalPortal onClose={handleCloseModal}>
           <div
             className="form-surface"
             style={{
+              position: 'relative',
               width: '100%',
               maxWidth: splitEnabled ? 580 : 480,
               maxHeight: '90vh',
@@ -1021,7 +1012,7 @@ export default function ReceptionOrderDetailPage() {
               </div>
             </form>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </AppShell>
   )

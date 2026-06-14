@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react'
+import { ModalPortal } from '../../components/ui/ModalPortal'
 import {
   Search,
   Plus,
@@ -700,18 +701,13 @@ const TransfersPage: React.FC = () => {
 
         {/* ── Modal: Ver Detalle ───────────────────────────────────────── */}
         {isDetailOpen && selectedTransfer && (
-          <div
-            style={{
-              position: 'fixed', inset: 0, zIndex: 9999,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)',
-            }}
-          >
+          <ModalPortal onClose={() => setIsDetailOpen(false)}>
             <div
-              className="fade-slide-up"
               style={{
+                position: 'relative',
                 backgroundColor: '#fff', borderRadius: '12px',
                 width: '100%', maxWidth: '480px',
+                maxHeight: '90vh', overflowY: 'auto',
                 boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
                 padding: '1.75rem', border: '1px solid #e5e7eb',
               }}
@@ -812,21 +808,15 @@ const TransfersPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </ModalPortal>
         )}
 
         {/* ── Modal: Nueva Transferencia ────────────────────────────────── */}
         {isCreateOpen && (
-          <div
-            style={{
-              position: 'fixed', inset: 0, zIndex: 9999,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)',
-            }}
-          >
+          <ModalPortal onClose={() => setIsCreateOpen(false)}>
             <div
-              className="fade-slide-up"
               style={{
+                position: 'relative',
                 backgroundColor: '#fff', borderRadius: '12px',
                 width: '100%', maxWidth: '540px',
                 maxHeight: '90vh', overflowY: 'auto',
@@ -1086,7 +1076,7 @@ const TransfersPage: React.FC = () => {
 
               </form>
             </div>
-          </div>
+          </ModalPortal>
         )}
 
       </div>

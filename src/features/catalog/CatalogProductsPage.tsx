@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import AppShell from "../../components/layout/AppShell";
 import { BarcodeDisplay } from "../../components/ui/BarcodeDisplay";
+import { ModalPortal } from "../../components/ui/ModalPortal";
 import { SkuInput } from "../../components/ui/SkuInput";
 import useCatalogStore from "../../store/useCatalogStore";
 import type { CatalogProduct } from "../../interfaces/catalog";
@@ -71,29 +72,16 @@ function ProductForm({
   }
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 50,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(15,30,32,.45)",
-        padding: 24,
-      }}
-      role="dialog"
-      aria-modal="true"
-      aria-label={initial?.id ? "Editar producto" : "Nuevo producto"}
-    >
+    <ModalPortal onClose={onClose}>
       <div
         style={{
+          position: "relative",
+          maxHeight: "90vh",
+          overflowY: "auto",
           background: "var(--white)",
           borderRadius: 18,
           width: "100%",
           maxWidth: 640,
-          maxHeight: "90vh",
-          overflow: "auto",
           boxShadow: "0 24px 64px rgba(15,30,32,.2)",
         }}
       >
@@ -105,10 +93,7 @@ function ProductForm({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            position: "sticky",
-            top: 0,
-            background: "var(--white)",
-            zIndex: 1,
+            flexShrink: 0,
           }}
         >
           <div>
@@ -149,6 +134,8 @@ function ProductForm({
             display: "flex",
             flexDirection: "column",
             gap: 20,
+            overflow: "auto",
+            flex: 1,
           }}
         >
           {error && (
@@ -446,8 +433,7 @@ function ProductForm({
           style={{
             padding: "16px 24px",
             borderTop: "1px solid var(--ink-06)",
-            position: "sticky",
-            bottom: 0,
+            flexShrink: 0,
             background: "var(--white)",
           }}
         >
@@ -471,7 +457,7 @@ function ProductForm({
           </button>
         </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }
 
