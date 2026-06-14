@@ -98,9 +98,6 @@ export const fetchBrands = async (
 ): Promise<CatalogBrand[]> => {
   if (useMocks) {
     let list = mockGetBrands(includeInactive)
-    if (categoryId) {
-      list = list.filter((b) => String(b.category) === String(categoryId))
-    }
     return list
   }
   const response = await api.get<BackendListResponse<CatalogBrand>>('/catalog/brands/', {
