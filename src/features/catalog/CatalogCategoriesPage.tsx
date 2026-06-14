@@ -5,6 +5,7 @@ import { ModalPortal } from '../../components/ui/ModalPortal';
 import AppShell from '../../components/layout/AppShell';
 import useCatalogStore from '../../store/useCatalogStore';
 import { useDebounce } from '../../hooks/useDebounce';
+import { Switch } from '../../components/ui/switch';
 
 export const CatalogCategoriesPage: React.FC = () => {
   const { 
@@ -500,12 +501,10 @@ export const CatalogCategoriesPage: React.FC = () => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                           <span className="f-label" style={{ margin: 0 }}>Código serial</span>
                           <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer' }}>
-                            <input
+                            <Switch
                               id="cat-requires-serial"
-                              type="checkbox"
                               checked={formRequiresSerial}
-                              onChange={(e) => setFormRequiresSerial(e.target.checked)}
-                              style={{ width: 16, height: 16, marginTop: 2, cursor: 'pointer', flexShrink: 0 }}
+                              onCheckedChange={setFormRequiresSerial}
                             />
                             <div>
                               <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--ink)' }}>

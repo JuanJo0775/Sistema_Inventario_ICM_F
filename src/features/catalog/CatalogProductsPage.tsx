@@ -7,6 +7,7 @@ import { ModalPortal } from "../../components/ui/ModalPortal";
 import { SkuInput } from "../../components/ui/SkuInput";
 import useCatalogStore from "../../store/useCatalogStore";
 import { useDebounce } from "../../hooks/useDebounce";
+import { Switch } from "../../components/ui/switch";
 import type { CatalogProduct } from "../../interfaces/catalog";
 
 const SKU_REGEX = /^[A-Za-z]{1,4}-\d{1,4}$/;
@@ -45,7 +46,7 @@ function ProductForm({
     subcategory: null,
     requires_cold_chain: false,
     requires_expiration: false,
-    reorder_point: 0,
+    reorder_point: undefined,
     notes: "",
     is_active: true,
     ...initial,
@@ -246,10 +247,11 @@ function ProductForm({
                   className="f-input text-mono"
                   type="number"
                   min={0}
-                  value={form.reorder_point ?? 0}
-                  onChange={(e) =>
-                    setForm({ ...form, reorder_point: Number(e.target.value) })
-                  }
+                  value={form.reorder_point ?? ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setForm({ ...form, reorder_point: val === '' ? undefined : Number(val) })
+                  }}
                 />
               </div>
               <div className="f-group">
@@ -270,7 +272,7 @@ function ProductForm({
           {/* condiciones especiales */}
           <fieldset>
             <legend>Condiciones especiales</legend>
-            <div className="flex gap-20" style={{ flexWrap: "wrap" }}>
+            <div className="flex gap-6" style={{ flexWrap: "wrap" }}>
               <label
                 style={{
                   display: "flex",
@@ -280,11 +282,10 @@ function ProductForm({
                   cursor: "pointer",
                 }}
               >
-                <input
-                  type="checkbox"
+                <Switch
                   checked={!!form.requires_cold_chain}
-                  onChange={(e) =>
-                    setForm({ ...form, requires_cold_chain: e.target.checked })
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, requires_cold_chain: checked })
                   }
                 />
                 Cadena de frío
@@ -298,11 +299,10 @@ function ProductForm({
                   cursor: "pointer",
                 }}
               >
-                <input
-                  type="checkbox"
+                <Switch
                   checked={!!form.requires_expiration}
-                  onChange={(e) =>
-                    setForm({ ...form, requires_expiration: e.target.checked })
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, requires_expiration: checked })
                   }
                 />
                 Maneja vencimiento / lotes
@@ -316,11 +316,10 @@ function ProductForm({
                   cursor: "pointer",
                 }}
               >
-                <input
-                  type="checkbox"
+                <Switch
                   checked={!!form.is_active}
-                  onChange={(e) =>
-                    setForm({ ...form, is_active: e.target.checked })
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, is_active: checked })
                   }
                 />
                 Producto activo
