@@ -7,8 +7,12 @@ const getFriendlyAuthError = (status?: number, data?: unknown) => {
     | { message?: string; detail?: string; error?: string }
     | undefined;
 
-  // Siempre prioriza el mensaje del backend si existe
-  const apiMessage = payload?.detail || payload?.message;
+  // Siempre prioriza el mensaje del backend si existe (solo strings, no objetos)
+  const apiMessage = typeof payload?.detail === 'string'
+    ? payload.detail
+    : typeof payload?.message === 'string'
+      ? payload.message
+      : undefined;
   if (apiMessage) {
     return apiMessage;
   }
