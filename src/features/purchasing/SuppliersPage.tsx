@@ -348,8 +348,8 @@ export const SuppliersPage: React.FC = () => {
                         <div className="flex gap-4" style={{ whiteSpace: 'nowrap' }}>
                           <Link
                             to={`/app/purchasing/suppliers/${supplier.id}`}
-                            className="btn btn--sm"
-                            style={{ background: 'rgba(25, 113, 194, 0.08)', color: '#1971c2', border: '1px solid rgba(25, 113, 194, 0.2)' }}
+                            className="btn btn--outline btn--sm"
+                            style={{ textDecoration: 'none' }}
                           >
                             Ver detalle
                           </Link>
