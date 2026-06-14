@@ -15,6 +15,9 @@ type LoginFormValues = {
   password: string
 }
 
+const errMsg = (e: unknown): string | undefined =>
+  typeof e === 'string' ? e : undefined
+
 function LoginPage() {
   const navigate = useNavigate()
   const login = useAuthStore((state) => state.login)
@@ -70,7 +73,7 @@ function LoginPage() {
           type="text"
           placeholder={t('auth.login.identifierPlaceholder')}
           icon={<Mail className="h-4 w-4" />}
-          error={errors.identifier?.message}
+          error={errMsg(errors.identifier?.message)}
           {...register('identifier')}
         />
         <PhysioInput
@@ -78,7 +81,8 @@ function LoginPage() {
           type="password"
           placeholder={t('auth.login.passwordPlaceholder')}
           icon={<Lock className="h-4 w-4" />}
-          error={errors.password?.message}
+          showPasswordToggle
+          error={errMsg(errors.password?.message)}
           {...register('password')}
         />
         <div className="flex justify-end text-sm">

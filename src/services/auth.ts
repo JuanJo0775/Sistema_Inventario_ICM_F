@@ -1,6 +1,6 @@
 import axios from "axios";
-import { api } from "./api";
-import type { LoginPayload, LoginResponse } from "../interfaces/auth";
+import { api, publicApi } from "./api";
+import type { LoginPayload, LoginResponse, ForgotPasswordPayload, ResetPasswordPayload } from "../interfaces/auth";
 
 const getFriendlyAuthError = (status?: number, data?: unknown) => {
   const payload = data as
@@ -36,7 +36,7 @@ const getFriendlyAuthError = (status?: number, data?: unknown) => {
 
 export const login = async (payload: LoginPayload): Promise<LoginResponse> => {
   try {
-    const response = await api.post<LoginResponse>("/auth/login/", payload);
+    const response = await publicApi.post<LoginResponse>("/auth/login/", payload);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -64,4 +64,30 @@ export const refreshAccessToken = async (
     refresh: refreshToken,
   });
   return response.data.access;
+};
+
+export const forgotPassword = async (payload: ForgotPasswordPayload): Promise<void> => {
+  try {
+    await publicApi.post("/auth/forgot-password/", payload);
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(
+        getFriendlyAuthError(error.response?.status, error.response?.data),
+      );
+    }
+    throw new Error("No se pudo enviar el correo de recuperación");
+  }
+};
+
+export const resetPassword = async (payload: ResetPasswordPayload): Promise<void> => {
+  try {
+    await publicApi.post("/auth/reset-password/", payload);
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(
+        getFriendlyAuthError(error.response?.status, error.response?.data),
+      );
+    }
+    throw new Error("No se pudo restablecer la contraseña");
+  }
 };

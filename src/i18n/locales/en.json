@@ -33,9 +33,39 @@
     },
     "forgot": {
       "title": "Recover access",
-      "subtitle": "This flow will be available in the next phase.",
-      "note": "For now, contact the administrator to reset your access.",
+      "subtitle": "Enter your email to receive a recovery link.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@email.com",
+      "submit": "Send recovery link",
+      "success": "If the email exists, you will receive a recovery link in the next few minutes.",
       "back": "Back to login"
+    },
+    "reset": {
+      "title": "Reset password",
+      "subtitle": "Enter your new password.",
+      "passwordLabel": "New password",
+      "passwordPlaceholder": "Minimum 8 characters",
+      "confirmLabel": "Confirm password",
+      "confirmPlaceholder": "Repeat the password",
+      "submit": "Reset",
+      "success": "Password has been reset successfully.",
+      "login": "Sign in",
+      "errors": {
+        "noToken": "The recovery link is invalid or has expired.",
+        "mismatch": "Passwords do not match.",
+        "minLength": "Minimum 8 characters",
+        "uppercase": "Must contain at least one uppercase letter",
+        "lowercase": "Must contain at least one lowercase letter",
+        "number": "Must contain at least one number",
+        "specialChar": "Must contain at least one special character",
+        "weak": "Password is too weak",
+        "fallback": "Could not reset password"
+      },
+      "strength": {
+        "weak": "Weak",
+        "medium": "Medium",
+        "strong": "Strong"
+      }
     }
   },
   "common": {

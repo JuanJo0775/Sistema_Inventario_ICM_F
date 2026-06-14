@@ -6,6 +6,7 @@ import PageLoader from './components/ui/PageLoader'
 const LoginPage = React.lazy(() => import('./features/auth/LoginPage'))
 const RegisterPage = React.lazy(() => import('./features/auth/RegisterPage'))
 const ForgotPasswordPage = React.lazy(() => import('./features/auth/ForgotPasswordPage'))
+const ResetPasswordPage = React.lazy(() => import('./features/auth/ResetPasswordPage'))
 const DashboardPage = React.lazy(() => import('./features/dashboard/DashboardPage'))
 const InventoryPage = React.lazy(() => import('./features/inventory/InventoryPage'))
 const ReceptionPage = React.lazy(() => import('./features/reception/ReceptionPage'))
@@ -37,6 +38,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route
           path="/app"
           element={

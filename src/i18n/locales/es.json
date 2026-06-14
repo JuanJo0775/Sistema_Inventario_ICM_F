@@ -33,9 +33,39 @@
     },
     "forgot": {
       "title": "Recuperar acceso",
-      "subtitle": "Este flujo estará disponible en la siguiente fase.",
-      "note": "Por ahora contacta al administrador para restablecer tu acceso.",
+      "subtitle": "Ingresa tu correo electrónico para recibir un enlace de recuperación.",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "tu@correo.com",
+      "submit": "Enviar enlace",
+      "success": "Si el correo existe, recibirás un enlace de recuperación en los próximos minutos.",
       "back": "Volver al login"
+    },
+    "reset": {
+      "title": "Restablecer contraseña",
+      "subtitle": "Ingresa tu nueva contraseña.",
+      "passwordLabel": "Nueva contraseña",
+      "passwordPlaceholder": "Mínimo 8 caracteres",
+      "confirmLabel": "Confirmar contraseña",
+      "confirmPlaceholder": "Repite la contraseña",
+      "submit": "Restablecer",
+      "success": "Contraseña restablecida correctamente.",
+      "login": "Iniciar sesión",
+      "errors": {
+        "noToken": "El enlace de recuperación no es válido o ya expiró.",
+        "mismatch": "Las contraseñas no coinciden.",
+        "minLength": "Mínimo 8 caracteres",
+        "uppercase": "Debe contener al menos una mayúscula",
+        "lowercase": "Debe contener al menos una minúscula",
+        "number": "Debe contener al menos un número",
+        "specialChar": "Debe contener al menos un carácter especial",
+        "weak": "La contraseña es insegura",
+        "fallback": "No se pudo restablecer la contraseña"
+      },
+      "strength": {
+        "weak": "Insegura",
+        "medium": "Media",
+        "strong": "Segura"
+      }
     }
   },
   "common": {

@@ -17,6 +17,16 @@ export interface LoginPayload {
 
 export interface LoginResponse {
   access: string;
-  refresh: string; // agrega esto
+  refresh: string;
   user: User;
+}
+
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  new_password: string;
+  new_password_confirm: string;
 }

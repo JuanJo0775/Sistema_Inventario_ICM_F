@@ -11,6 +11,14 @@ export const api = axios.create({
   },
 });
 
+/** Instancia limpia SIN autenticación — para login, register, forgot/reset password. */
+export const publicApi = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
 export const setAuthToken = (token: string | null) => {
   if (token) {
     api.defaults.headers.common.Authorization = `Bearer ${token}`;
@@ -47,7 +55,9 @@ api.interceptors.response.use(
       error.response?.status === 401 &&
       !originalRequest._retry &&
       !originalRequest.url?.includes("/auth/token/refresh/") &&
-      !originalRequest.url?.includes("/auth/login/")
+      !originalRequest.url?.includes("/auth/login/") &&
+      !originalRequest.url?.includes("/auth/forgot-password/") &&
+      !originalRequest.url?.includes("/auth/reset-password/")
     ) {
       if (isRefreshing) {
         // Si ya hay un refresh en curso, encola esta petición
