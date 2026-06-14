@@ -31,6 +31,17 @@ const chartColors: Record<KpiKey, string> = {
   cadena_frio: '#3867a6',
 }
 
+function isEmptyData(kpi: DashboardVisualKpi): boolean {
+  if (kpi.chartType === 'radial') {
+    return !kpi.value || kpi.value === 0
+  }
+  if (kpi.chartType === 'bar') {
+    const items = kpi.breakdown ?? kpi.history
+    return items.length === 0 || items.every((item) => !item.value || item.value === 0)
+  }
+  return kpi.history.length === 0 || kpi.history.every((item) => !item.value || item.value === 0)
+}
+
 const formatKpiValue = (value: number, unit: string, precision: number, locale = 'es-CO') => {
   const safePrecision = Math.min(20, Math.max(0, Number.isFinite(Number(precision)) ? Number(precision) : 0))
   const formatted = Number.isFinite(value)
@@ -56,6 +67,29 @@ function KpiChart({ kpi }: { kpi: DashboardVisualKpi }) {
   const color = chartColors[kpi.key]
   const shortTitle = kpiText(t, kpi, 'shortTitle')
   const locale = i18n.language === 'en' ? 'en-US' : 'es-CO'
+
+  if (isEmptyData(kpi)) {
+    return (
+      <div
+        style={{
+          height: 170,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          color: 'var(--ink-40)',
+          fontSize: 13,
+        }}
+      >
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} style={{ opacity: 0.4 }}>
+          <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z" />
+          <polyline points="13 2 13 9 20 9" />
+        </svg>
+        <span>{t('dashboard.chartLabels.noData', 'Sin datos disponibles')}</span>
+      </div>
+    )
+  }
 
   if (kpi.chartType === 'radial') {
     return (
