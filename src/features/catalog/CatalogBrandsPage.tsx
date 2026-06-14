@@ -1,5 +1,4 @@
 import { useEffect, useState, useMemo } from 'react';
-
 import { AlertTriangle, X, Tag } from 'lucide-react';
 import AppShell from '../../components/layout/AppShell';
 import useCatalogStore from '../../store/useCatalogStore';

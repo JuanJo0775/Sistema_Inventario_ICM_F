@@ -16,6 +16,7 @@ export interface CatalogBrand {
   name: string
   description?: string
   slug: string
+  category?: string
   is_active: boolean
   created_at?: string
   updated_at?: string

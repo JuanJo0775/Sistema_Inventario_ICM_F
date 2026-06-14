@@ -31,8 +31,6 @@ export const CatalogCategoriesPage: React.FC = () => {
   const [formIsActive, setFormIsActive] = useState(true);
   const [formRequiresSerial, setFormRequiresSerial] = useState(false);
 
-  
-  
   // Feedback states
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);

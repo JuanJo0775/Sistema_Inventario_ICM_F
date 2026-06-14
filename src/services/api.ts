@@ -1,4 +1,5 @@
 import axios from "axios";
+import useAuthStore from "../store/useAuthStore";
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
@@ -63,8 +64,6 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      // Importación dinámica para evitar dependencia circular
-      const { default: useAuthStore } = await import("../store/useAuthStore");
       const refreshed = await useAuthStore.getState().tryRefreshToken();
 
       if (refreshed) {
