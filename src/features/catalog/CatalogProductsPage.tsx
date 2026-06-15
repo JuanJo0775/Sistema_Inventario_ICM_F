@@ -650,6 +650,14 @@ export default function CatalogProductsPage() {
               </option>
             ))}
           </select>
+          {(search || filterCat) && (
+            <button
+              onClick={() => { setSearch(''); setFilterCat(''); }}
+              className="btn btn--ghost btn--sm"
+            >
+              Limpiar filtros
+            </button>
+          )}
         </div>
 
         {error && (
