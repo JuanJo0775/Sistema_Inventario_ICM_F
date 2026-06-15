@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import AppShell from "../../components/layout/AppShell";
@@ -8,7 +8,7 @@ import { SkuInput } from "../../components/ui/SkuInput";
 import useCatalogStore from "../../store/useCatalogStore";
 import { useDebounce } from "../../hooks/useDebounce";
 import { Switch } from "../../components/ui/switch";
-import { createCatalogProduct, updateCatalogProductPrices } from "../../services/catalog";
+import { updateCatalogProductPrices } from "../../services/catalog";
 import { toast } from "sonner";
 import type { CatalogProduct } from "../../interfaces/catalog";
 
@@ -474,40 +474,40 @@ export default function CatalogProductsPage() {
     fetchProducts,
     fetchCategories,
     fetchBrands,
+    createProduct,
     updateProduct,
     updateProductPrices,
     deactivateProduct,
   } = useCatalogStore();
 
   const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 150);
+  const debouncedSearch = useDebounce(search, 300);
   const [filterCat, setFilterCat] = useState("");
+
+  // Reset to page 1 when search or category filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, filterCat]);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<CatalogProduct | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const { productCount, productPageSize } = useCatalogStore();
+  const totalPages = Math.max(1, Math.ceil((productCount || 0) / (productPageSize || 25)));
 
   useEffect(() => {
-    fetchProducts();
+    fetchProducts({ search: debouncedSearch, category: filterCat, page: currentPage });
     fetchCategories();
     fetchBrands();
-  }, [fetchProducts, fetchCategories, fetchBrands]);
+  }, [fetchProducts, fetchCategories, fetchBrands, debouncedSearch, filterCat, currentPage, refreshKey]);
 
-  const filtered = useMemo(() => {
-    let list = products;
-    if (filterCat) list = list.filter((p) => p.category === filterCat);
-    if (debouncedSearch.trim()) {
-      const q = debouncedSearch.toLowerCase();
-      list = list.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          (p.sku || "").toLowerCase().includes(q) ||
-          (p.barcode || "").toLowerCase().includes(q),
-      );
-    }
-    return list;
-  }, [products, debouncedSearch, filterCat]);
+  const triggerRefresh = () => {
+    setCurrentPage(1);
+    setRefreshKey((k) => k + 1);
+  };
 
-  const activeCount = filtered.filter((p) => p.is_active).length;
-  const reorderCount = filtered.filter(
+  const reorderCount = products.filter(
     (p) => p.is_active && (p.stockTotal ?? 0) <= (p.reorder_point ?? 0),
   ).length;
 
@@ -525,7 +525,7 @@ export default function CatalogProductsPage() {
       }
       toast.success('Producto actualizado correctamente');
     } else {
-      const created = await createCatalogProduct(data as any);
+      const created = await createProduct(data as any);
       if ((data as any).unit_cost || (data as any).sale_price_retail || (data as any).sale_price_wholesale) {
         await updateCatalogProductPrices(created.id, {
           unit_cost: (data as any).unit_cost ?? null,
@@ -535,11 +535,11 @@ export default function CatalogProductsPage() {
           currency: (data as any).currency || 'COP',
         });
       }
-      await fetchProducts();
       toast.success('Producto creado correctamente');
     }
     setShowForm(false);
     setEditing(null);
+    triggerRefresh();
   }
 
   function openCreate() {
@@ -566,7 +566,7 @@ export default function CatalogProductsPage() {
         <div className="metric-strip mb-28" style={{ maxWidth: 480 }}>
           <div className="metric-cell metric-cell--hero">
             <p className="metric-cell__eyebrow">Total productos</p>
-            <p className="metric-cell__val">{activeCount}</p>
+            <p className="metric-cell__val">{productCount}</p>
             <p className="metric-cell__sub">activos en catálogo</p>
           </div>
           <div className="metric-cell metric-cell--light">
@@ -669,7 +669,7 @@ export default function CatalogProductsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.length === 0 ? (
+                  {products.length === 0 && !loading ? (
                     <tr>
                       <td
                         colSpan={7}
@@ -684,7 +684,7 @@ export default function CatalogProductsPage() {
                       </td>
                     </tr>
                   ) : (
-                    filtered.map((p) => {
+                    products.map((p) => {
                       const cat = categories.find((c) => c.id === p.category);
                       return (
                         <tr
@@ -764,7 +764,10 @@ export default function CatalogProductsPage() {
                               {p.is_active && (
                                 <button
                                   className="btn btn--danger btn--sm"
-                                  onClick={() => deactivateProduct(p.id)}
+                                  onClick={async () => {
+                                    await deactivateProduct(p.id);
+                                    triggerRefresh();
+                                  }}
                                 >
                                   Desactivar
                                 </button>
@@ -778,6 +781,36 @@ export default function CatalogProductsPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div
+            className="flex gap-8"
+            style={{
+              justifyContent: "center",
+              alignItems: "center",
+              marginTop: 20,
+              fontSize: 13,
+            }}
+          >
+            <button
+              className="btn btn--outline btn--sm"
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
+              ← Anterior
+            </button>
+            <span style={{ color: "var(--ink-40)" }}>
+              Página {currentPage} de {totalPages}
+            </span>
+            <button
+              className="btn btn--outline btn--sm"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+            >
+              Siguiente →
+            </button>
           </div>
         )}
       </div>
