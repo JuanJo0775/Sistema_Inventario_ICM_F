@@ -49,6 +49,7 @@ export interface DispatchCustomerData {
   customer_email: string;
   customer_phone: string;
   customer_address: string;
+  customer_doc?: string;
   privacy_notice_acknowledged: boolean;
 }
 
@@ -57,6 +58,7 @@ export interface DispatchSubmitPayload {
   locationId: string;
   quantity: number;
   movementType: string;
+  unitPrice?: number | null;
   scannedCode?: string | null;
   orderSku?: string | null;
   serialNumber?: string | null;

@@ -56,13 +56,14 @@ type DispatchForm = Readonly<{
   lotCode: string
   serialNumber: string
   customerName: string
-  customerEmail: string      // nuevo
-  customerPhone: string      // nuevo
-  customerAddress: string    // nuevo
+  customerDoc: string
+  customerEmail: string
+  customerPhone: string
+  customerAddress: string
+  unitPrice: string
   note: string
   coldChainConfirmed: boolean
   electricalSafetyConfirmed: boolean
-  privacyNoticeConfirmed: boolean  // requerido para venta mayor
 }>
 
   type DispatchMode = 'wholesale' | 'retail' | 'damage' | 'expiry'
@@ -153,15 +154,13 @@ type DispatchForm = Readonly<{
       return t("dispatch.errors.coldChain");
     if (selectedOrder.requiresSerial && !form.electricalSafetyConfirmed)
       return t("dispatch.errors.electricalSafety");
-    // Venta mayor requiere todos los datos del cliente y aviso de privacidad
+    // Venta mayor requiere datos del cliente
     if (customerDataRequired) {
       if (!form.customerName.trim()) return t("dispatch.errors.customerData");
       if (!form.customerEmail.trim()) return t("dispatch.errors.customerEmail");
       if (!form.customerPhone.trim()) return t("dispatch.errors.customerPhone");
       if (!form.customerAddress.trim())
         return t("dispatch.errors.customerAddress");
-      if (!form.privacyNoticeConfirmed)
-        return t("dispatch.errors.privacyNotice");
     }
     return null;
   }
@@ -173,13 +172,14 @@ function toForm(order?: DispatchItem): DispatchForm {
     lotCode: "",
     serialNumber: "",
     customerName: order?.customerName ?? "",
+    customerDoc: "",
     customerEmail: "",
     customerPhone: "",
     customerAddress: "",
+    unitPrice: "",
     note: "",
     coldChainConfirmed: false,
     electricalSafetyConfirmed: false,
-    privacyNoticeConfirmed: false,
   };
 }
 
@@ -193,6 +193,13 @@ function toForm(order?: DispatchItem): DispatchForm {
 
   function DispatchPage() {
     const { t } = useTranslation()
+
+    const dispatchModeToMovementType: Record<DispatchMode, string> = {
+      wholesale: 'SALIDA_VENTA_MAYOR',
+      retail: 'SALIDA_VENTA_MENOR',
+      damage: 'SALIDA_DANO',
+      expiry: 'SALIDA_VENCIMIENTO',
+    }
     const [overview, setOverview] = useState<{
       locations: DispatchLocation[]
       expectedOrders: DispatchItem[]
@@ -374,7 +381,8 @@ function toForm(order?: DispatchItem): DispatchForm {
           productId: selectedOrder.productId,
           locationId: form.locationId,
           quantity,
-          movementType: "SALIDA_VENTA_MAYOR",
+          movementType: dispatchModeToMovementType[dispatchMode],
+          unitPrice: form.unitPrice ? Number(form.unitPrice) : null,
           // BR-08: solo enviamos ambos si el scan fue validado
           scannedCode: scanValue.trim() || null,
           orderSku: scanValue.trim() ? selectedOrder.sku : null,
@@ -386,17 +394,18 @@ function toForm(order?: DispatchItem): DispatchForm {
                 customer_email: form.customerEmail.trim(),
                 customer_phone: form.customerPhone.trim(),
                 customer_address: form.customerAddress.trim(),
-                privacy_notice_acknowledged: form.privacyNoticeConfirmed,
+                customer_doc: form.customerDoc.trim() || undefined,
+                privacy_notice_acknowledged: false,
               }
             : null,
-          note: form.note.trim() || undefined,
+          note: form.note.trim() || '',
           coldChainAcknowledged: selectedOrder.requiresColdChain
             ? form.coldChainConfirmed
             : false,
           electricalSafetyAcknowledged: selectedOrder.requiresSerial
             ? form.electricalSafetyConfirmed
             : false,
-          privacyNoticeAcknowledged: form.privacyNoticeConfirmed,
+          privacyNoticeAcknowledged: false,
         });
 
         setRecentMovements((current) => [movement, ...current]);
@@ -718,6 +727,28 @@ function toForm(order?: DispatchItem): DispatchForm {
                     <div className="inventory-field">
                       <label
                         className="inventory-label"
+                        htmlFor="dispatch-unit-price"
+                      >
+                        Precio unitario
+                      </label>
+                      <Input
+                        id="dispatch-unit-price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={form.unitPrice}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            unitPrice: event.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="inventory-field">
+                      <label
+                        className="inventory-label"
                         htmlFor="dispatch-location"
                       >
                         {t("dispatch.form.location")}
@@ -816,6 +847,29 @@ function toForm(order?: DispatchItem): DispatchForm {
                           setForm((c) => ({
                             ...c,
                             customerName: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="inventory-field">
+                      <label
+                        className="inventory-label"
+                        htmlFor="dispatch-cust-doc"
+                      >
+                        {t("dispatch.form.customerDoc")}
+                      </label>
+                      <Input
+                        id="dispatch-cust-doc"
+                        value={form.customerDoc}
+                        placeholder={
+                          customerDataRequired
+                            ? "NIT 900.123.456-7"
+                            : t("dispatch.form.customerOptionalIdPlaceholder")
+                        }
+                        onChange={(e) =>
+                          setForm((c) => ({
+                            ...c,
+                            customerDoc: e.target.value,
                           }))
                         }
                       />
@@ -967,22 +1021,6 @@ function toForm(order?: DispatchItem): DispatchForm {
                       <AlertTriangle />
                       <div className="notice__body">{validationMessage}</div>
                     </div>
-                  ) : null}
-
-                  {customerDataRequired ? (
-                    <label className="reception-actions__label">
-                      <input
-                        type="checkbox"
-                        checked={form.privacyNoticeConfirmed}
-                        onChange={(e) =>
-                          setForm((c) => ({
-                            ...c,
-                            privacyNoticeConfirmed: e.target.checked,
-                          }))
-                        }
-                      />
-                      <span>{t("dispatch.form.privacyNotice")}</span>
-                    </label>
                   ) : null}
 
                   <Button

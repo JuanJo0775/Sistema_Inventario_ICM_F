@@ -126,12 +126,13 @@ export const submitDispatch = async (
     location_id: payload.locationId,
     quantity: payload.quantity,
     movement_type: payload.movementType,
+    unit_price: payload.unitPrice ?? null,
     // BR-08: ambos o ninguno, nunca solo uno
     scanned_code: payload.scannedCode || null,
     order_sku: payload.orderSku || null,
     serial_number: payload.serialNumber || null,
     customer_data: payload.customerData ?? null,
-    note: payload.note || null,
+    note: payload.note || '',
     cold_chain_acknowledged: payload.coldChainAcknowledged ?? false,
     electrical_safety_acknowledged:
       payload.electricalSafetyAcknowledged ?? false,
