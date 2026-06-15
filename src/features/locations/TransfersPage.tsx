@@ -39,6 +39,13 @@ const extractErrorMsg = (err: any): string => {
   return err?.message || 'Error desconocido'
 }
 
+const TRANSFER_JUSTIFICATIONS = [
+  { value: 'reposicion_vitrina', label: 'Reposición de vitrina' },
+  { value: 'devolucion_bodega', label: 'Devolución a bodega' },
+  { value: 'transferencia_sucursal', label: 'Transferencia entre sucursales' },
+  { value: 'ajuste_inventario', label: 'Ajuste de inventario' },
+] as const
+
 const TransfersPage: React.FC = () => {
   const currentUser = useAuthStore((state) => state.user)
 
@@ -75,6 +82,7 @@ const TransfersPage: React.FC = () => {
   const [transferQuantity, setTransferQuantity] = useState<string>('1')
   const [coldChainAck, setColdChainAck] = useState(false)
   const [electricalSafetyAck, setElectricalSafetyAck] = useState(false)
+  const [transferJustification, setTransferJustification] = useState('')
 
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -194,6 +202,7 @@ const TransfersPage: React.FC = () => {
     setTransferQuantity('1')
     setColdChainAck(false)
     setElectricalSafetyAck(false)
+    setTransferJustification('')
     setFormError(null)
     setIsCreateOpen(true)
   }
@@ -345,6 +354,10 @@ const TransfersPage: React.FC = () => {
       setFormError('Este producto requiere control de vencimiento. Selecciona un lote.')
       return
     }
+    if (!transferJustification) {
+      setFormError('Selecciona un motivo para el traslado.')
+      return
+    }
 
     // Safety checks
     if (selectedProduct.requires_cold_chain && !coldChainAck) {
@@ -362,6 +375,10 @@ const TransfersPage: React.FC = () => {
       return
     }
 
+    const justificationLabel = TRANSFER_JUSTIFICATIONS.find(
+      (j) => j.value === transferJustification,
+    )?.label ?? transferJustification
+
     setSaving(true)
     try {
       await submitTransfer({
@@ -370,6 +387,7 @@ const TransfersPage: React.FC = () => {
         destination_id: selectedDestinationId,
         quantity: parsedQty,
         lot_id: selectedProduct.requires_expiration ? selectedLotId : null,
+        justification: `Traslado interno de inventario (${justificationLabel})`,
         cold_chain_acknowledged: coldChainAck,
         electrical_safety_acknowledged: electricalSafetyAck,
       })
@@ -1018,7 +1036,30 @@ const TransfersPage: React.FC = () => {
                       </div>
                     )}
 
-                    {/* 6. CRITICAL FLAGS ACKNOWLEDGEMENTS */}
+                    {/* 6. MOTIVO / JUSTIFICATION */}
+                    {selectedOriginId && selectedDestinationId && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                        <label htmlFor="justification-select" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+                          Motivo del traslado <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <select
+                          id="justification-select"
+                          value={transferJustification}
+                          onChange={(e) => setTransferJustification(e.target.value)}
+                          style={{ width: '100%', padding: '0.625rem 0.75rem', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.875rem', outline: 'none', background: '#fff' }}
+                          required
+                        >
+                          <option value="">— Selecciona el motivo —</option>
+                          {TRANSFER_JUSTIFICATIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              Traslado interno de inventario ({opt.label})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* 7. CRITICAL FLAGS ACKNOWLEDGEMENTS */}
                     {selectedOriginId && selectedDestinationId && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
                         {selectedProduct.requires_cold_chain && (
