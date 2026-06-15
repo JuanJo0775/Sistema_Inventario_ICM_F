@@ -366,8 +366,9 @@ export const CatalogBrandsPage: React.FC = () => {
                 >
                   <AlertTriangle style={{ width: 18, height: 18, flexShrink: 0, marginTop: '1px' }} />
                   <div>
-                    <strong>Regla de negocio:</strong> Esta marca tiene <strong>{brandProductCounts[brandToDeactivate.id]} producto(s)</strong> asociado(s). 
-                    No es posible desactivarla en este momento a menos que desactives o cambies de marca los productos asociados primero.
+                    Esta marca tiene <strong>{brandProductCounts[brandToDeactivate.id]} producto(s)</strong> asociado(s).
+                    Al desactivarla, solo se ocultará del formulario de creación de nuevos productos.
+                    Los productos existentes conservarán su marca.
                   </div>
                 </div>
               )}
@@ -381,7 +382,6 @@ export const CatalogBrandsPage: React.FC = () => {
                 </button>
                 <button
                   className="btn btn--danger btn--sm"
-                  disabled={brandProductCounts[brandToDeactivate.id] > 0}
                   onClick={confirmDeactivate}
                 >
                   Confirmar Desactivación

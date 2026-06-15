@@ -77,7 +77,7 @@ export const deactivateCategory = async (id: string): Promise<void> => {
   if (useMocks) {
     return mockDeactivateCategory(id)
   }
-  await api.delete(`/catalog/categories/${id}/`)
+  await api.patch(`/catalog/categories/${id}/`, { is_active: false })
 }
 
 export const restoreCategory = async (id: string): Promise<CatalogCategory> => {
@@ -136,7 +136,7 @@ export const deactivateBrand = async (id: string): Promise<void> => {
   if (useMocks) {
     return mockDeactivateBrand(id)
   }
-  await api.delete(`/catalog/brands/${id}/`)
+  await api.patch(`/catalog/brands/${id}/`, { is_active: false })
 }
 
 export const restoreBrand = async (id: string): Promise<CatalogBrand> => {
