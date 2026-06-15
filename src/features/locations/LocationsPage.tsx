@@ -153,6 +153,7 @@ const LocationsPage: React.FC = () => {
         await updateLocation(editingLoc.id, {
           name: nameTrimmed,
           description: formDescription.trim(),
+          storage_type_id: formStorageTypeId || undefined,
           capacity_score: formCapacityScore,
         });
         setSuccessMsg(`Ubicación "${nameTrimmed}" actualizada correctamente.`);
@@ -612,26 +613,24 @@ const LocationsPage: React.FC = () => {
                   />
                 </div>
 
-                {/* Tipo de almacenamiento – solo en creación */}
-                {!editingLoc && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                    <label htmlFor="loc-type" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
-                      Tipo <span style={{ color: '#ef4444' }}>*</span>
-                    </label>
-                    <select
-                      id="loc-type"
-                      value={formStorageTypeId}
-                      onChange={(e) => setFormStorageTypeId(e.target.value)}
-                      style={{ width: '100%', padding: '0.625rem 0.75rem', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.875rem', outline: 'none', background: '#fff' }}
-                      required
-                    >
-                      <option value="">— Selecciona un tipo —</option>
-                      {storageTypes.map((st: StorageType) => (
-                        <option key={st.id} value={st.id}>{st.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                {/* Tipo de almacenamiento */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                  <label htmlFor="loc-type" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+                    Tipo <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <select
+                    id="loc-type"
+                    value={formStorageTypeId}
+                    onChange={(e) => setFormStorageTypeId(e.target.value)}
+                    style={{ width: '100%', padding: '0.625rem 0.75rem', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.875rem', outline: 'none', background: '#fff' }}
+                    required
+                  >
+                    <option value="">— Selecciona un tipo —</option>
+                    {storageTypes.map((st: StorageType) => (
+                      <option key={st.id} value={st.id}>{st.name}</option>
+                    ))}
+                  </select>
+                </div>
 
                 {/* Capacidad relativa */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>

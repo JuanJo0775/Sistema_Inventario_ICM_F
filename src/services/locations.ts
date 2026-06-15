@@ -33,6 +33,7 @@ export const updateLocation = async (
     description?: string
     capacity_score?: number
     is_active?: boolean
+    storage_type_id?: string
   }
 ): Promise<LocationItem> => {
   const payload: any = {}
@@ -40,6 +41,7 @@ export const updateLocation = async (
   if (data.description !== undefined) payload.description = data.description
   if (data.capacity_score !== undefined) payload.capacity_score = Number(data.capacity_score)
   if (data.is_active !== undefined) payload.is_active = data.is_active
+  if (data.storage_type_id !== undefined) payload.storage_type_id = data.storage_type_id
 
   const response = await api.patch<LocationItem>(`/inventory/locations/${id}/`, payload)
   return response.data
