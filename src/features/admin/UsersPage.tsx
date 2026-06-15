@@ -7,11 +7,9 @@ import {
   X,
   User,
   Shield,
-  Activity,
   Mail,
   Phone,
   Lock,
-  CheckCircle2,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import AppShell from '../../components/layout/AppShell'
@@ -274,10 +272,10 @@ export const UsersPage: React.FC = () => {
   }
 
   const getAvatarBg = (username: string): string => {
-    const colors = ['#4f46e5', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#14b8a6']
+    const palette = ['var(--teal-700)', 'var(--teal-600)', 'var(--ok)', 'var(--amber-dk)', 'var(--ink-70)', 'var(--teal-400)', 'var(--warn)']
     let sum = 0
     for (let i = 0; i < username.length; i++) sum += username.charCodeAt(i)
-    return colors[sum % colors.length]
+    return palette[sum % palette.length]
   }
 
   // Role restriction dynamic messages
@@ -296,8 +294,8 @@ export const UsersPage: React.FC = () => {
 
   // Visual helper for roles badge
   const renderRoleBadge = (roleValue: string) => {
-    let bg = '#f3f4f6'
-    let color = '#4b5563'
+    let bg = 'var(--ink-06)'
+    let color = 'var(--ink-50)'
     let label = roleValue
 
     const roleObj = roles.find((r) => r.value === roleValue)
@@ -336,151 +334,42 @@ export const UsersPage: React.FC = () => {
   }
 
   return (
-    <AppShell title={t('users.title')} subtitle={t('users.subtitle')}>
-      <div className="catalog-page fade-slide-up" style={{ padding: '0.5rem 0' }}>
-        
-        {/* Header Action Button */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.25rem' }}>
-          <button
-            onClick={handleOpenCreateModal}
-            className="btn btn--primary"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              height: '38px',
-              padding: '0 1.25rem',
-              borderRadius: '8px',
-            }}
-          >
-            <Plus style={{ width: '18px', height: '18px' }} />
-            {t('users.createBtn')}
-          </button>
-        </div>
-
-        {/* ── Stat Cards ────────────────────────────────────────────────── */}
-        <section
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '1.25rem',
-            marginBottom: '1.5rem',
-          }}
+    <AppShell
+      title={t('users.title')}
+      subtitle={t('users.subtitle')}
+      actions={
+        <button
+          onClick={handleOpenCreateModal}
+          className="btn btn--primary btn--sm"
+          style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
         >
-          {/* Card 1: Totales */}
-          <div
-            className="stat-card"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1.25rem',
-              backgroundColor: '#fff',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#e8f2ff',
-                color: '#1971c2',
-                width: '48px',
-                height: '48px',
-                borderRadius: '10px',
-              }}
-            >
-              <User style={{ width: '22px', height: '22px', color: '#1971c2' }} />
-            </div>
-            <div>
-              <span style={{ fontSize: '1.85rem', fontWeight: 700, color: '#111827', lineHeight: 1, display: 'block' }}>
-                {totalUsersCount}
-              </span>
-              <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '0.25rem 0 0 0', fontWeight: 500 }}>
-                {t('users.stats.total')}
-              </p>
-            </div>
-          </div>
+          <Plus style={{ width: '16px', height: '16px' }} />
+          {t('users.createBtn')}
+        </button>
+      }
+    >
+      <div className="catalog-page fade-slide-up">
 
-          {/* Card 2: Activos */}
-          <div
-            className="stat-card"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1.25rem',
-              backgroundColor: '#fff',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#ebfbee',
-                color: '#099268',
-                width: '48px',
-                height: '48px',
-                borderRadius: '10px',
-              }}
-            >
-              <CheckCircle2 style={{ width: '22px', height: '22px', color: '#0ca678' }} />
-            </div>
-            <div>
-              <span style={{ fontSize: '1.85rem', fontWeight: 700, color: '#111827', lineHeight: 1, display: 'block' }}>
-                {activeUsersCount}
-              </span>
-              <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '0.25rem 0 0 0', fontWeight: 500 }}>
-                {t('users.stats.active')}
-              </p>
-            </div>
+        {/* ── Metric strip ──────────────────────────────────────────────── */}
+        <div className="metric-strip mb-4" style={{ maxWidth: 700 }}>
+          <div className="metric-cell metric-cell--hero">
+            <p className="metric-cell__eyebrow">{t('users.stats.total')}</p>
+            <p className="metric-cell__val">{totalUsersCount}</p>
+            <p className="metric-cell__sub">usuarios registrados</p>
           </div>
-
-          {/* Card 3: Inactivos */}
-          <div
-            className="stat-card"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1.25rem',
-              backgroundColor: '#fff',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#fff0f0',
-                color: '#e03131',
-                width: '48px',
-                height: '48px',
-                borderRadius: '10px',
-              }}
-            >
-              <Activity style={{ width: '22px', height: '22px', color: '#f03e3e' }} />
-            </div>
-            <div>
-              <span style={{ fontSize: '1.85rem', fontWeight: 700, color: '#111827', lineHeight: 1, display: 'block' }}>
-                {inactiveUsersCount}
-              </span>
-              <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '0.25rem 0 0 0', fontWeight: 500 }}>
-                {t('users.stats.inactive')}
-              </p>
-            </div>
+          <div className="metric-cell metric-cell--light">
+            <p className="metric-cell__eyebrow">{t('users.stats.active')}</p>
+            <p className="metric-cell__val">{activeUsersCount}</p>
+            <p className="metric-cell__sub">usuarios activos</p>
           </div>
-        </section>
+          <div className="metric-cell metric-cell--light">
+            <p className="metric-cell__eyebrow">{t('users.stats.inactive')}</p>
+            <p className="metric-cell__val" style={{ color: inactiveUsersCount > 0 ? 'var(--err)' : undefined }}>
+              {inactiveUsersCount}
+            </p>
+            <p className="metric-cell__sub">usuarios inactivos</p>
+          </div>
+        </div>
 
         {/* ── Feedback alerts ───────────────────────────────────────────── */}
         {successMsg && (
@@ -507,8 +396,8 @@ export const UsersPage: React.FC = () => {
           className="catalog-toolbar"
           style={{
             background: '#fff',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
+            border: '1px solid var(--ink-12)',
+            borderRadius: 'var(--r-md)',
             padding: '1rem 1.25rem',
             marginBottom: '1.5rem',
             boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
@@ -519,7 +408,7 @@ export const UsersPage: React.FC = () => {
           }}
         >
           {/* Search bar */}
-          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', flexGrow: 2, minWidth: '280px', gap: '0.5rem' }}>
+          <form onSubmit={handleSearchSubmit} style={{ display: 'flex', flexGrow: 2, minWidth: '260px', gap: '0.5rem' }}>
             <div style={{ flexGrow: 1, position: 'relative' }}>
               <Search
                 style={{
@@ -529,7 +418,7 @@ export const UsersPage: React.FC = () => {
                   transform: 'translateY(-50%)',
                   width: '15px',
                   height: '15px',
-                  color: '#9ca3af',
+                  color: 'var(--teal-600)',
                 }}
               />
               <input
@@ -537,36 +426,23 @@ export const UsersPage: React.FC = () => {
                 placeholder={t('users.filters.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  width: '100%',
-                  paddingLeft: '2.5rem',
-                  height: '38px',
-                  borderRadius: '8px',
-                  border: '1px solid #d1d5db',
-                  fontSize: '0.875rem',
-                  outline: 'none',
-                }}
+                className="f-input"
+                style={{ paddingLeft: '2.25rem', width: '100%' }}
               />
             </div>
-            <button type="submit" className="btn btn--primary" style={{ height: '38px', padding: '0 1.25rem' }}>
+            <button type="submit" className="btn btn--primary btn--sm" style={{ height: '36px', padding: '0 1.25rem' }}>
               {t('users.filters.searchBtn')}
             </button>
           </form>
 
           {/* Role Filter */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '150px' }}>
-            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#4b5563' }}>{t('users.filters.roleLabel')}</label>
+            <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--ink-50)' }}>{t('users.filters.roleLabel')}</label>
             <select
               value={filterRole}
               onChange={(e) => setFilterRole(e.target.value)}
-              style={{
-                height: '38px',
-                borderRadius: '8px',
-                border: '1px solid #d1d5db',
-                padding: '0 0.5rem',
-                fontSize: '0.875rem',
-                backgroundColor: '#fff',
-              }}
+              className="f-input"
+              style={{ width: '100%' }}
             >
               <option value="">{t('users.filters.roleAll')}</option>
               {roles.map((r) => (
@@ -579,18 +455,12 @@ export const UsersPage: React.FC = () => {
 
           {/* Status Filter */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '130px' }}>
-            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#4b5563' }}>{t('users.filters.statusLabel')}</label>
+            <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--ink-50)' }}>{t('users.filters.statusLabel')}</label>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              style={{
-                height: '38px',
-                borderRadius: '8px',
-                border: '1px solid #d1d5db',
-                padding: '0 0.5rem',
-                fontSize: '0.875rem',
-                backgroundColor: '#fff',
-              }}
+              className="f-input"
+              style={{ width: '100%' }}
             >
               <option value="">{t('users.filters.statusAll')}</option>
               <option value="ACTIVO">{t('users.filters.statusActive')}</option>
@@ -602,9 +472,10 @@ export const UsersPage: React.FC = () => {
           {hasActiveFilters && (
             <button
               onClick={handleClearFilters}
-              className="btn btn--secondary"
-              style={{ height: '38px', borderRadius: '8px', whiteSpace: 'nowrap' }}
+              className="btn btn--ghost btn--sm"
+              style={{ height: '36px', whiteSpace: 'nowrap' }}
             >
+              <X style={{ width: '14px', height: '14px', marginRight: '0.3rem' }} />
               {t('users.filters.clearBtn')}
             </button>
           )}
@@ -612,204 +483,130 @@ export const UsersPage: React.FC = () => {
 
         {/* ── Table / Users list ────────────────────────────────────────── */}
         {loading ? (
-          <div className="empty-state" style={{ padding: '3rem 0', textAlign: 'center' }}>
-            <p style={{ color: '#6b7280' }}>{t('users.loading')}</p>
+          <div className="empty-state">
+            <p style={{ color: 'var(--ink-40)' }}>{t('users.loading')}</p>
           </div>
         ) : filteredUsers.length === 0 ? (
-          <div
-            className="empty-state"
-            style={{
-              padding: '3rem 1.5rem',
-              textAlign: 'center',
-              background: '#fff',
-              borderRadius: '12px',
-              border: '1px solid #e5e7eb',
-            }}
-          >
-            <User style={{ width: '48px', height: '48px', color: '#9ca3af', marginBottom: '1rem', strokeWidth: 1 }} />
-            <p style={{ color: '#6b7280', fontSize: '0.95rem' }}>
+          <div className="empty-state">
+            <User style={{ width: '48px', height: '48px', color: 'var(--ink-40)', marginBottom: '1rem', strokeWidth: 1 }} />
+            <p style={{ color: 'var(--ink-40)' }}>
               {t('users.empty')}
             </p>
           </div>
         ) : (
-          <div
-            className="table-surface"
-            style={{
-              borderRadius: '12px',
-              overflow: 'hidden',
-              border: '1px solid #e5e7eb',
-              background: '#fff',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-            }}
-          >
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
-                    {t('users.table.user')}
-                  </th>
-                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
-                    {t('users.table.contact')}
-                  </th>
-                  <th style={{ padding: '1rem 1.25rem', fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
-                    {t('users.table.role')}
-                  </th>
-                  <th
-                    style={{
-                      padding: '1rem 1.25rem',
-                      fontWeight: 600,
-                      color: '#374151',
-                      fontSize: '0.875rem',
-                      textAlign: 'center',
-                    }}
-                  >
-                    {t('users.table.status')}
-                  </th>
-                  <th
-                    style={{
-                      padding: '1rem 1.25rem',
-                      fontWeight: 600,
-                      color: '#374151',
-                      fontSize: '0.875rem',
-                      textAlign: 'center',
-                    }}
-                  >
-                    {t('users.table.action')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map((u) => {
-                  const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || t('users.noName')
-                  const initials = getInitials(u.first_name, u.last_name, u.username)
-                  const avatarColor = getAvatarBg(u.username)
+          <div className="table-surface">
+            <div className="table-wrap">
+              <table className="data-table" style={{ minWidth: 700 }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: '28%' }}>{t('users.table.user')}</th>
+                    <th style={{ width: '20%' }}>{t('users.table.contact')}</th>
+                    <th style={{ width: '18%' }}>{t('users.table.role')}</th>
+                    <th style={{ width: '14%', textAlign: 'center' }}>{t('users.table.status')}</th>
+                    <th style={{ width: '20%', textAlign: 'center' }}>{t('users.table.action')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.map((u) => {
+                    const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || t('users.noName')
+                    const initials = getInitials(u.first_name, u.last_name, u.username)
+                    const avatarColor = getAvatarBg(u.username)
 
-                  return (
-                    <tr
-                      key={u.id}
-                      style={{ borderBottom: '1px solid #f3f4f6', transition: 'background-color 0.1s' }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#fafafa'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent'
-                      }}
-                    >
-                      {/* Name / Avatar / Username */}
-                      <td style={{ padding: '0.85rem 1.25rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <div
-                            style={{
-                              width: '38px',
-                              height: '38px',
-                              borderRadius: '50%',
-                              backgroundColor: avatarColor,
-                              color: '#fff',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '0.875rem',
-                              fontWeight: 700,
-                              boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
-                            }}
-                          >
-                            {initials}
+                    return (
+                      <tr key={u.id}>
+                        {/* Name / Avatar / Username */}
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div
+                              style={{
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '50%',
+                                backgroundColor: avatarColor,
+                                color: '#fff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.8rem',
+                                fontWeight: 700,
+                                flexShrink: 0,
+                              }}
+                            >
+                              {initials}
+                            </div>
+                            <div>
+                              <span style={{ display: 'block', fontWeight: 600, color: 'var(--ink)' }}>
+                                {fullName}
+                              </span>
+                              <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--ink-40)' }}>
+                                @{u.username}
+                              </span>
+                            </div>
                           </div>
-                          <div>
-                            <span style={{ display: 'block', fontWeight: 600, color: '#111827', fontSize: '0.9rem' }}>
-                              {fullName}
-                            </span>
-                            <span style={{ display: 'block', fontSize: '0.78rem', color: '#6b7280' }}>
-                              @{u.username}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Contact / Email */}
-                      <td style={{ padding: '0.85rem 1.25rem', fontSize: '0.85rem' }}>
-                        <div style={{ color: '#374151' }}>{u.email}</div>
-                        {u.phone && <div style={{ color: '#9ca3af', fontSize: '0.78rem' }}> {u.phone}</div>}
-                      </td>
+                        {/* Contact / Email */}
+                        <td>
+                          <div style={{ color: 'var(--ink-70)' }}>{u.email}</div>
+                          {u.phone && <div style={{ color: 'var(--ink-40)', fontSize: '0.78rem' }}>{u.phone}</div>}
+                        </td>
 
-                      {/* Role Badge */}
-                      <td style={{ padding: '0.85rem 1.25rem' }}>{renderRoleBadge(u.role)}</td>
+                        {/* Role Badge */}
+                        <td>{renderRoleBadge(u.role)}</td>
 
-                      {/* Status Badge */}
-                      <td style={{ padding: '0.85rem 1.25rem', textAlign: 'center' }}>
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            padding: '0.25rem 0.625rem',
-                            borderRadius: '9999px',
-                            fontSize: '0.72rem',
-                            fontWeight: 700,
-                            lineHeight: 1,
-                            backgroundColor: u.is_active ? '#e6fcf5' : '#fff0f0',
-                            color: u.is_active ? '#0ca678' : '#f03e3e',
-                            border: `1px solid ${u.is_active ? '#c3fae8' : '#ffc9c9'}`,
-                          }}
-                        >
-                          {u.is_active ? t('users.status.active') : t('users.status.inactive')}
-                        </span>
-                      </td>
+                        {/* Status Badge */}
+                        <td style={{ textAlign: 'center' }}>
+                          <span className={`pill ${u.is_active ? 'pill--active' : 'pill--inactive'}`}>
+                            {u.is_active ? t('users.status.active') : t('users.status.inactive')}
+                          </span>
+                        </td>
 
-                      {/* Button Action */}
-                      <td style={{ padding: '0.85rem 1.25rem', textAlign: 'center' }}>
-                        {u.is_active ? (
-                          <button
-                            type="button"
-                            className="btn btn--secondary"
-                            onClick={() => handleOpenEditModal(u)}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.3rem',
-                              height: '30px',
-                              padding: '0 0.8rem',
-                              borderRadius: '6px',
-                              fontSize: '0.825rem',
-                              fontWeight: 500,
-                            }}
-                          >
-                            <Edit2 style={{ width: '13px', height: '13px' }} />
-                            {t('users.actions.edit')}
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="btn"
-                            onClick={() => handleReactivate(u)}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              height: '30px',
-                              padding: '0 0.8rem',
-                              borderRadius: '6px',
-                              fontSize: '0.825rem',
-                              fontWeight: 500,
-                              backgroundColor: '#ebfbee',
-                              color: '#099268',
-                              border: '1px solid #b2f2bb',
-                              cursor: 'pointer',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = '#d3f9d8'
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = '#ebfbee'
-                            }}
-                          >
-                            {t('users.actions.reactivate')}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                        {/* Button Action */}
+                        <td style={{ textAlign: 'center' }}>
+                          {u.is_active ? (
+                            <button
+                              type="button"
+                              className="btn btn--ghost btn--sm"
+                              onClick={() => handleOpenEditModal(u)}
+                              style={{ height: '30px', padding: '0 0.75rem', fontSize: '0.8rem' }}
+                            >
+                              <Edit2 style={{ width: '13px', height: '13px', marginRight: '0.3rem' }} />
+                              {t('users.actions.edit')}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleReactivate(u)}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                height: '30px',
+                                padding: '0 0.75rem',
+                                borderRadius: '6px',
+                                fontSize: '0.8rem',
+                                fontWeight: 500,
+                                backgroundColor: '#ebfbee',
+                                color: '#099268',
+                                border: '1px solid #b2f2bb',
+                                cursor: 'pointer',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#d3f9d8'
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#ebfbee'
+                              }}
+                            >
+                              {t('users.actions.reactivate')}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
@@ -846,22 +643,17 @@ export const UsersPage: React.FC = () => {
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   padding: '1.25rem 1.5rem',
-                  borderBottom: '1px solid #e5e7eb',
+                  borderBottom: '1px solid var(--ink-12)',
                 }}
               >
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#111827', margin: 0 }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
                   {editingUser ? t('users.modal.editTitle') : t('users.modal.createTitle')}
                 </h3>
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: '#9ca3af',
-                    padding: '0.25rem',
-                  }}
+                  className="btn btn--ghost btn--sm"
+                  aria-label="Cerrar"
                 >
                   <X style={{ width: '20px', height: '20px' }} />
                 </button>
@@ -870,11 +662,7 @@ export const UsersPage: React.FC = () => {
               {/* Modal Body */}
               <form onSubmit={handleSave} style={{ padding: '1.5rem' }}>
                 {validationError && (
-                  <div
-                    className="alert-bar alert-bar--warn"
-                    role="alert"
-                    style={{ marginBottom: '1.25rem', padding: '0.5rem 0.75rem' }}
-                  >
+                  <div className="alert-bar alert-bar--warn" role="alert" style={{ marginBottom: '1.25rem', padding: '0.5rem 0.75rem' }}>
                     <AlertTriangle style={{ marginRight: '0.35rem', width: '15px', height: '15px' }} />
                     <span style={{ fontSize: '0.825rem' }}>{validationError}</span>
                   </div>
@@ -883,15 +671,7 @@ export const UsersPage: React.FC = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   {/* Nombre Completo */}
                   <div>
-                    <label
-                      style={{
-                        display: 'block',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        color: '#374151',
-                        marginBottom: '0.35rem',
-                      }}
-                    >
+                    <label className="f-label" htmlFor="user-fullname">
                       {t('users.modal.fullName')} <span style={{ color: '#ef4444' }}>*</span>
                     </label>
                     <div style={{ position: 'relative' }}>
@@ -903,24 +683,18 @@ export const UsersPage: React.FC = () => {
                           transform: 'translateY(-50%)',
                           width: '14px',
                           height: '14px',
-                          color: '#9ca3af',
+                          color: 'var(--ink-40)',
                         }}
                       />
                       <input
+                        id="user-fullname"
                         type="text"
                         placeholder={t('users.modal.fullNamePlaceholder')}
                         value={formFullName}
                         onChange={(e) => setFormFullName(e.target.value)}
                         required
-                        style={{
-                          width: '100%',
-                          paddingLeft: '2.25rem',
-                          height: '38px',
-                          borderRadius: '8px',
-                          border: '1px solid #d1d5db',
-                          fontSize: '0.875rem',
-                          outline: 'none',
-                        }}
+                        className="f-input"
+                        style={{ paddingLeft: '2.25rem', width: '100%' }}
                       />
                     </div>
                   </div>
@@ -929,15 +703,7 @@ export const UsersPage: React.FC = () => {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     {/* Username */}
                     <div>
-                      <label
-                        style={{
-                          display: 'block',
-                          fontSize: '0.8rem',
-                          fontWeight: 600,
-                          color: '#374151',
-                          marginBottom: '0.35rem',
-                        }}
-                      >
+                      <label className="f-label" htmlFor="user-username">
                         {t('users.modal.username')} <span style={{ color: '#ef4444' }}>*</span>
                       </label>
                       <div style={{ position: 'relative' }}>
@@ -948,29 +714,26 @@ export const UsersPage: React.FC = () => {
                             top: '50%',
                             transform: 'translateY(-50%)',
                             fontSize: '0.875rem',
-                            color: '#9ca3af',
+                            color: 'var(--ink-40)',
                             fontWeight: 600,
                           }}
                         >
                           @
                         </span>
                         <input
+                          id="user-username"
                           type="text"
                           placeholder="carlos.a"
                           value={formUsername}
                           onChange={(e) => setFormUsername(e.target.value)}
                           required
-                          disabled={!!editingUser} // Deshabilitado en edición para evitar romper relaciones
+                          disabled={!!editingUser}
+                          className="f-input"
                           style={{
-                            width: '100%',
                             paddingLeft: '1.75rem',
-                            height: '38px',
-                            borderRadius: '8px',
-                            border: '1px solid #d1d5db',
-                            fontSize: '0.875rem',
-                            outline: 'none',
-                            backgroundColor: editingUser ? '#f3f4f6' : '#fff',
-                            color: editingUser ? '#6b7280' : '#111827',
+                            width: '100%',
+                            backgroundColor: editingUser ? 'var(--ink-06)' : '#fff',
+                            color: editingUser ? 'var(--ink-40)' : 'var(--ink)',
                           }}
                         />
                       </div>
@@ -978,15 +741,7 @@ export const UsersPage: React.FC = () => {
 
                     {/* Email */}
                     <div>
-                      <label
-                        style={{
-                          display: 'block',
-                          fontSize: '0.8rem',
-                          fontWeight: 600,
-                          color: '#374151',
-                          marginBottom: '0.35rem',
-                        }}
-                      >
+                      <label className="f-label" htmlFor="user-email">
                         {t('users.modal.email')} <span style={{ color: '#ef4444' }}>*</span>
                       </label>
                       <div style={{ position: 'relative' }}>
@@ -998,24 +753,18 @@ export const UsersPage: React.FC = () => {
                             transform: 'translateY(-50%)',
                             width: '14px',
                             height: '14px',
-                            color: '#9ca3af',
+                            color: 'var(--ink-40)',
                           }}
                         />
                         <input
+                          id="user-email"
                           type="email"
                           placeholder="ejemplo@icm.com"
                           value={formEmail}
                           onChange={(e) => setFormEmail(e.target.value)}
                           required
-                          style={{
-                            width: '100%',
-                            paddingLeft: '2.25rem',
-                            height: '38px',
-                            borderRadius: '8px',
-                            border: '1px solid #d1d5db',
-                            fontSize: '0.875rem',
-                            outline: 'none',
-                          }}
+                          className="f-input"
+                          style={{ paddingLeft: '2.25rem', width: '100%' }}
                         />
                       </div>
                     </div>
@@ -1025,15 +774,7 @@ export const UsersPage: React.FC = () => {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     {/* Teléfono */}
                     <div>
-                      <label
-                        style={{
-                          display: 'block',
-                          fontSize: '0.8rem',
-                          fontWeight: 600,
-                          color: '#374151',
-                          marginBottom: '0.35rem',
-                        }}
-                      >
+                      <label className="f-label" htmlFor="user-phone">
                         {t('users.modal.phone')}
                       </label>
                       <div style={{ position: 'relative' }}>
@@ -1045,38 +786,24 @@ export const UsersPage: React.FC = () => {
                             transform: 'translateY(-50%)',
                             width: '14px',
                             height: '14px',
-                            color: '#9ca3af',
+                            color: 'var(--ink-40)',
                           }}
                         />
                         <input
+                          id="user-phone"
                           type="text"
                           placeholder="3001234567"
                           value={formPhone}
                           onChange={(e) => setFormPhone(e.target.value)}
-                          style={{
-                            width: '100%',
-                            paddingLeft: '2.25rem',
-                            height: '38px',
-                            borderRadius: '8px',
-                            border: '1px solid #d1d5db',
-                            fontSize: '0.875rem',
-                            outline: 'none',
-                          }}
+                          className="f-input"
+                          style={{ paddingLeft: '2.25rem', width: '100%' }}
                         />
                       </div>
                     </div>
 
                     {/* Rol select */}
                     <div>
-                      <label
-                        style={{
-                          display: 'block',
-                          fontSize: '0.8rem',
-                          fontWeight: 600,
-                          color: '#374151',
-                          marginBottom: '0.35rem',
-                        }}
-                      >
+                      <label className="f-label" htmlFor="user-role">
                         {t('users.modal.role')} <span style={{ color: '#ef4444' }}>*</span>
                       </label>
                       <div style={{ position: 'relative' }}>
@@ -1088,23 +815,16 @@ export const UsersPage: React.FC = () => {
                             transform: 'translateY(-50%)',
                             width: '14px',
                             height: '14px',
-                            color: '#9ca3af',
+                            color: 'var(--ink-40)',
                           }}
                         />
                         <select
+                          id="user-role"
                           value={formRole}
                           onChange={(e) => setFormRole(e.target.value)}
                           required
-                          style={{
-                            width: '100%',
-                            paddingLeft: '2.25rem',
-                            height: '38px',
-                            borderRadius: '8px',
-                            border: '1px solid #d1d5db',
-                            fontSize: '0.875rem',
-                            outline: 'none',
-                            backgroundColor: '#fff',
-                          }}
+                          className="f-input"
+                          style={{ paddingLeft: '2.25rem', width: '100%' }}
                         >
                           <option value="">{t('users.modal.roleSelectPlaceholder')}</option>
                           {roles.map((r) => (
@@ -1120,15 +840,7 @@ export const UsersPage: React.FC = () => {
                   {/* Contraseña temporal (solo visible en creación) */}
                   {!editingUser && (
                     <div>
-                      <label
-                        style={{
-                          display: 'block',
-                          fontSize: '0.8rem',
-                          fontWeight: 600,
-                          color: '#374151',
-                          marginBottom: '0.35rem',
-                        }}
-                      >
+                      <label className="f-label" htmlFor="user-password">
                         {t('users.modal.password')} <span style={{ color: '#ef4444' }}>*</span>
                       </label>
                       <div style={{ position: 'relative' }}>
@@ -1140,24 +852,18 @@ export const UsersPage: React.FC = () => {
                             transform: 'translateY(-50%)',
                             width: '14px',
                             height: '14px',
-                            color: '#9ca3af',
+                            color: 'var(--ink-40)',
                           }}
                         />
                         <input
+                          id="user-password"
                           type="password"
                           placeholder={t('users.modal.passwordPlaceholder')}
                           value={formPassword}
                           onChange={(e) => setFormPassword(e.target.value)}
                           required={!editingUser}
-                          style={{
-                            width: '100%',
-                            paddingLeft: '2.25rem',
-                            height: '38px',
-                            borderRadius: '8px',
-                            border: '1px solid #d1d5db',
-                            fontSize: '0.875rem',
-                            outline: 'none',
-                          }}
+                          className="f-input"
+                          style={{ paddingLeft: '2.25rem', width: '100%' }}
                         />
                       </div>
                     </div>
@@ -1190,7 +896,7 @@ export const UsersPage: React.FC = () => {
                     alignItems: 'center',
                     marginTop: '1.75rem',
                     paddingTop: '1rem',
-                    borderTop: '1px solid #e5e7eb',
+                    borderTop: '1px solid var(--ink-12)',
                   }}
                 >
                   {/* Left: Deactivate button (Only when editing an active user) */}
@@ -1198,23 +904,8 @@ export const UsersPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setUserToDeactivate(editingUser)}
-                      style={{
-                        height: '36px',
-                        padding: '0 0.85rem',
-                        borderRadius: '6px',
-                        fontSize: '0.825rem',
-                        fontWeight: 600,
-                        backgroundColor: '#fff5f5',
-                        color: '#e03131',
-                        border: '1px solid #ffc9c9',
-                        cursor: 'pointer',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#ffe3e3'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#fff5f5'
-                      }}
+                      className="btn btn--danger btn--sm"
+                      style={{ height: '36px', padding: '0 0.85rem', fontSize: '0.825rem' }}
                     >
                       {t('users.deactivateBtn')}
                     </button>
@@ -1227,16 +918,16 @@ export const UsersPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsModalOpen(false)}
-                      className="btn btn--secondary"
-                      style={{ height: '36px', padding: '0 1rem', borderRadius: '6px', fontSize: '0.825rem' }}
+                      className="btn btn--outline btn--sm"
+                      style={{ height: '36px', padding: '0 1rem', fontSize: '0.825rem' }}
                     >
                       {t('users.modal.cancelBtn')}
                     </button>
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="btn btn--primary"
-                      style={{ height: '36px', padding: '0 1.25rem', borderRadius: '6px', fontSize: '0.825rem' }}
+                      className="btn btn--primary btn--sm"
+                      style={{ height: '36px', padding: '0 1.25rem', fontSize: '0.825rem' }}
                     >
                       {submitting
                         ? t('users.modal.savingBtn')
@@ -1292,10 +983,10 @@ export const UsersPage: React.FC = () => {
               >
                 <AlertTriangle style={{ width: '24px', height: '24px', color: '#f03e3e' }} />
               </div>
-              <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#111827', margin: '0 0 0.5rem 0' }}>
+              <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--ink)', margin: '0 0 0.5rem 0' }}>
                 {t('users.deactivateModal.title')}
               </h4>
-              <p style={{ fontSize: '0.85rem', color: '#6b7280', lineHeight: '1.4', margin: '0 0 1.5rem 0' }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--ink-40)', lineHeight: '1.4', margin: '0 0 1.5rem 0' }}>
                 {t('users.deactivateModal.confirm')} <strong>@{userToDeactivate.username}</strong>?
                 <br />
                 {t('users.deactivateModal.warning')}
@@ -1305,24 +996,23 @@ export const UsersPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setUserToDeactivate(null)}
-                  className="btn btn--secondary"
-                  style={{ height: '36px', padding: '0 1.25rem', borderRadius: '6px', fontSize: '0.825rem' }}
+                  className="btn btn--outline btn--sm"
+                  style={{ height: '36px', padding: '0 1.25rem', fontSize: '0.825rem' }}
                 >
                   {t('users.deactivateModal.cancelBtn')}
                 </button>
                 <button
                   type="button"
                   onClick={handleDeactivate}
+                  className="btn btn--primary"
                   style={{
                     height: '36px',
                     padding: '0 1.25rem',
-                    borderRadius: '6px',
                     fontSize: '0.825rem',
                     fontWeight: 600,
                     backgroundColor: '#e03131',
                     color: '#fff',
                     border: 'none',
-                    cursor: 'pointer',
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = '#c22525'
