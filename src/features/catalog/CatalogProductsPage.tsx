@@ -502,6 +502,7 @@ export default function CatalogProductsPage() {
     updateProduct,
     updateProductPrices,
     deactivateProduct,
+    restoreProduct,
   } = useCatalogStore();
 
   const [search, setSearch] = useState("");
@@ -516,6 +517,30 @@ export default function CatalogProductsPage() {
   const [editing, setEditing] = useState<CatalogProduct | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // ── confirm action modal ────────────────────────────────────────────────────
+  const [confirmAction, setConfirmAction] = useState<{
+    product: CatalogProduct;
+    action: 'deactivate' | 'reactivate';
+  } | null>(null);
+
+  async function handleConfirmAction() {
+    if (!confirmAction) return;
+    const { product, action } = confirmAction;
+    setConfirmAction(null);
+    try {
+      if (action === 'deactivate') {
+        await deactivateProduct(product.id);
+        toast.success(`Producto "${product.name}" desactivado.`);
+      } else {
+        await restoreProduct(product.id);
+        toast.success(`Producto "${product.name}" reactivado.`);
+      }
+      triggerRefresh();
+    } catch (err) {
+      toast.error(extractApiError(err));
+    }
+  }
 
   const { productCount, productPageSize } = useCatalogStore();
   const totalPages = Math.max(1, Math.ceil((productCount || 0) / (productPageSize || 25)));
@@ -793,19 +818,19 @@ export default function CatalogProductsPage() {
                               >
                                 Editar
                               </button>
-                              {p.is_active && (
+                              {p.is_active ? (
                                 <button
                                   className="btn btn--danger btn--sm"
-                                  onClick={async () => {
-                                    try {
-                                      await deactivateProduct(p.id);
-                                      triggerRefresh();
-                                    } catch (err) {
-                                      toast.error(extractApiError(err));
-                                    }
-                                  }}
+                                  onClick={() => setConfirmAction({ product: p, action: 'deactivate' })}
                                 >
                                   Desactivar
+                                </button>
+                              ) : (
+                                <button
+                                  className="btn btn--outline btn--sm"
+                                  onClick={() => setConfirmAction({ product: p, action: 'reactivate' })}
+                                >
+                                  Reactivar
                                 </button>
                               )}
                             </div>
@@ -862,6 +887,53 @@ export default function CatalogProductsPage() {
             setEditing(null);
           }}
         />
+      )}
+
+      {confirmAction && (
+        <ModalPortal onClose={() => setConfirmAction(null)}>
+          <div
+            style={{
+              background: "var(--white)",
+              borderRadius: 18,
+              width: "100%",
+              maxWidth: 440,
+              boxShadow: "0 24px 64px rgba(15,30,32,.2)",
+              padding: 28,
+            }}
+          >
+            <h2
+              style={{
+                fontFamily: "var(--ff-display)",
+                fontSize: 20,
+                fontWeight: 400,
+                marginBottom: 8,
+              }}
+            >
+              {confirmAction.action === 'deactivate'
+                ? 'Desactivar producto'
+                : 'Reactivar producto'}
+            </h2>
+            <p style={{ fontSize: 14, color: "var(--ink-60)", marginBottom: 24, lineHeight: 1.5 }}>
+              {confirmAction.action === 'deactivate'
+                ? `El producto "${confirmAction.product.name}" (${confirmAction.product.sku}) quedará inactivo. No aparecerá en nuevas operaciones hasta que se reactive.`
+                : `El producto "${confirmAction.product.name}" (${confirmAction.product.sku}) volverá a estar disponible para nuevas operaciones.`}
+            </p>
+            <div className="flex gap-8" style={{ justifyContent: "flex-end" }}>
+              <button
+                className="btn btn--outline"
+                onClick={() => setConfirmAction(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                className={confirmAction.action === 'deactivate' ? 'btn btn--danger' : 'btn btn--primary'}
+                onClick={handleConfirmAction}
+              >
+                {confirmAction.action === 'deactivate' ? 'Sí, desactivar' : 'Sí, reactivar'}
+              </button>
+            </div>
+          </div>
+        </ModalPortal>
       )}
     </AppShell>
   );
