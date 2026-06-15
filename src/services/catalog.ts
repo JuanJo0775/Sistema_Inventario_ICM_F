@@ -207,11 +207,12 @@ export const updateCatalogProduct = async (
   return response.data
 }
 
-export const deactivateCatalogProduct = async (id: string): Promise<void> => {
+export const deactivateCatalogProduct = async (id: string): Promise<CatalogProduct> => {
   if (useMocks) {
     return mockDeactivateProduct(id)
   }
-  await api.delete(`/catalog/products/${id}/`)
+  const response = await api.patch<CatalogProduct>(`/catalog/products/${id}/`, { is_active: false })
+  return response.data
 }
 
 export const restoreCatalogProduct = async (id: string): Promise<CatalogProduct> => {

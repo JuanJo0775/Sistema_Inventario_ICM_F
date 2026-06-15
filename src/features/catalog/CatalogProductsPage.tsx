@@ -7,6 +7,7 @@ import { ModalPortal } from "../../components/ui/ModalPortal";
 import { SkuInput } from "../../components/ui/SkuInput";
 import useCatalogStore from "../../store/useCatalogStore";
 import { useDebounce } from "../../hooks/useDebounce";
+import { extractApiError } from "../../hooks/useApiError";
 import { Switch } from "../../components/ui/switch";
 import { updateCatalogProductPrices } from "../../services/catalog";
 import { toast } from "sonner";
@@ -796,8 +797,12 @@ export default function CatalogProductsPage() {
                                 <button
                                   className="btn btn--danger btn--sm"
                                   onClick={async () => {
-                                    await deactivateProduct(p.id);
-                                    triggerRefresh();
+                                    try {
+                                      await deactivateProduct(p.id);
+                                      triggerRefresh();
+                                    } catch (err) {
+                                      toast.error(extractApiError(err));
+                                    }
                                   }}
                                 >
                                   Desactivar

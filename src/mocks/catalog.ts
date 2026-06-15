@@ -478,13 +478,14 @@ export const mockUpdateProduct = (id: string, data: Partial<CatalogProduct> & { 
   return mockCatalogProducts[idx]
 }
 
-export const mockDeactivateProduct = (id: string) => {
+export const mockDeactivateProduct = (id: string): CatalogProduct => {
   const idx = mockCatalogProducts.findIndex(p => p.id === id)
   if (idx === -1) throw new Error('Producto no encontrado.')
-  
-  // Product deactivation
+
+  // Product deactivation (is_active = false, no soft delete)
   mockCatalogProducts[idx].is_active = false
   mockCatalogProducts[idx].updated_at = new Date().toISOString()
+  return mockCatalogProducts[idx]
 }
 
 export const mockRestoreProduct = (id: string) => {
