@@ -7,8 +7,6 @@ import {
   AlertTriangle,
   X,
   ChevronDown,
-  Calendar,
-  User,
 } from 'lucide-react'
 import AppShell from '../../components/layout/AppShell'
 import { fetchAuditLogs, exportAuditToCSV } from '../../services/audit'
@@ -18,17 +16,36 @@ import type { AuditLogEntry, EventTypeBadgeConfig } from '../../interfaces/audit
 
 // ─── Badge config por tipo de movimiento ──────────────────────────────────────
 
-const BADGE_CONFIGS: Record<string, EventTypeBadgeConfig> = {
-  ENTRADA: { label: 'Entrada', bg: '#d1fae5', color: '#065f46' },
-  TRASLADO: { label: 'Transferencia', bg: '#dbeafe', color: '#1d4ed8' },
-  DEVOLUCION: { label: 'Recepción', bg: '#ccfbf1', color: '#0f766e' },
+const resolveBadgeClass = (entry: AuditLogEntry): string => {
+  if (entry.movement_type === 'ENTRADA') return 'pill--ok'
+  if (entry.movement_type === 'TRASLADO') return 'pill--teal'
+  if (entry.movement_type === 'DEVOLUCION') return 'pill--teal'
+  if (entry.movement_type === 'AJUSTE') {
+    return entry.destination_location ? 'pill--amber' : 'pill--warn'
+  }
+  if (entry.movement_type.startsWith('SALIDA') || entry.movement_type === 'SALIDA_COMBO') {
+    return 'pill--err'
+  }
+  return 'pill--muted'
+}
+
+const resolveBadgeLabel = (entry: AuditLogEntry): string => {
+  if (entry.movement_type === 'ENTRADA') return 'Entrada'
+  if (entry.movement_type === 'TRASLADO') return 'Transferencia'
+  if (entry.movement_type === 'DEVOLUCION') return 'Recepción'
+  if (entry.movement_type === 'AJUSTE') {
+    return entry.destination_location ? 'Ajuste +' : 'Ajuste -'
+  }
+  if (entry.movement_type.startsWith('SALIDA') || entry.movement_type === 'SALIDA_COMBO') {
+    return 'Salida'
+  }
+  return entry.movement_type
 }
 
 const resolveBadge = (entry: AuditLogEntry): EventTypeBadgeConfig => {
-  if (entry.movement_type === 'ENTRADA') return BADGE_CONFIGS.ENTRADA
-  if (entry.movement_type === 'TRASLADO') return BADGE_CONFIGS.TRASLADO
-  if (entry.movement_type === 'DEVOLUCION') return BADGE_CONFIGS.DEVOLUCION
-
+  if (entry.movement_type === 'ENTRADA') return { label: 'Entrada', bg: '#d1fae5', color: '#065f46' }
+  if (entry.movement_type === 'TRASLADO') return { label: 'Transferencia', bg: '#dbeafe', color: '#1d4ed8' }
+  if (entry.movement_type === 'DEVOLUCION') return { label: 'Recepción', bg: '#ccfbf1', color: '#0f766e' }
   if (entry.movement_type === 'AJUSTE') {
     if (entry.destination_location) {
       return { label: 'Ajuste +', bg: '#fef9c3', color: '#a16207' }
@@ -36,11 +53,9 @@ const resolveBadge = (entry: AuditLogEntry): EventTypeBadgeConfig => {
       return { label: 'Ajuste -', bg: '#ffedd5', color: '#c2410c' }
     }
   }
-
   if (entry.movement_type.startsWith('SALIDA') || entry.movement_type === 'SALIDA_COMBO') {
     return { label: 'Salida', bg: '#fee2e2', color: '#b91c1c' }
   }
-
   return { label: entry.movement_type, bg: '#f3f4f6', color: '#374151' }
 }
 
@@ -129,7 +144,6 @@ const AuditPage: React.FC = () => {
     setLoading(true)
     setErrorMsg(null)
     try {
-      // Intentamos resolver el SKU a un product ID antes de la consulta
       let resolvedProductId: string | undefined = undefined
       if (appliedSku.trim()) {
         const matchingProduct = products.find(
@@ -140,15 +154,12 @@ const AuditPage: React.FC = () => {
         }
       }
 
-      // Consultamos el ledger de movimientos con un tamaño de página amplio
       const data = await fetchAuditLogs({
         product_id: resolvedProductId,
         page_size: 100,
       })
       let results = data.results ?? []
 
-      // Filtrado del lado del cliente para aquellos parámetros no soportados nativamente
-      // 1. SKU / Nombre del producto (si no fue resuelto exactamente a product_id)
       if (appliedSku.trim() && !resolvedProductId) {
         const q = appliedSku.trim().toLowerCase()
         results = results.filter((e) => {
@@ -160,12 +171,10 @@ const AuditPage: React.FC = () => {
         })
       }
 
-      // 2. Operario (executed_by)
       if (appliedOperario) {
         results = results.filter((e) => String(e.executed_by) === String(appliedOperario))
       }
 
-      // 3. Tipo de operación (mapeado de badges)
       if (appliedTipo) {
         results = results.filter((e) => {
           const badge = resolveBadge(e)
@@ -173,14 +182,13 @@ const AuditPage: React.FC = () => {
         })
       }
 
-      // 4. Fecha (created_at matches YYYY-MM-DD)
       if (appliedFecha) {
         results = results.filter((e) => e.created_at.startsWith(appliedFecha))
       }
 
       setEntries(results)
       setTotalCount(results.length)
-      setCurrentPage(1) // Volver a la primera página tras filtrar
+      setCurrentPage(1)
     } catch (err: any) {
       const msg =
         err?.response?.data?.detail || err?.message || 'Error al cargar los movimientos de auditoría'
@@ -225,7 +233,7 @@ const AuditPage: React.FC = () => {
 
   const handleExportExcel = () => {
     setExportOpen(false)
-    
+
     const headers = [
       'ID',
       'Fecha',
@@ -241,7 +249,6 @@ const AuditPage: React.FC = () => {
 
     const escape = (v: unknown): string => {
       const s = v == null ? '' : String(v)
-      // Escapar dobles comillas para CSV
       return s.includes(';') || s.includes('"') || s.includes('\n')
         ? `"${s.replace(/"/g, '""')}"`
         : s
@@ -249,7 +256,7 @@ const AuditPage: React.FC = () => {
 
     const rows = entries.map((e) => {
       const badge = resolveBadge(e)
-      
+
       let prevStock = ''
       let nextStock = ''
       if (e.movement_type === 'ENTRADA' || (e.movement_type === 'AJUSTE' && e.destination_location)) {
@@ -279,8 +286,6 @@ const AuditPage: React.FC = () => {
       ]
     })
 
-    // Indicar explícitamente a Excel que el separador es el punto y coma (sep=;)
-    // y anteponer el BOM de UTF-8 (\ufeff) para que reconozca los acentos correctamente
     const csvContent = 'sep=;\n' + [headers, ...rows].map((r) => r.map(escape).join(';')).join('\n')
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
@@ -293,8 +298,7 @@ const AuditPage: React.FC = () => {
 
   const handleExportPDF = () => {
     setExportOpen(false)
-    
-    // Crear iframe oculto para evitar bloqueadores de popups y permitir impresión directa
+
     const iframe = document.createElement('iframe')
     iframe.style.position = 'fixed'
     iframe.style.right = '0'
@@ -313,7 +317,7 @@ const AuditPage: React.FC = () => {
     let rowsHtml = ''
     entries.forEach((e) => {
       const badge = resolveBadge(e)
-      
+
       let prevStock = ''
       let nextStock = ''
       if (e.movement_type === 'ENTRADA' || (e.movement_type === 'AJUSTE' && e.destination_location)) {
@@ -355,66 +359,16 @@ const AuditPage: React.FC = () => {
         <head>
           <title>Reporte de Auditoría - ICM</title>
           <style>
-            @page {
-              size: letter landscape;
-              margin: 15mm;
-            }
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-              color: #333;
-              margin: 0;
-              padding: 0;
-              font-size: 11px;
-            }
-            .header-container {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              border-bottom: 2px solid #4f46e5;
-              padding-bottom: 10px;
-              margin-bottom: 20px;
-            }
-            .title {
-              font-size: 18px;
-              font-weight: bold;
-              color: #111827;
-              margin: 0;
-            }
-            .subtitle {
-              font-size: 11px;
-              color: #6b7280;
-              margin: 4px 0 0 0;
-            }
-            .meta {
-              text-align: right;
-              font-size: 10px;
-              color: #4b5563;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 10px;
-            }
-            th {
-              background-color: #f9fafb;
-              color: #374151;
-              font-weight: 600;
-              border-bottom: 1px solid #e5e7eb;
-              padding: 8px 10px;
-              text-align: left;
-            }
-            td {
-              padding: 8px 10px;
-              border-bottom: 1px solid #f3f4f6;
-              vertical-align: middle;
-            }
-            .badge {
-              display: inline-block;
-              padding: 2px 6px;
-              border-radius: 4px;
-              font-weight: bold;
-              font-size: 9px;
-            }
+            @page { size: letter landscape; margin: 15mm; }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #333; margin: 0; padding: 0; font-size: 11px; }
+            .header-container { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4f46e5; padding-bottom: 10px; margin-bottom: 20px; }
+            .title { font-size: 18px; font-weight: bold; color: #111827; margin: 0; }
+            .subtitle { font-size: 11px; color: #6b7280; margin: 4px 0 0 0; }
+            .meta { text-align: right; font-size: 10px; color: #4b5563; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th { background-color: #f9fafb; color: #374151; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding: 8px 10px; text-align: left; }
+            td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+            .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 9px; }
           </style>
         </head>
         <body>
@@ -445,18 +399,12 @@ const AuditPage: React.FC = () => {
               ${rowsHtml}
             </tbody>
           </table>
-          <script>
-            window.onload = function() {
-              window.focus();
-              window.print();
-            }
-          </script>
+          <script>window.onload = function() { window.focus(); window.print(); }</script>
         </body>
       </html>
     `)
     doc.close()
 
-    // Dar tiempo para la impresión y luego remover el iframe
     setTimeout(() => {
       document.body.removeChild(iframe)
     }, 2000)
@@ -500,21 +448,21 @@ const AuditPage: React.FC = () => {
         <div style={{ fontSize: '0.8rem', lineHeight: '1.25' }}>
           <div>
             Ori:{' '}
-            <span style={{ color: '#374151' }}>
+            <span style={{ color: 'var(--ink-70)' }}>
               {e.stock_previo_origen != null ? e.stock_previo_origen : '—'}
             </span>{' '}
-            <span style={{ color: '#9ca3af' }}>→</span>{' '}
-            <span style={{ color: '#e03131', fontWeight: 600 }}>
+            <span style={{ color: 'var(--ink-40)' }}>→</span>{' '}
+            <span style={{ color: 'var(--err)', fontWeight: 600 }}>
               {e.stock_resultante_origen != null ? e.stock_resultante_origen : '—'}
             </span>
           </div>
           <div>
             Dest:{' '}
-            <span style={{ color: '#374151' }}>
+            <span style={{ color: 'var(--ink-70)' }}>
               {e.stock_previo_destino != null ? e.stock_previo_destino : '—'}
             </span>{' '}
-            <span style={{ color: '#9ca3af' }}>→</span>{' '}
-            <span style={{ color: '#059669', fontWeight: 600 }}>
+            <span style={{ color: 'var(--ink-40)' }}>→</span>{' '}
+            <span style={{ color: 'var(--ok)', fontWeight: 600 }}>
               {e.stock_resultante_destino != null ? e.stock_resultante_destino : '—'}
             </span>
           </div>
@@ -522,15 +470,15 @@ const AuditPage: React.FC = () => {
       )
     }
 
-    if (prev == null && next == null) return <span style={{ color: '#9ca3af' }}>—</span>
+    if (prev == null && next == null) return <span style={{ color: 'var(--ink-40)' }}>—</span>
 
     const isPositive = next != null && prev != null && next >= prev
 
     return (
-      <span style={{ color: '#6b7280' }}>
-        <span style={{ color: '#374151' }}>{prev ?? '—'}</span>
-        <span style={{ margin: '0 0.3rem', color: '#9ca3af' }}>→</span>
-        <span style={{ color: isPositive ? '#059669' : '#e03131', fontWeight: 600 }}>
+      <span style={{ color: 'var(--ink-40)' }}>
+        <span style={{ color: 'var(--ink-70)' }}>{prev ?? '—'}</span>
+        <span style={{ margin: '0 0.3rem', color: 'var(--ink-40)' }}>→</span>
+        <span style={{ color: isPositive ? 'var(--ok)' : 'var(--err)', fontWeight: 600 }}>
           {next ?? '—'}
         </span>
       </span>
@@ -544,117 +492,100 @@ const AuditPage: React.FC = () => {
     return entries.slice(startIdx, startIdx + pageSize)
   }, [entries, currentPage, pageSize])
 
+  // Metric calculations
+  const uniqueOperarios = useMemo(() => {
+    const ids = new Set(entries.map((e) => String(e.executed_by)))
+    return ids.size
+  }, [entries])
+
+  const uniqueTipos = useMemo(() => {
+    const tipos = new Set(entries.map((e) => resolveBadgeLabel(e)))
+    return tipos.size
+  }, [entries])
+
+  // Export dropdown content
+  const exportDropdown = useMemo(() => exportOpen && (
+    <div
+      style={{
+        position: 'absolute',
+        right: 0,
+        top: 'calc(100% + 4px)',
+        zIndex: 200,
+        background: '#fff',
+        border: '1px solid var(--ink-12)',
+        borderRadius: '8px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.10)',
+        minWidth: '180px',
+        overflow: 'hidden',
+      }}
+    >
+      <button
+        type="button"
+        onClick={handleExportCSV}
+        className="btn btn--ghost btn--sm"
+        style={{ display: 'flex', width: '100%', textAlign: 'left', padding: '0.65rem 1rem', border: 'none', borderRadius: 0, fontSize: '0.825rem' }}
+      >
+        📊 Descargar CSV
+      </button>
+      <button
+        type="button"
+        onClick={handleExportExcel}
+        className="btn btn--ghost btn--sm"
+        style={{ display: 'flex', width: '100%', textAlign: 'left', padding: '0.65rem 1rem', border: 'none', borderRadius: 0, fontSize: '0.825rem' }}
+      >
+        📈 Descargar Excel
+      </button>
+      <button
+        type="button"
+        onClick={handleExportPDF}
+        className="btn btn--ghost btn--sm"
+        style={{ display: 'flex', width: '100%', textAlign: 'left', padding: '0.65rem 1rem', border: 'none', borderRadius: 0, fontSize: '0.825rem' }}
+      >
+        📄 Descargar PDF
+      </button>
+    </div>
+  ), [exportOpen, handleExportCSV, handleExportExcel, handleExportPDF])
+
   return (
-    <AppShell title="Log de auditoría" subtitle="Trazabilidad de movimientos físicos de inventario">
+    <AppShell
+      title="Log de auditoría"
+      subtitle="Trazabilidad de movimientos físicos de inventario"
+      actions={
+        <div ref={exportRef} style={{ position: 'relative' }}>
+          <button
+            type="button"
+            className="btn btn--outline btn--sm"
+            onClick={() => setExportOpen((o) => !o)}
+            style={{ height: '36px', display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0 0.85rem' }}
+          >
+            <Download style={{ width: '14px', height: '14px' }} />
+            Exportar
+            <ChevronDown style={{ width: '12px', height: '12px' }} />
+          </button>
+          {exportDropdown}
+        </div>
+      }
+    >
       <div className="catalog-page fade-slide-up">
-        {/* ── Header ─────────────────────────────────────────────────────── */}
-        <header className="catalog-header" style={{ marginBottom: '1.25rem' }}>
-          <div className="catalog-header__info" />
-          <div style={{ position: 'relative' }} ref={exportRef}>
-            <button
-              type="button"
-              className="btn btn--secondary"
-              onClick={() => setExportOpen((o) => !o)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                height: '38px',
-                padding: '0 1rem',
-              }}
-            >
-              <Download style={{ width: '15px', height: '15px' }} />
-              Exportar
-              <ChevronDown style={{ width: '14px', height: '14px' }} />
-            </button>
-            {exportOpen && (
-              <div
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 'calc(100% + 4px)',
-                  zIndex: 200,
-                  background: '#fff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.10)',
-                  minWidth: '160px',
-                  overflow: 'hidden',
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={handleExportCSV}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '0.65rem 1rem',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '0.875rem',
-                    color: '#374151',
-                  }}
-                  onMouseEnter={(e) => {
-                    ;(e.currentTarget as HTMLButtonElement).style.background = '#f9fafb'
-                  }}
-                  onMouseLeave={(e) => {
-                    ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
-                  }}
-                >
-                  📊 Descargar CSV
-                </button>
-                <button
-                  type="button"
-                  onClick={handleExportExcel}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '0.65rem 1rem',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '0.875rem',
-                    color: '#374151',
-                  }}
-                  onMouseEnter={(e) => {
-                    ;(e.currentTarget as HTMLButtonElement).style.background = '#f9fafb'
-                  }}
-                  onMouseLeave={(e) => {
-                    ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
-                  }}
-                >
-                  📈 Descargar Excel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleExportPDF}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '0.65rem 1rem',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '0.875rem',
-                    color: '#374151',
-                  }}
-                  onMouseEnter={(e) => {
-                    ;(e.currentTarget as HTMLButtonElement).style.background = '#f9fafb'
-                  }}
-                  onMouseLeave={(e) => {
-                    ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
-                  }}
-                >
-                  📄 Descargar PDF
-                </button>
-              </div>
-            )}
+
+        {/* ── Metric strip ──────────────────────────────────────────────── */}
+        <div className="metric-strip mb-4" style={{ maxWidth: 700 }}>
+          <div className="metric-cell metric-cell--hero">
+            <p className="metric-cell__eyebrow">Total registros</p>
+            <p className="metric-cell__val">{totalCount}</p>
+            <p className="metric-cell__sub">movimientos en el ledger</p>
           </div>
-        </header>
+          <div className="metric-cell metric-cell--light">
+            <p className="metric-cell__eyebrow">Operarios</p>
+            <p className="metric-cell__val">{uniqueOperarios}</p>
+            <p className="metric-cell__sub">usuarios con movimientos</p>
+          </div>
+          <div className="metric-cell metric-cell--light">
+            <p className="metric-cell__eyebrow">Tipos de operación</p>
+            <p className="metric-cell__val">{uniqueTipos}</p>
+            <p className="metric-cell__sub">categorías de movimiento</p>
+          </div>
+        </div>
 
         {/* ── Error ─────────────────────────────────────────────────────── */}
         {errorMsg && (
@@ -667,217 +598,119 @@ const AuditPage: React.FC = () => {
           </div>
         )}
 
-        {/* ── Panel de filtros ────────────────────────────────────────────── */}
+        {/* ── Filter toolbar ────────────────────────────────────────────── */}
         <div
+          className="catalog-toolbar"
           style={{
             background: '#fff',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            padding: '1.25rem 1.5rem',
+            border: '1px solid var(--ink-12)',
+            borderRadius: 'var(--r-md)',
+            padding: '1rem 1.25rem',
             marginBottom: '1.5rem',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+            display: 'flex',
+            gap: '0.75rem',
+            alignItems: 'end',
+            width: '100%',
           }}
         >
-          <form onSubmit={handleApplyFilters}>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1.4fr 160px 1fr auto',
-                gap: '0.75rem',
-                alignItems: 'end',
-              }}
-            >
-              {/* Operario */}
-              <div>
-                <label
+          <form onSubmit={handleApplyFilters} style={{ display: 'flex', gap: '0.75rem', alignItems: 'end', flex: 1, flexWrap: 'nowrap' }}>
+            {/* Search SKU */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1, minWidth: 0 }}>
+              <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--ink-50)', whiteSpace: 'nowrap' }}>
+                Filtrar por SKU / Producto
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Search
                   style={{
-                    display: 'block',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    color: '#374151',
-                    marginBottom: '0.35rem',
-                  }}
-                >
-                  <User
-                    style={{
-                      width: '13px',
-                      height: '13px',
-                      display: 'inline',
-                      marginRight: '0.25rem',
-                      verticalAlign: 'middle',
-                    }}
-                  />
-                  Operario
-                </label>
-                <select
-                  value={filterOperario}
-                  onChange={(e) => setFilterOperario(e.target.value)}
-                  style={{
-                    width: '100%',
-                    height: '38px',
-                    borderRadius: '8px',
-                    border: '1px solid #d1d5db',
-                    padding: '0 0.75rem',
-                    fontSize: '0.875rem',
-                    background: '#fff',
-                  }}
-                >
-                  <option value="">Todos</option>
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {(u.first_name + ' ' + u.last_name).trim() || u.username}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Tipo de operación */}
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    color: '#374151',
-                    marginBottom: '0.35rem',
-                  }}
-                >
-                  <Shield
-                    style={{
-                      width: '13px',
-                      height: '13px',
-                      display: 'inline',
-                      marginRight: '0.25rem',
-                      verticalAlign: 'middle',
-                    }}
-                  />
-                  Tipo de operación
-                </label>
-                <select
-                  value={filterTipo}
-                  onChange={(e) => setFilterTipo(e.target.value)}
-                  style={{
-                    width: '100%',
-                    height: '38px',
-                    borderRadius: '8px',
-                    border: '1px solid #d1d5db',
-                    padding: '0 0.75rem',
-                    fontSize: '0.875rem',
-                    background: '#fff',
-                  }}
-                >
-                  {OPERATION_FILTER_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Fecha */}
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    color: '#374151',
-                    marginBottom: '0.35rem',
-                  }}
-                >
-                  <Calendar
-                    style={{
-                      width: '13px',
-                      height: '13px',
-                      display: 'inline',
-                      marginRight: '0.25rem',
-                      verticalAlign: 'middle',
-                    }}
-                  />
-                  Fecha
-                </label>
-                <input
-                  type="date"
-                  value={filterFecha}
-                  onChange={(e) => setFilterFecha(e.target.value)}
-                  style={{
-                    width: '100%',
-                    height: '38px',
-                    borderRadius: '8px',
-                    border: '1px solid #d1d5db',
-                    padding: '0 0.75rem',
-                    fontSize: '0.875rem',
+                    position: 'absolute',
+                    left: '0.65rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: '14px',
+                    height: '14px',
+                    color: 'var(--teal-600)',
                   }}
                 />
-              </div>
-
-              {/* SKU / Búsqueda */}
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    color: '#374151',
-                    marginBottom: '0.35rem',
-                  }}
-                >
-                  <Search
-                    style={{
-                      width: '13px',
-                      height: '13px',
-                      display: 'inline',
-                      marginRight: '0.25rem',
-                      verticalAlign: 'middle',
-                    }}
-                  />
-                  SKU / Producto
-                </label>
                 <input
                   type="text"
+                  placeholder="Buscar por SKU…"
                   value={filterSku}
                   onChange={(e) => setFilterSku(e.target.value)}
-                  placeholder="Ej: ALM-..."
-                  style={{
-                    width: '100%',
-                    height: '38px',
-                    borderRadius: '8px',
-                    border: '1px solid #d1d5db',
-                    padding: '0 0.75rem',
-                    fontSize: '0.875rem',
-                  }}
+                  className="f-input"
+                  style={{ paddingLeft: '2rem', width: '100%' }}
                 />
               </div>
+            </div>
 
-              {/* Botones */}
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {/* Operario */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '165px', flexShrink: 0 }}>
+              <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--ink-50)', whiteSpace: 'nowrap' }}>
+                Filtrar por operario
+              </label>
+              <select
+                value={filterOperario}
+                onChange={(e) => setFilterOperario(e.target.value)}
+                className="f-input"
+                style={{ width: '100%' }}
+              >
+                <option value="">Todos los operarios</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {(u.first_name + ' ' + u.last_name).trim() || u.username}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Tipo */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '155px', flexShrink: 0 }}>
+              <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--ink-50)', whiteSpace: 'nowrap' }}>
+                Filtrar por estados
+              </label>
+              <select
+                value={filterTipo}
+                onChange={(e) => setFilterTipo(e.target.value)}
+                className="f-input"
+                style={{ width: '100%' }}
+              >
+                {OPERATION_FILTER_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Fecha */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '145px', flexShrink: 0 }}>
+              <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--ink-50)', whiteSpace: 'nowrap' }}>
+                Filtrar por fechas
+              </label>
+              <input
+                type="date"
+                value={filterFecha}
+                onChange={(e) => setFilterFecha(e.target.value)}
+                className="f-input"
+                style={{ width: '100%' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'end', flexShrink: 0, paddingBottom: '1px' }}>
+              <button type="submit" className="btn btn--primary btn--sm" style={{ height: '36px', padding: '0 0.9rem' }}>
+                <Filter style={{ width: '14px', height: '14px', marginRight: '0.25rem' }} />
+                Filtrar
+              </button>
+              {hasActiveFilters && (
                 <button
-                  type="submit"
-                  className="btn btn--primary"
-                  style={{
-                    height: '38px',
-                    padding: '0 1.25rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.35rem',
-                    whiteSpace: 'nowrap',
-                  }}
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="btn btn--ghost btn--sm"
+                  style={{ height: '36px', padding: '0 0.65rem' }}
                 >
-                  <Filter style={{ width: '14px', height: '14px' }} />
-                  Filtrar
+                  <X style={{ width: '14px', height: '14px' }} />
                 </button>
-                {hasActiveFilters && (
-                  <button
-                    type="button"
-                    onClick={handleClearFilters}
-                    className="btn btn--secondary"
-                    style={{ height: '38px', padding: '0 0.85rem' }}
-                    title="Limpiar filtros"
-                  >
-                    <X style={{ width: '14px', height: '14px' }} />
-                  </button>
-                )}
-              </div>
+              )}
             </div>
           </form>
         </div>
@@ -885,7 +718,7 @@ const AuditPage: React.FC = () => {
         {/* ── Tabla ───────────────────────────────────────────────────────── */}
         {loading ? (
           <div className="empty-state">
-            <p>Cargando movimientos de auditoría...</p>
+            <p>Cargando movimientos de auditoría…</p>
           </div>
         ) : paginatedEntries.length === 0 ? (
           <div className="empty-state">
@@ -894,244 +727,122 @@ const AuditPage: React.FC = () => {
                 width: '48px',
                 height: '48px',
                 strokeWidth: 1,
-                color: '#9ca3af',
+                color: 'var(--ink-40)',
                 marginBottom: '1rem',
               }}
             />
             <p>No se encontraron registros de movimientos de auditoría.</p>
             {hasActiveFilters && (
-              <button
-                type="button"
-                className="btn btn--secondary"
-                onClick={handleClearFilters}
-                style={{ marginTop: '0.75rem' }}
-              >
+              <button type="button" className="btn btn--secondary" onClick={handleClearFilters} style={{ marginTop: '0.75rem' }}>
                 Limpiar filtros
-              </button>
-            )}
+      </button>
+    )}
           </div>
         ) : (
           <>
-            {/* Info count */}
-            <p
-              style={{
-                fontSize: '0.82rem',
-                color: '#6b7280',
-                marginBottom: '0.75rem',
-                margin: '0 0 0.75rem 0',
-              }}
-            >
+            <p style={{ fontSize: '0.82rem', color: 'var(--ink-40)', marginBottom: '0.75rem' }}>
               Mostrando {paginatedEntries.length} de {totalCount} registros filtrados
               {hasActiveFilters && (
-                <span style={{ marginLeft: '0.5rem', color: '#6366f1', fontWeight: 500 }}>
+                <span style={{ marginLeft: '0.5rem', color: 'var(--teal-600)', fontWeight: 500 }}>
                   · Filtros activos
                 </span>
               )}
             </p>
 
-            <div
-              className="table-surface"
-              style={{
-                borderRadius: '12px',
-                overflow: 'hidden',
-                border: '1px solid #e5e7eb',
-                background: '#fff',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
-              }}
-            >
-              <table
-                className="data-table"
-                style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.855rem' }}
-              >
-                <thead>
-                  <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                    {[
-                      'ID',
-                      'TIMESTAMP',
-                      'OPERARIO',
-                      'TIPO',
-                      'PRODUCTO',
-                      'CANTIDAD',
-                      'STOCK ANT./NUEVO',
-                      'NOTA',
-                    ].map((col) => (
-                      <th
-                        key={col}
-                        style={{
-                          padding: '0.8rem 1rem',
-                          fontWeight: 600,
-                          color: '#6b7280',
-                          fontSize: '0.75rem',
-                          letterSpacing: '0.04em',
-                          textAlign: col === 'CANTIDAD' ? 'center' : 'left',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedEntries.map((entry) => {
-                    const badge = resolveBadge(entry)
-                    const nota = entry.justification || entry.discrepancy_note || '—'
-                    return (
-                      <tr
-                        key={entry.id}
-                        style={{ borderBottom: '1px solid #f3f4f6', transition: 'background 0.12s' }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#fafafa'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'transparent'
-                        }}
-                      >
-                        {/* ID */}
-                        <td style={{ padding: '0.8rem 1rem', whiteSpace: 'nowrap' }}>
-                          <span
-                            style={{
-                              fontFamily: 'monospace',
-                              fontSize: '0.8rem',
-                              color: '#4f46e5',
-                              fontWeight: 600,
-                            }}
-                          >
-                            {shortId(entry.id)}
-                          </span>
-                        </td>
-
-                        {/* Timestamp */}
-                        <td style={{ padding: '0.8rem 1rem', color: '#374151', whiteSpace: 'nowrap' }}>
-                          {formatTs(entry.created_at)}
-                        </td>
-
-                        {/* Operario */}
-                        <td style={{ padding: '0.8rem 1rem', color: '#374151', whiteSpace: 'nowrap' }}>
-                          {getUserName(entry.executed_by)}
-                        </td>
-
-                        {/* Tipo (badge) */}
-                        <td style={{ padding: '0.8rem 1rem', whiteSpace: 'nowrap' }}>
-                          <span
-                            style={{
-                              display: 'inline-block',
-                              padding: '0.2rem 0.55rem',
-                              borderRadius: '5px',
-                              background: badge.bg,
-                              color: badge.color,
-                              fontWeight: 700,
-                              fontSize: '0.72rem',
-                              letterSpacing: '0.02em',
-                            }}
-                          >
-                            {badge.label}
-                          </span>
-                        </td>
-
-                        {/* Producto (SKU + Nombre) */}
-                        <td style={{ padding: '0.8rem 1rem', color: '#1e293b', maxWidth: '240px' }}>
-                          <span
-                            style={{
-                              display: 'block',
-                              fontWeight: 600,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {entry.product_sku}
-                          </span>
-                          <span
-                            style={{
-                              display: 'block',
-                              fontSize: '0.78rem',
-                              color: '#6b7280',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                            title={getProductName(entry.product_sku)}
-                          >
-                            {getProductName(entry.product_sku)}
-                          </span>
-                        </td>
-
-                        {/* Cantidad */}
-                        <td
-                          style={{
-                            padding: '0.8rem 1rem',
-                            textAlign: 'center',
-                            color: '#374151',
-                            fontWeight: 600,
-                          }}
-                        >
-                          {entry.quantity}
-                        </td>
-
-                        {/* Stock Ant. / Nuevo */}
-                        <td style={{ padding: '0.8rem 1rem', whiteSpace: 'nowrap' }}>
-                          {renderStockChange(entry)}
-                        </td>
-
-                        {/* Nota */}
-                        <td
-                          style={{
-                            padding: '0.8rem 1rem',
-                            color: nota === '—' ? '#9ca3af' : '#b45309',
-                            maxWidth: '220px',
-                          }}
-                        >
-                          <span
-                            style={{
-                              display: 'block',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                            title={nota}
-                          >
-                            {nota}
-                          </span>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+            <div className="table-surface">
+              <div className="table-wrap">
+                <table className="data-table" style={{ minWidth: 800 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: '9%' }}>ID</th>
+                      <th style={{ width: '13%' }}>TIMESTAMP</th>
+                      <th style={{ width: '14%' }}>OPERARIO</th>
+                      <th style={{ width: '11%' }}>TIPO</th>
+                      <th style={{ width: '18%' }}>PRODUCTO</th>
+                      <th style={{ width: '7%', textAlign: 'center' }}>CANT.</th>
+                      <th style={{ width: '16%' }}>STOCK ANT./NUEVO</th>
+                      <th>NOTA</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedEntries.map((entry) => {
+                      const pillClass = resolveBadgeClass(entry)
+                      const badgeLabel = resolveBadgeLabel(entry)
+                      const nota = entry.justification || entry.discrepancy_note || '—'
+                      return (
+                        <tr key={entry.id}>
+                          <td style={{ whiteSpace: 'nowrap' }}>
+                            <span className="sku">{shortId(entry.id)}</span>
+                          </td>
+                          <td style={{ whiteSpace: 'nowrap' }}>
+                            {formatTs(entry.created_at)}
+                          </td>
+                          <td style={{ whiteSpace: 'nowrap' }}>
+                            {getUserName(entry.executed_by)}
+                          </td>
+                          <td>
+                            <span className={`pill ${pillClass}`}>
+                              {badgeLabel}
+                            </span>
+                          </td>
+                          <td>
+                            <span style={{ fontWeight: 600, color: 'var(--ink)' }}>
+                              {entry.product_sku}
+                            </span>
+                            <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--ink-40)' }}>
+                              {getProductName(entry.product_sku)}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: 'center', fontWeight: 600 }}>
+                            {entry.quantity}
+                          </td>
+                          <td style={{ whiteSpace: 'nowrap' }}>
+                            {renderStockChange(entry)}
+                          </td>
+                          <td>
+                            <span
+                              style={{
+                                display: 'block',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                color: nota === '—' ? 'var(--ink-40)' : 'var(--amber-dk)',
+                              }}
+                              title={nota}
+                            >
+                              {nota}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {/* Paginación */}
             {totalCount > pageSize && (
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginTop: '1.25rem',
-                }}
-              >
-                <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.75rem', marginTop: '1.5rem' }}>
+                <button
+                  className="btn btn--secondary btn--sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  style={{ height: '36px', padding: '0 0.85rem' }}
+                >
+                  Anterior
+                </button>
+                <span style={{ fontSize: '0.85rem', color: 'var(--ink-40)' }}>
                   Página {currentPage} de {totalPages}
                 </span>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button
-                    className="btn btn--secondary"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                    style={{ height: '36px', padding: '0 0.85rem' }}
-                  >
-                    Anterior
-                  </button>
-                  <button
-                    className="btn btn--secondary"
-                    disabled={currentPage >= totalPages}
-                    onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                    style={{ height: '36px', padding: '0 0.85rem' }}
-                  >
-                    Siguiente
-                  </button>
-                </div>
+                <button
+                  className="btn btn--secondary btn--sm"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  style={{ height: '36px', padding: '0 0.85rem' }}
+                >
+                  Siguiente
+                </button>
               </div>
             )}
           </>
