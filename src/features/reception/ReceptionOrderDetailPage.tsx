@@ -17,7 +17,9 @@ import useReceptionStore from '../../store/useReceptionStore'
 import useLocationStore from '../../store/useLocationStore'
 import useCatalogStore from '../../store/useCatalogStore'
 import type { PurchaseOrderItem } from '../../interfaces/purchaseOrders'
+import type { CatalogProduct } from '../../interfaces/catalog'
 import { extractApiError } from '../../hooks/useApiError'
+import { fetchCatalogProductDetail } from '../../services/catalog'
 
 interface LocationSplit {
   id: string
@@ -70,13 +72,14 @@ export default function ReceptionOrderDetailPage() {
   const [actionError, setActionError] = useState<string | null>(null)
   const [actionSuccess, setActionSuccess] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [productDetail, setProductDetail] = useState<CatalogProduct | null>(null)
 
   useEffect(() => {
     if (orderId) {
       fetchOrderDetail(orderId)
     }
     fetchLocations(true)
-    fetchProducts()
+    fetchProducts({ page_size: 9999 })
     fetchCategories(true)
   }, [orderId, fetchOrderDetail, fetchLocations, fetchProducts, fetchCategories])
 
@@ -88,8 +91,12 @@ export default function ReceptionOrderDetailPage() {
 
   const productConfig = useMemo(() => {
     if (!selectedItem) return null
-    return catalogProducts.find((p) => p.id === selectedItem.product)
-  }, [selectedItem, catalogProducts])
+    let found: CatalogProduct | undefined = productDetail ?? catalogProducts.find((p) => p.id === selectedItem.product)
+    if (!found && selectedItem.product_sku) {
+      found = catalogProducts.find((p) => p.sku === selectedItem.product_sku)
+    }
+    return found ?? null
+  }, [selectedItem, catalogProducts, productDetail])
 
   const requiresExpiration = productConfig?.requires_expiration ?? false
   const lotRequired = requiresExpiration
@@ -127,7 +134,10 @@ export default function ReceptionOrderDetailPage() {
     setSplitEnabled(false)
     setSplits([])
     setActionError(null)
+    setActionSuccess(null)
     setIsModalOpen(true)
+    setProductDetail(null)
+    fetchCatalogProductDetail(item.product).then(setProductDetail).catch(() => setProductDetail(null))
   }
 
   const handleCloseModal = () => {

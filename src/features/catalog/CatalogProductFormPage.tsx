@@ -284,13 +284,17 @@ const CatalogProductFormPage: React.FC = () => {
               <div className="form-field">
                 <label className="form-label" htmlFor="reorder_point">{t('catalog.products.form.reorderPoint')}</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   id="reorder_point"
                   name="reorder_point"
                   className="form-input"
                   value={formData.reorder_point}
-                  onChange={handleChange}
-                  min="0"
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setFormData(prev => ({ ...prev, reorder_point: val === '' ? 0 : Number(val) }))
+                  }}
                 />
               </div>
 

@@ -271,12 +271,13 @@ function ProductForm({
                 <input
                   id="pf-reorder"
                   className="f-input text-mono"
-                  type="number"
-                  min={0}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={form.reorder_point ?? ''}
                   onChange={(e) => {
-                    const val = e.target.value;
-                    setForm({ ...form, reorder_point: val === '' ? undefined : Number(val) })
+                    const val = e.target.value.replace(/\D/g, '');
+                    setForm(prev => ({ ...prev, reorder_point: val === '' ? undefined : Number(val) }))
                   }}
                 />
               </div>
