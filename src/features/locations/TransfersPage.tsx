@@ -106,7 +106,7 @@ const TransfersPage: React.FC = () => {
     try {
       const [locsRes, prodsRes, usersRes] = await Promise.allSettled([
         fetchLocations(true),
-        fetchCatalogProducts({ include_inactive: true }),
+        fetchCatalogProducts({ include_inactive: true, page_size: 9999 }),
         fetchUsers(),
       ])
 

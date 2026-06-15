@@ -36,7 +36,7 @@ interface CatalogState {
   productPage: number
   productPageSize: number
   
-  fetchProducts: (params?: { page?: number; search?: string; category?: string }) => Promise<void>
+  fetchProducts: (params?: { page?: number; search?: string; category?: string; page_size?: number }) => Promise<void>
   fetchCategories: (includeInactive?: boolean) => Promise<void>
   fetchBrands: (includeInactive?: boolean) => Promise<void>
   
@@ -91,8 +91,8 @@ async function fetchProductsWithStock(
   page = 1,
   search?: string,
   category?: string,
+  pageSize = 25,
 ): Promise<{ products: Product[]; count: number }> {
-  const pageSize = 25
 
   const [productsResp, inventoryResp] = await Promise.allSettled([
     api.get<any>('/catalog/products/', {
@@ -154,7 +154,8 @@ const useCatalogStore = create<CatalogState>((set) => ({
     set({ loading: true, error: null })
     try {
       const page = params?.page ?? 1
-      const { products, count } = await fetchProductsWithStock(page, params?.search, params?.category)
+      const ps = params?.page_size ?? 25
+      const { products, count } = await fetchProductsWithStock(page, params?.search, params?.category, ps)
       set({ products: products as any, productCount: count, productPage: page, loading: false })
     } catch (err: any) {
       set({ error: err.humanMessage || err.message, loading: false })

@@ -293,7 +293,7 @@ export const PurchaseOrdersPage: React.FC = () => {
   useEffect(() => {
     fetchOrders()
     fetchSuppliers()
-    fetchProducts()
+    fetchProducts({ page_size: 9999 })
   }, [fetchOrders, fetchSuppliers, fetchProducts])
 
   const filteredOrders = orders.filter((o) => {
