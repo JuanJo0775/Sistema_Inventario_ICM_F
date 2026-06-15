@@ -90,8 +90,8 @@ En el sidebar o menú superior, navegar a cada sección y confirmar que cargan:
 1. Ir a **Catálogo > Categorías**
 2. Click **+ Nueva Categoría**
 3. Ingresar:
-   - **Nombre:** `Electroestimulación`
-   - **Descripción:** `Equipos de electroestimulación muscular y nerviosa`
+   - **Nombre:** `Fisioterapia Deportiva Avanzada`
+   - **Descripción:** `Equipos para rehabilitación y fisioterapia deportiva`
    - **Código serial:** `NO` (desmarcado)
 4. Click **Guardar**
 5. ✅ Verifica mensaje "Categoría creada correctamente"
@@ -100,8 +100,8 @@ En el sidebar o menú superior, navegar a cada sección y confirmar que cargan:
 ### 2.2 Crear una Categoría con serial obligatorio
 1. Click **+ Nueva Categoría**
 2. Ingresar:
-   - **Nombre:** `Láser Terapéutico`
-   - **Descripción:** `Equipos láser de baja potencia para terapia`
+   - **Nombre:** `Terapia Neural Avanzada`
+   - **Descripción:** `Equipos para terapia neural y neuromodulación`
    - **Código serial:** `SÍ` (marcado)
 3. Click **Guardar**
 4. ✅ Verifica que el checkbox "Código serial" muestra el mensaje informativo sobre seriales
@@ -110,8 +110,8 @@ En el sidebar o menú superior, navegar a cada sección y confirmar que cargan:
 1. Ir a **Catálogo > Marcas**
 2. Click **+ Nueva Marca**
 3. Ingresar:
-   - **Nombre:** `BTL Medical`
-   - **Descripción:** `Fabricante líder en equipos de electroterapia`
+   - **Nombre:** `Quantum Medical Systems`
+   - **Descripción:** `Fabricante especializado en equipos de rehabilitación avanzada`
 4. Click **Guardar**
 5. ✅ Verifica "Marca creada correctamente"
 
@@ -140,13 +140,13 @@ En el sidebar o menú superior, navegar a cada sección y confirmar que cargan:
 4. ✅ Verifica "Marca actualizada correctamente"
 
 ### 2.8 Desactivar / Activar Categoría
-1. Click **Desactivar** en la nueva categoría "Electroestimulación" (sin productos)
+1. Click **Desactivar** en la nueva categoría "Fisioterapia Deportiva Avanzada" (sin productos)
 2. En el modal de confirmación, click **Confirmar Desactivación**
 3. ✅ Verifica que aparece como "Inactiva"
 4. Click **Activar** → vuelve a "Activa"
 
 ### 2.9 Desactivar / Activar Marca
-1. Click **Desactivar** en "Pelotas de Ejercicio"
+1. Click **Desactivar** en "Pesas Terapéuticas"
 2. Confirmar
 3. ✅ Verifica que cambia a "Inactiva"
 4. Click **Activar**
@@ -155,26 +155,26 @@ En el sidebar o menú superior, navegar a cada sección y confirmar que cargan:
 1. Ir a **Catálogo > Productos**
 2. Click **+ Nuevo Producto**
 3. Ingresar:
-   - **SKU:** `BT-001`
-   - **Nombre:** `BTL 4000 Smart`
-   - **Categoría:** `Electroterapia`
-   - **Marca:** `TENS`
-   - **Código de barras:** `7701234567890`
+   - **SKU:** `FT-001`
+   - **Nombre:** `Smart Rehab FT-3000`
+   - **Categoría:** `Fisioterapia Deportiva Avanzada`
+   - **Marca:** `Quantum Medical Systems`
+   - **Código de barras:** `7709876543210`
    - **Punto de reorden:** (vacío — probar que no queda pegado el 0)
    - **Requiere cadena de frío:** `NO`
    - **Requiere vencimiento:** `NO`
 4. Click **Guardar**
 5. ✅ Verifica toast "Producto creado exitosamente" (BUG-9)
-6. ✅ Verifica el producto aparece en la lista con SKU `BT-001` (BUG-11)
+6. ✅ Verifica el producto aparece en la lista con SKU `FT-001` (BUG-11)
 7. ✅ Verifica que el punto de reorden guardado es el valor correcto ingresado, no 0 (BUG-7)
 
 ### 2.11 Crear Producto — Con serial obligatorio
 1. Click **+ Nuevo Producto**
 2. Ingresar:
-   - **SKU:** `LS-001`
-   - **Nombre:** `Láser Terapéutico 800mW`
-   - **Categoría:** `Láser Terapéutico` (la que creaste con serial obligatorio)
-   - **Marca:** `Ultrasonido`
+   - **SKU:** `TN-001`
+   - **Nombre:** `Neurostim TN-5000`
+   - **Categoría:** `Terapia Neural Avanzada` (la que creaste con serial obligatorio)
+   - **Marca:** `Quantum Medical Systems`
    - **SKU válido según patrón:** 1-4 letras + `-` + 1-4 dígitos
 3. Click **Guardar**
 4. ✅ Verifica que se crea correctamente
@@ -182,13 +182,13 @@ En el sidebar o menú superior, navegar a cada sección y confirmar que cargan:
 
 ### 2.12 Validación — SKU duplicado
 1. Click **+ Nuevo Producto**
-2. Ingresar SKU: `BT-001` (ya existe)
+2. Ingresar SKU: `FT-001` (ya existe)
 3. Click **Guardar**
 4. ✅ Verifica mensaje de error "Ya existe un producto con este SKU" (BUG-12)
 
 ### 2.13 Buscar productos
 1. Usar el campo de búsqueda
-2. Escribir `ultrasonido`
+2. Escribir `rehab`
 3. ✅ Verifica que filtra solo productos que coinciden
 4. Click **Limpiar filtro** → muestra todos
 
@@ -196,7 +196,7 @@ En el sidebar o menú superior, navegar a cada sección y confirmar que cargan:
 1. Click en **Ver detalle** de cualquier producto
 2. ✅ Verifica que carga la página de detalle con información completa
 
-### 2.15 Editar producto
+### 2.15 Editar producto (usar el recién creado FT-001)
 1. Ir a detalle de producto, click **Editar**
 2. Cambiar punto de reorden a `10`
 3. Guardar
@@ -205,7 +205,7 @@ En el sidebar o menú superior, navegar a cada sección y confirmar que cargan:
 
 ### 2.16 Desactivar / Reactivar producto (BUG-15)
 1. Ir a la lista de productos
-2. Click **Desactivar** en un producto sin movimientos asociados
+2. Click **Desactivar** en el producto recién creado `FT-001` (sin movimientos asociados)
 3. ✅ Verifica modal de confirmación: "¿Está seguro de desactivar [producto]?"
 4. Confirmar
 5. ✅ Verifica que cambia a inactivo
@@ -246,17 +246,17 @@ En el sidebar o menú superior, navegar a cada sección y confirmar que cargan:
 1. Ir a **Compras > Proveedores**
 2. Click **+ Nuevo Proveedor**
 3. Ingresar:
-   - **Nombre:** `MedTech Colombia SAS`
-   - **NIT:** `900555666-7`
-   - **Contacto:** `Carlos Méndez`
-   - **Teléfono:** `+57 310 555 6677`
-   - **Email:** `carlos@medtech.co`
+   - **Nombre:** `Distribuidora Hospitalaria FT`
+   - **NIT:** `901222333-4`
+   - **Contacto:** `María Fernanda Ríos`
+   - **Teléfono:** `+57 320 888 9911`
+   - **Email:** `maria@hospitalariaft.co`
 4. Click **Guardar**
 5. ✅ Verifica "Proveedor creado correctamente"
 
 ### 4.2 Editar Proveedor
 1. Click **Editar** en el proveedor creado
-2. Cambiar teléfono a `+57 311 555 6688`
+2. Cambiar teléfono a `+57 320 888 9922`
 3. ✅ Verifica actualización
 
 ### 4.3 Desactivar / Activar Proveedor (BUG-18)
@@ -269,7 +269,7 @@ En el sidebar o menú superior, navegar a cada sección y confirmar que cargan:
 ### 4.4 Crear Orden de Compra — buscador de productos (BUG-19)
 1. Ir a **Compras > Órdenes de Compra**
 2. Click **+ Nueva Orden**
-3. Seleccionar proveedor `MedTech Colombia SAS`
+3. Seleccionar proveedor `Distribuidora Hospitalaria FT`
 4. Agregar productos:
    - Buscar `CAN-US-007` → ✅ debe aparecer en resultados
    - Buscar `CAN-TENS-003` → ✅ debe aparecer en resultados
@@ -319,7 +319,7 @@ En el sidebar o menú superior, navegar a cada sección y confirmar que cargan:
 3. Agregar producto:
    - Seleccionar producto del catálogo (ej: `CAN-TENS-003`)
    - Cantidad: `2`
-   - **Precio unitario:** `$320,000` (BUG-21)
+   - **Precio unitario:** `$350,000` (BUG-21)
 4. Seleccionar origen: `Vitrina`
 5. ✅ Verifica que NO aparece checkbox "Acepto la ley 1581" (BUG-21)
 6. Click **Confirmar Despacho**
@@ -333,7 +333,7 @@ En el sidebar o menú superior, navegar a cada sección y confirmar que cargan:
 3. Agregar producto:
    - Seleccionar producto del catálogo (ej: `CAN-US-007`)
    - Cantidad: `1`
-   - **Precio unitario:** `$7,200,000`
+   - **Precio unitario:** `$8,500,000`
 4. Origen: `Bodega principal`
 5. Ingresar datos del cliente:
    - **Cliente:** `Clínica del Sur`
