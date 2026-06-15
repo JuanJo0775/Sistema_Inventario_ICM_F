@@ -9,6 +9,7 @@ import { Select } from '../../components/ui/select'
 import type { AlertItem } from '../../interfaces/alerts'
 import { fetchActiveAlerts, resolveAlert } from '../../services/alerts'
 import useAuthStore from '../../store/useAuthStore'
+import { extractApiError } from '../../hooks/useApiError'
 
 type AlertTone = 'critical' | 'warning' | 'special' | 'resolved'
 
@@ -70,8 +71,8 @@ function AlertsPage() {
         alert_type: alertTypeFilter || undefined,
       })
       setAlerts(data)
-    } catch {
-      setError(t('alerts.errors.load'))
+    } catch (err) {
+      setError(extractApiError(err))
     } finally {
       setLoading(false)
     }
@@ -96,8 +97,8 @@ function AlertsPage() {
       setAlerts((current) =>
         current.map((item) => (item.id === alertId ? resolved : item)),
       );
-    } catch {
-      setError(t("alerts.errors.resolve"));
+    } catch (err) {
+      setError(extractApiError(err));
     }
   };
 

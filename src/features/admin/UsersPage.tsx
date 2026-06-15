@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { toast } from 'sonner'
 import { ModalPortal } from '../../components/ui/ModalPortal'
+import { extractApiError } from '../../hooks/useApiError'
 import {
   Search,
   Plus,
@@ -73,7 +74,7 @@ export const UsersPage: React.FC = () => {
       setUsers(usersData)
       setRoles(rolesData)
     } catch (err: any) {
-      setErrorMsg(err.message || t('users.errors.load'))
+      setErrorMsg(extractApiError(err))
     } finally {
       setLoading(false)
     }
@@ -230,7 +231,7 @@ export const UsersPage: React.FC = () => {
           detailedError = `${firstKey}: ${Array.isArray(msg) ? msg.join(', ') : msg}`
         }
       }
-      setErrorMsg(detailedError || err.message || t('users.errors.save'))
+      setErrorMsg(detailedError || extractApiError(err))
     } finally {
       setSubmitting(false)
     }
@@ -249,7 +250,7 @@ export const UsersPage: React.FC = () => {
       setIsModalOpen(false)
       loadData()
     } catch (err: any) {
-      setErrorMsg(err.message || t('users.errors.deactivate'))
+      setErrorMsg(extractApiError(err))
       setUserToDeactivate(null)
     }
   }
@@ -264,7 +265,7 @@ export const UsersPage: React.FC = () => {
       toast.success(t('users.success.reactivated', { username: user.username }))
       loadData()
     } catch (err: any) {
-      setErrorMsg(err.message || t('users.errors.reactivate'))
+      setErrorMsg(extractApiError(err))
     }
   }
 

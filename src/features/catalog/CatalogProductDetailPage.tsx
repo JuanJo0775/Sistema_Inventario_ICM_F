@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import AppShell from '../../components/layout/AppShell';
 import { BarcodeDisplay } from '../../components/ui/BarcodeDisplay';
 import useCatalogStore from '../../store/useCatalogStore';
 import { fetchProductStock } from '../../services/inventory';
+import { extractApiError } from '../../hooks/useApiError';
 
 const CatalogProductDetailPage = () => {
   const { t } = useTranslation();
@@ -74,7 +76,7 @@ const CatalogProductDetailPage = () => {
         // Refrescar la lista en el store
         if (fetchProducts) fetchProducts();
       } catch (err) {
-        console.error('Error deactivating product:', err);
+        toast.error(extractApiError(err));
       }
     }
   };
@@ -87,7 +89,7 @@ const CatalogProductDetailPage = () => {
       // Refrescar la lista en el store
       if (fetchProducts) fetchProducts();
     } catch (err) {
-      console.error('Error restoring product:', err);
+      toast.error(extractApiError(err));
     }
   };
 

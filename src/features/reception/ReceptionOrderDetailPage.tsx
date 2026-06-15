@@ -17,6 +17,7 @@ import useReceptionStore from '../../store/useReceptionStore'
 import useLocationStore from '../../store/useLocationStore'
 import useCatalogStore from '../../store/useCatalogStore'
 import type { PurchaseOrderItem } from '../../interfaces/purchaseOrders'
+import { extractApiError } from '../../hooks/useApiError'
 
 interface LocationSplit {
   id: string
@@ -283,8 +284,7 @@ export default function ReceptionOrderDetailPage() {
       toast.success(successMsg)
       setIsModalOpen(false)
     } catch (err: any) {
-      const data = err?.response?.data
-      setActionError(data?.message || data?.detail || err.message || 'Error al procesar la recepción.')
+      setActionError(extractApiError(err))
     } finally {
       setSaving(false)
     }

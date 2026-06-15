@@ -53,6 +53,7 @@ const CatalogProductFormPage: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState('');
+  const [skuError, setSkuError] = useState('');
 
   useEffect(() => {
     fetchCategories();
@@ -150,7 +151,18 @@ const CatalogProductFormPage: React.FC = () => {
       navigate('/app/catalog/products');
     } catch (error: any) {
       console.error('Error saving product:', error);
-      setFormError(error?.message || t('catalog.products.messages.error', 'Error al guardar el producto'));
+      const data = error?.response?.data;
+      if (data?.sku) {
+        const msg = Array.isArray(data.sku) ? data.sku[0] : data.sku;
+        setSkuError(msg);
+      } else if (data?.detail?.field === 'sku') {
+        setSkuError(data.message || '');
+      } else if (data?.detail?.sku) {
+        const msg = Array.isArray(data.detail.sku) ? data.detail.sku[0] : data.detail.sku;
+        setSkuError(msg);
+      } else {
+        setFormError(data?.message || error?.message || t('catalog.products.messages.error', 'Error al guardar el producto'));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -199,7 +211,11 @@ const CatalogProductFormPage: React.FC = () => {
                   id="sku"
                   label={t('catalog.products.form.sku')}
                   value={formData.sku}
-                  onChange={(v) => setFormData(prev => ({ ...prev, sku: v }))}
+                  error={skuError}
+                  onChange={(v) => {
+                    setFormData(prev => ({ ...prev, sku: v }));
+                    if (skuError) setSkuError('');
+                  }}
                 />
               </div>
 

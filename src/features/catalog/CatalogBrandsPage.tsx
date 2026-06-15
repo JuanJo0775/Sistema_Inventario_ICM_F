@@ -5,6 +5,7 @@ import AppShell from '../../components/layout/AppShell';
 import useCatalogStore from '../../store/useCatalogStore';
 import { useDebounce } from '../../hooks/useDebounce';
 import { toast } from 'sonner';
+import { extractApiError } from '../../hooks/useApiError';
 
 export const CatalogBrandsPage: React.FC = () => {
   const { 
@@ -116,7 +117,7 @@ export const CatalogBrandsPage: React.FC = () => {
       }
       setIsModalOpen(false);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Ocurrió un error al guardar la marca.');
+      setErrorMsg(extractApiError(err));
     }
   };
 
@@ -132,7 +133,7 @@ export const CatalogBrandsPage: React.FC = () => {
         setSuccessMsg(`Marca "${brand.name}" activada correctamente.`);
         toast.success(`Marca "${brand.name}" activada correctamente`);
       } catch (err: any) {
-        setErrorMsg(err.message || 'Error al activar la marca.');
+        setErrorMsg(extractApiError(err));
       }
     }
   };
@@ -147,7 +148,7 @@ export const CatalogBrandsPage: React.FC = () => {
       setSuccessMsg(`Marca "${brand.name}" desactivada correctamente.`);
       toast.success(`Marca "${brand.name}" desactivada correctamente`);
     } catch (err: any) {
-      setErrorMsg(err.message || 'No se pudo desactivar la marca porque tiene productos asociados.');
+      setErrorMsg(extractApiError(err));
     }
   };
 

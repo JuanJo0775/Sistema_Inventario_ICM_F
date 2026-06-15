@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BarcodeScannerButton } from '../../components/ui/BarcodeScannerButton'
 import type { BarcodeProductResult } from '../../services/barcodeScanner'
+import { extractApiError } from '../../hooks/useApiError'
 
 import {
   AlertTriangle,
@@ -234,8 +235,8 @@ function toForm(order?: DispatchItem): DispatchForm {
         setRecentMovements(data.recentMovements)
         const firstPending = data.expectedOrders.find((order) => order.status !== 'dispatched')
         setSelectedOrderId((current) => current ?? firstPending?.id ?? data.expectedOrders[0]?.id ?? null)
-      } catch {
-        setError(t('dispatch.errors.load'))
+      } catch (err) {
+        setError(extractApiError(err))
       } finally {
         setLoading(false)
       }
@@ -404,8 +405,8 @@ function toForm(order?: DispatchItem): DispatchForm {
           t("dispatch.success.confirmed", { sku: selectedOrder.sku }),
         );
         setLastSavedMovement(movement);
-      } catch {
-        setError(t("dispatch.errors.save"));
+      } catch (err) {
+        setError(extractApiError(err));
       } finally {
         setSaving(false);
       }
@@ -415,8 +416,8 @@ function toForm(order?: DispatchItem): DispatchForm {
       if (!lastSavedMovement) return
       try {
         await downloadInvoicePdf(lastSavedMovement.id, lastSavedMovement.invoiceNumber ?? 'ICM-PDF')
-      } catch {
-        setError('No se pudo descargar la factura en PDF.')
+      } catch (err) {
+        setError(extractApiError(err))
       }
     }
 

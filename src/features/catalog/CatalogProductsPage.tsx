@@ -55,8 +55,26 @@ function ProductForm({
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [skuError, setSkuError] = useState("");
 
-
+  function parseError(e: any) {
+    const data = e?.response?.data;
+    if (data?.sku) {
+      const msg = Array.isArray(data.sku) ? data.sku[0] : data.sku;
+      setSkuError(msg);
+      return;
+    }
+    if (data?.detail?.field === 'sku') {
+      setSkuError(data.message || '');
+      return;
+    }
+    if (data?.detail?.sku) {
+      const msg = Array.isArray(data.detail.sku) ? data.detail.sku[0] : data.detail.sku;
+      setSkuError(msg);
+      return;
+    }
+    setError(data?.message || e.message || "Error al guardar");
+  }
 
   async function handleSubmit() {
     if (!form.name?.trim()) return setError("El nombre es obligatorio");
@@ -65,11 +83,12 @@ function ProductForm({
     if (!form.category) return setError("Selecciona una categoría");
     setSaving(true);
     setError("");
+    setSkuError("");
     try {
       await onSave(form);
       onClose();
     } catch (e: any) {
-      setError(e.message || "Error al guardar");
+      parseError(e);
     } finally {
       setSaving(false);
     }
@@ -179,7 +198,11 @@ function ProductForm({
                   id="pf-sku"
                   label="SKU *"
                   value={form.sku || ""}
-                  onChange={(v) => setForm({ ...form, sku: v })}
+                  error={skuError}
+                  onChange={(v) => {
+                    setForm({ ...form, sku: v });
+                    if (skuError) setSkuError("");
+                  }}
                 />
               </div>
             </div>

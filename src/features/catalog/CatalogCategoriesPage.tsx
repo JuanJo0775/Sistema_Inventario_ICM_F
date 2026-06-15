@@ -6,6 +6,7 @@ import AppShell from '../../components/layout/AppShell';
 import useCatalogStore from '../../store/useCatalogStore';
 import { useDebounce } from '../../hooks/useDebounce';
 import { Switch } from '../../components/ui/switch';
+import { extractApiError } from '../../hooks/useApiError';
 import { toast } from 'sonner';
 
 export const CatalogCategoriesPage: React.FC = () => {
@@ -132,7 +133,7 @@ export const CatalogCategoriesPage: React.FC = () => {
       }
       setIsModalOpen(false);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Ocurrió un error al guardar la categoría.');
+      setErrorMsg(extractApiError(err));
     }
   };
 
@@ -151,7 +152,7 @@ export const CatalogCategoriesPage: React.FC = () => {
         setSuccessMsg(`Categoría "${category.name}" activada correctamente.`);
         toast.success(`Categoría "${category.name}" activada correctamente`);
       } catch (err: any) {
-        setErrorMsg(err.message || 'Error al activar la categoría.');
+        setErrorMsg(extractApiError(err));
       }
     }
   };
@@ -166,8 +167,7 @@ export const CatalogCategoriesPage: React.FC = () => {
       setSuccessMsg(`Categoría "${cat.name}" desactivada correctamente.`);
       toast.success(`Categoría "${cat.name}" desactivada correctamente`);
     } catch (err: any) {
-      // Show backend message
-      setErrorMsg(err.message || 'No se pudo desactivar la categoría porque tiene productos asociados.');
+      setErrorMsg(extractApiError(err));
     }
   };
 

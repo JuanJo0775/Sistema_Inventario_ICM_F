@@ -9,6 +9,7 @@ import AuthLayout from '../../components/layout/AuthLayout'
 import PhysioInput from '../../components/ui/PhysioInput'
 import PhysioButton from '../../components/ui/PhysioButton'
 import useAuthStore from '../../store/useAuthStore'
+import { extractApiError } from '../../hooks/useApiError'
 
 type LoginFormValues = {
   identifier: string
@@ -47,11 +48,7 @@ function LoginPage() {
       await login(payload)
       navigate('/app', { replace: true })
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : t('auth.login.errors.fallback')
-      setFormError(message)
+      setFormError(extractApiError(error))
     }
   }
 
