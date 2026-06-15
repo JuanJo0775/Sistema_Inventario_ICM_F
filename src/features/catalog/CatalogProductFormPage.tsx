@@ -54,6 +54,7 @@ const CatalogProductFormPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState('');
   const [skuError, setSkuError] = useState('');
+  const [originalSku, setOriginalSku] = useState('');
 
   useEffect(() => {
     fetchCategories();
@@ -67,9 +68,11 @@ const CatalogProductFormPage: React.FC = () => {
     if (isEditMode && id && products.length > 0) {
       const productToEdit = products.find((p: any) => String(p.id) === String(id));
       if (productToEdit) {
+        const productSku = (productToEdit as any).sku || '';
+        setOriginalSku(productSku);
         setFormData({
           name: (productToEdit as any).name || '',
-          sku: (productToEdit as any).sku || '',
+          sku: productSku,
           description: (productToEdit as any).notes || (productToEdit as any).description || '',
           category_id: (productToEdit as any).category || (productToEdit as any).category_id || '',
           subcategory_id: (productToEdit as any).subcategory || (productToEdit as any).subcategory_id || '',
@@ -109,7 +112,8 @@ const CatalogProductFormPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!SKU_REGEX.test(formData.sku)) {
+    const skuChanged = isEditMode ? formData.sku !== originalSku : true;
+    if (skuChanged && !SKU_REGEX.test(formData.sku)) {
       setFormError('El SKU debe tener formato: 1–4 letras + guion + 1–4 dígitos (BR-12)');
       setIsLoading(false);
       return;
@@ -119,7 +123,7 @@ const CatalogProductFormPage: React.FC = () => {
     try {
       const payload: any = {
         name: formData.name,
-        sku: formData.sku,
+        ...(skuChanged ? { sku: formData.sku } : {}),
         category_id: formData.category_id,
         subcategory_id: formData.subcategory_id || null,
         notes: formData.description || formData.notes,
