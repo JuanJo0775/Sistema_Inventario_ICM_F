@@ -661,7 +661,6 @@ export default function CatalogProductsPage() {
                     <th>Producto</th>
                     <th>Categoría</th>
                     <th>Precio</th>
-                    <th>Stock total</th>
                     <th>Reorden</th>
                     <th>Estado</th>
                     <th>
@@ -673,7 +672,7 @@ export default function CatalogProductsPage() {
                   {filtered.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={8}
+                        colSpan={7}
                         style={{
                           textAlign: "center",
                           color: "var(--ink-40)",
@@ -738,18 +737,6 @@ export default function CatalogProductsPage() {
                             {p.sale_price_retail != null
                               ? `$${Number(p.sale_price_retail).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
                               : "—"}
-                          </td>
-                          <td className="text-mono">
-                            <strong
-                              style={
-                                (p.stockTotal ?? 0) <= (p.reorder_point ?? 0) &&
-                                p.is_active
-                                  ? { color: "var(--err)" }
-                                  : undefined
-                              }
-                            >
-                              {p.stockTotal ?? "—"}
-                            </strong>
                           </td>
                           <td className="text-mono">{p.reorder_point ?? 0}</td>
                           <td>
