@@ -41,6 +41,9 @@ export const SuppliersPage: React.FC = () => {
   const [validationError, setValidationError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
+  // ── confirm deactivation modal ──────────────────────────────────────────────
+  const [supplierToDeactivate, setSupplierToDeactivate] = useState<Supplier | null>(null)
+
   useEffect(() => {
     fetchSuppliers()
   }, [fetchSuppliers])
@@ -98,16 +101,28 @@ export const SuppliersPage: React.FC = () => {
   const handleToggleStatus = async (supplier: Supplier) => {
     clearError()
     setSuccessMsg(null)
-    try {
-      if (supplier.is_active) {
-        await deactivateSupplier(supplier.id)
-        setSuccessMsg(`Proveedor "${supplier.nombre_comercial}" desactivado correctamente.`)
-        toast.success(`Proveedor "${supplier.nombre_comercial}" desactivado correctamente`)
-      } else {
+    if (supplier.is_active) {
+      // Abrir modal de confirmación
+      setSupplierToDeactivate(supplier)
+    } else {
+      try {
         await activateSupplier(supplier.id)
         setSuccessMsg(`Proveedor "${supplier.nombre_comercial}" activado correctamente.`)
         toast.success(`Proveedor "${supplier.nombre_comercial}" activado correctamente`)
+      } catch (err: any) {
+        // handled by store
       }
+    }
+  }
+
+  const confirmDeactivate = async () => {
+    if (!supplierToDeactivate) return
+    const supplier = supplierToDeactivate
+    setSupplierToDeactivate(null)
+    try {
+      await deactivateSupplier(supplier.id)
+      setSuccessMsg(`Proveedor "${supplier.nombre_comercial}" desactivado correctamente.`)
+      toast.success(`Proveedor "${supplier.nombre_comercial}" desactivado correctamente`)
     } catch (err: any) {
       // handled by store
     }
@@ -389,6 +404,56 @@ export const SuppliersPage: React.FC = () => {
               </table>
             </div>
           </div>
+        )}
+
+        {/* ── Deactivate Confirm Modal ──────────────────────────────────── */}
+        {supplierToDeactivate && (
+          <ModalPortal onClose={() => setSupplierToDeactivate(null)}>
+            <div
+              style={{
+                background: 'var(--white)',
+                borderRadius: 18,
+                width: '100%',
+                maxWidth: 440,
+                boxShadow: '0 24px 64px rgba(15,30,32,.2)',
+                padding: 28,
+              }}
+            >
+              <h2
+                style={{
+                  fontFamily: 'var(--ff-display)',
+                  fontSize: 20,
+                  fontWeight: 400,
+                  marginBottom: 8,
+                }}
+              >
+                Desactivar proveedor
+              </h2>
+              <p style={{ fontSize: 14, color: 'var(--ink-60)', marginBottom: 24, lineHeight: 1.5 }}>
+                ¿Estás seguro de que deseas desactivar el proveedor{' '}
+                <strong>"{supplierToDeactivate.nombre_comercial}"</strong>?
+                {supplierToDeactivate.nit && (
+                  <> (NIT: {supplierToDeactivate.nit})</>
+                )}
+                <br /><br />
+                Un proveedor inactivo no podrá asociarse a nuevas órdenes de compra.
+              </p>
+              <div className="flex gap-8" style={{ justifyContent: 'flex-end' }}>
+                <button
+                  className="btn btn--outline"
+                  onClick={() => setSupplierToDeactivate(null)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="btn btn--danger"
+                  onClick={confirmDeactivate}
+                >
+                  Sí, desactivar
+                </button>
+              </div>
+            </div>
+          </ModalPortal>
         )}
 
         {/* Create / Edit Modal */}
