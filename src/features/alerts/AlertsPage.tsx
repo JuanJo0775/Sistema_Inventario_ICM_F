@@ -82,7 +82,7 @@ function AlertsPage() {
     loadAlerts()
   }, [loadAlerts])
 
-  const handleResolve = async (alertId: string) => {
+  const handleResolve = async (alertId: number) => {
     if (!canResolve) {
       setError(t("alerts.errors.unauthorized"));
       return;

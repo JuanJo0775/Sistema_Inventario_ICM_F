@@ -2,7 +2,7 @@ import type { AlertItem } from "../interfaces/alerts";
 
 export const mockAlerts: AlertItem[] = [
   {
-    id: "alert-001",
+    id: 1,
     product: "prod-003",
     product_sku: "CAN-APS-001",
     location: "loc-bod-02",
@@ -15,7 +15,7 @@ export const mockAlerts: AlertItem[] = [
     created_at: "2026-05-30T10:00:00Z",
   },
   {
-    id: "alert-002",
+    id: 2,
     product: "prod-004",
     product_sku: "CAN-GEL-005",
     location: "loc-frio-01",
@@ -28,7 +28,7 @@ export const mockAlerts: AlertItem[] = [
     created_at: "2026-05-29T14:30:00Z",
   },
   {
-    id: "alert-003",
+    id: 3,
     product: "prod-004",
     product_sku: "CAN-GEL-005",
     location: "loc-frio-01",
@@ -41,7 +41,7 @@ export const mockAlerts: AlertItem[] = [
     created_at: "2026-05-30T08:15:00Z",
   },
   {
-    id: "alert-004",
+    id: 4,
     product: "prod-002",
     product_sku: "CAN-TENS-003",
     location: "loc-bod-01",

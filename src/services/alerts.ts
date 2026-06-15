@@ -41,7 +41,7 @@ export const fetchActiveAlerts = async (filters?: {
   return normalizeList(response.data);
 };
 
-export const resolveAlert = async (alertId: string): Promise<AlertItem> => {
+export const resolveAlert = async (alertId: number): Promise<AlertItem> => {
   if (useMocks) {
     const alert = mockAlerts.find((item) => item.id === alertId);
     if (!alert) throw new Error("Alerta no encontrada");
