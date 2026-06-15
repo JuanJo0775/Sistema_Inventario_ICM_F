@@ -40,6 +40,7 @@ type InventoryRow = {
   sku: string
   category: string
   subcategory: string
+  locationDisplay: string
   stock: string
   stockValue: number | null
   reorderPoint: string
@@ -193,12 +194,17 @@ function InventoryPage() {
 
       const status = stockMeta(product.stockTotal, product.reorder_point);
 
+      const locationDisplay = product.byLocation?.length
+        ? product.byLocation.map((l) => l.location_name ?? l.location_code).join(', ')
+        : t("inventory.table.empty");
+
       return {
         id: product.id,
         name: product.name,
         sku,
         category,
         subcategory,
+        locationDisplay,
         stock,
         stockValue: product.stockTotal ?? null,
         reorderPoint:
@@ -244,7 +250,7 @@ function InventoryPage() {
     if (loading) {
       return (
         <TableRow>
-          <TableCell colSpan={7} className="inventory-empty">
+          <TableCell colSpan={9} className="inventory-empty">
             {t('common.loading')}
           </TableCell>
         </TableRow>
@@ -254,7 +260,7 @@ function InventoryPage() {
     if (inventoryRows.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={7} className="inventory-empty">
+          <TableCell colSpan={9} className="inventory-empty">
             {t('common.empty')}
           </TableCell>
         </TableRow>
@@ -284,6 +290,12 @@ function InventoryPage() {
         </TableCell>
         <TableCell>
           <Badge variant="muted">{row.category}</Badge>
+        </TableCell>
+        <TableCell className="text-muted" style={{ fontSize: 12 }}>
+          {row.subcategory}
+        </TableCell>
+        <TableCell style={{ fontSize: 12, maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {row.locationDisplay}
         </TableCell>
         <TableCell className="text-mono">
           <strong>{row.stock}</strong>
@@ -483,6 +495,8 @@ function InventoryPage() {
                       <TableHead>{t('inventory.table.sku')}</TableHead>
                       <TableHead>{t('inventory.table.product')}</TableHead>
                       <TableHead>{t('inventory.table.category')}</TableHead>
+                      <TableHead>{t('inventory.table.subcategory')}</TableHead>
+                      <TableHead>Ubicación</TableHead>
                       <TableHead>{t('inventory.table.stock')}</TableHead>
                       <TableHead>{t('inventory.table.reorderPoint')}</TableHead>
                       <TableHead>{t('inventory.table.status')}</TableHead>
