@@ -195,7 +195,12 @@ const useCatalogStore = create<CatalogState>((set) => ({
   updateProduct: async (id, productData) => {
     set({ error: null })
     try {
-      await updateCatalogProduct(id.toString(), mapProductPayload(productData) as CatalogProductUpdateInput)
+      const payload = mapProductPayload(productData) as CatalogProductUpdateInput
+      // SKU es inmutable (BR-12); el backend rechaza cualquier cambio.
+      // Omitirlo evita el falso positivo de validate_sku cuando se reedita
+      // con el mismo SKU (el serializer no recibe la instancia actual).
+      delete (payload as any).sku
+      await updateCatalogProduct(id.toString(), payload)
     } catch (err: any) {
       set({ error: err.humanMessage || err.message })
       throw err
