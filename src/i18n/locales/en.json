@@ -647,10 +647,6 @@
       "allowed": "{{sku}} · {{product}} — return allowed",
       "blocked": "{{product}} — {{reason}}"
     },
-    "blockExample": {
-      "eyebrow": "Return restriction example",
-      "message": "Basic Hydraulic Table — Does not allow returns."
-    },
     "form": {
       "ariaLabel": "Return form",
       "title": "Register return",
@@ -670,8 +666,8 @@
       "reasonPlaceholder": "Failure to power on, open package, missing accessory...",
       "note": "Notes",
       "notePlaceholder": "Internal notes or visual evidence...",
-      "relatedMovement": "Related movement",
-      "relatedMovementPlaceholder": "Related movement or order ID",
+      "relatedMovement": "Origin movement (optional)",
+      "relatedMovementPlaceholder": "Search outgoing movement...",
       "reset": "Cancel",
       "submit": "Register return",
       "saving": "Registering..."

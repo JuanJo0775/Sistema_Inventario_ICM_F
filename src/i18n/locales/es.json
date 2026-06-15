@@ -647,10 +647,6 @@
       "allowed": "{{sku}} · {{product}} — devolución permitida",
       "blocked": "{{product}} — {{reason}}"
     },
-    "blockExample": {
-      "eyebrow": "Ejemplo de restricción de devolución",
-      "message": "Mesa Hidraulica Basica — No admite devolucion."
-    },
     "form": {
       "ariaLabel": "Formulario de devolución",
       "title": "Registrar devolución",
@@ -670,8 +666,8 @@
       "reasonPlaceholder": "Falla al encender, empaque abierto, accesorio faltante...",
       "note": "Observaciones",
       "notePlaceholder": "Notas internas o evidencia visual...",
-      "relatedMovement": "Movimiento relacionado",
-      "relatedMovementPlaceholder": "ID de movimiento o pedido relacionado",
+      "relatedMovement": "Movimiento de origen (opcional)",
+      "relatedMovementPlaceholder": "Buscar movimiento de salida...",
       "reset": "Cancelar",
       "submit": "Registrar devolución",
       "saving": "Registrando..."
