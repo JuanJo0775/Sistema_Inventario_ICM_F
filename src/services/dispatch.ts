@@ -5,6 +5,7 @@ import {
   mockDispatchItems,
   mockDispatchMovements,
 } from "../mocks/dispatch";
+import { fetchCatalogProducts, fetchCategories } from "./catalog";
 import type {
   DispatchItem,
   DispatchLocation,
@@ -47,15 +48,21 @@ export const fetchDispatchOverview = async (): Promise<DispatchOverview> => {
   }
 
   try {
-    const [locationsRes, movementsRes] = await Promise.all([
-      api.get<Array<{ id: string; code: string; name: string }> | { results: Array<{ id: string; code: string; name: string }> }>(
-        "/inventory/locations/",
-      ),
-      api.get<{ results: DispatchMovementResponse[] }>(
-        "/movements/dispatches/",
-        { params: { page_size: 10, ordering: "-created_at" } },
-      ),
-    ]);
+    const [locationsRes, movementsRes, catalogProducts, categories] =
+      await Promise.all([
+        api.get<
+          | Array<{ id: string; code: string; name: string }>
+          | {
+              results: Array<{ id: string; code: string; name: string }>;
+            }
+        >("/inventory/locations/"),
+        api.get<{ results: DispatchMovementResponse[] }>(
+          "/movements/dispatches/",
+          { params: { page_size: 10, ordering: "-created_at" } },
+        ),
+        fetchCatalogProducts({ page_size: 9999, include_inactive: false }),
+        fetchCategories(),
+      ]);
 
     const locData = Array.isArray(locationsRes.data)
       ? locationsRes.data
@@ -80,10 +87,31 @@ export const fetchDispatchOverview = async (): Promise<DispatchOverview> => {
       },
     );
 
+    // Mapa de categorías para saber requiresSerial
+    const categoryMap = new Map(
+      categories.map((cat) => [cat.id, cat.requires_serial_number ?? false]),
+    );
+
+    // Ordenes de despacho desde productos reales del catálogo
+    const expectedOrders: DispatchItem[] = catalogProducts.map((prod) => ({
+      id: `dsp-${prod.id}`,
+      invoiceNumber: `DSP-${prod.sku}`,
+      customerName: "",
+      productId: prod.id,
+      productName: prod.name,
+      sku: prod.sku,
+      barcode: prod.barcode ?? "",
+      category: prod.category_slug ?? "",
+      expectedQuantity: 1,
+      dispatchedQuantity: 0,
+      status: "pending" as const,
+      requiresSerial: categoryMap.get(prod.category) ?? false,
+      requiresColdChain: prod.requires_cold_chain,
+    }));
+
     return {
       locations,
-      // Las órdenes de picking no tienen endpoint en el backend todavía
-      expectedOrders: mockDispatchItems,
+      expectedOrders,
       recentMovements,
     };
   } catch (err) {
