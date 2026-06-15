@@ -702,6 +702,40 @@ export default function ReceptionOrderDetailPage() {
                 />
               </div>
 
+              {/* Discrepancy — inmediatamente debajo de Cantidad a recibir */}
+              {hasDiscrepancy && (
+                <div
+                  className="notice notice--warn"
+                  style={{ display: 'grid', gap: 8 }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontWeight: 700,
+                      fontSize: 12,
+                      color: 'var(--warn)',
+                    }}
+                  >
+                    <AlertCircle size={14} />
+                    Diferencia detectada
+                  </div>
+                  <p style={{ fontSize: 11.5, color: 'var(--ink-70)', margin: 0 }}>
+                    La cantidad a registrar ({quantityReceived || 0}) difiere de la
+                    cantidad esperada en esta entrega. Escribe el motivo:
+                  </p>
+                  <textarea
+                    className="f-input"
+                    placeholder="Escribe el motivo del faltante o retraso..."
+                    value={discrepancyNote}
+                    onChange={(e) => setDiscrepancyNote(e.target.value)}
+                    style={{ minHeight: 60, resize: 'none', width: '100%' }}
+                    required
+                  />
+                </div>
+              )}
+
               {/* Lot + Expiration (always global) */}
               {requiresExpiration && (
                 <div className="f-row f-row-2">
@@ -956,40 +990,6 @@ export default function ReceptionOrderDetailPage() {
                       </option>
                     ))}
                   </select>
-                </div>
-              )}
-
-              {/* Discrepancy */}
-              {hasDiscrepancy && (
-                <div
-                  className="notice notice--warn"
-                  style={{ display: 'grid', gap: 8 }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      fontWeight: 700,
-                      fontSize: 12,
-                      color: 'var(--warn)',
-                    }}
-                  >
-                    <AlertCircle size={14} />
-                    Diferencia detectada
-                  </div>
-                  <p style={{ fontSize: 11.5, color: 'var(--ink-70)', margin: 0 }}>
-                    La cantidad a registrar ({quantityReceived || 0}) difiere de la
-                    cantidad esperada en esta entrega. Escribe el motivo:
-                  </p>
-                  <textarea
-                    className="f-input"
-                    placeholder="Escribe el motivo del faltante o retraso..."
-                    value={discrepancyNote}
-                    onChange={(e) => setDiscrepancyNote(e.target.value)}
-                    style={{ minHeight: 60, resize: 'none' }}
-                    required
-                  />
                 </div>
               )}
 
