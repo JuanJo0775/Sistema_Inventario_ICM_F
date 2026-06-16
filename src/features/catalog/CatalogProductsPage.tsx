@@ -850,7 +850,18 @@ export default function CatalogProductsPage() {
                           <td className="text-mono">{p.reorder_point ?? 0}</td>
                           <td>
                             {p.is_active ? (
-                              stockPill(p.stockTotal, p.reorder_point ?? 0)
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <span>
+                                  {stockPill(p.stockTotal, p.reorder_point ?? 0)}
+                                </span>
+                                {p.byLocation && p.byLocation.length > 0 && (
+                                  <span style={{ fontSize: 10, color: 'var(--ink-40)', lineHeight: 1.3 }}>
+                                    {p.byLocation.map(loc =>
+                                      `${loc.location_name ?? loc.location_code} (${loc.quantity})`
+                                    ).join(', ')}
+                                  </span>
+                                )}
+                              </div>
                             ) : (
                               <span className="pill pill--muted">Inactivo</span>
                             )}
