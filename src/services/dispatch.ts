@@ -20,6 +20,7 @@ export interface CartSubmitItem {
   scannedCode?: string | null
   orderSku?: string | null
   serialNumber?: string | null
+  lotId?: string | null
   note?: string
 }
 
@@ -165,6 +166,11 @@ export const submitDispatch = async (
 export const submitCart = async (
   items: CartSubmitItem[],
   customerData: DispatchSubmitPayload["customerData"],
+  flags?: {
+    coldChainAck?: boolean;
+    electricalSafetyAck?: boolean;
+    privacyNoticeAck?: boolean;
+  },
 ): Promise<CartSubmissionResult> => {
   if (useMocks) {
     const location = mockDispatchLocations.find(
@@ -193,7 +199,7 @@ export const submitCart = async (
   const movements: DispatchMovement[] = [];
 
   for (const item of items) {
-    const requestBody = {
+    const requestBody: Record<string, unknown> = {
       product_id: item.productId,
       location_id: item.locationId,
       quantity: item.quantity,
@@ -202,12 +208,15 @@ export const submitCart = async (
       scanned_code: item.scannedCode || null,
       order_sku: item.orderSku || null,
       serial_number: item.serialNumber || null,
-      customer_data: customerData ?? null,
+      lot_id: item.lotId ?? null,
       note: item.note || '',
-      cold_chain_acknowledged: false,
-      electrical_safety_acknowledged: false,
-      privacy_notice_acknowledged: false,
+      cold_chain_acknowledged: flags?.coldChainAck ?? false,
+      electrical_safety_acknowledged: flags?.electricalSafetyAck ?? false,
+      privacy_notice_acknowledged: flags?.privacyNoticeAck ?? false,
     };
+    if (customerData) {
+      requestBody.customer_data = customerData;
+    }
 
     const response = await api.post<DispatchMovementResponse>(
       "/movements/dispatches/",

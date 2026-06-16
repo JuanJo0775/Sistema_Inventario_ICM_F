@@ -27,6 +27,7 @@ type AppShellChromeProps = Readonly<{
   isInventory: boolean
   isReception: boolean
   isDispatch: boolean
+  isInvoices: boolean
   isReturns: boolean
   isAlerts: boolean
   isCatalog: boolean
@@ -45,6 +46,7 @@ type ShellRailProps = Readonly<{
   isInventory: boolean
   isReception: boolean
   isDispatch: boolean
+  isInvoices: boolean
   isReturns: boolean
   isAlerts: boolean
   isCatalog: boolean
@@ -64,6 +66,7 @@ type ShellSidebarProps = Readonly<{
   isInventory: boolean
   isReception: boolean
   isDispatch: boolean
+  isInvoices: boolean
   isReturns: boolean
   isAlerts: boolean
   isCatalog: boolean
@@ -139,6 +142,7 @@ type SidebarNavCommonProps = Readonly<{
   isInventory: boolean
   isReception: boolean
   isDispatch: boolean
+  isInvoices: boolean
   isReturns: boolean
   isAlerts: boolean
 }>
@@ -359,6 +363,7 @@ function SidebarOperationsSection({
   canManageInventory,
   isReception,
   isDispatch,
+  isInvoices,
   isReturns,
   isAlerts,
 }: SidebarNavCommonProps) {
@@ -376,6 +381,15 @@ function SidebarOperationsSection({
           <path d="M5 12h14M12 5l7 7-7 7" />
         </svg>
         {t('dashboard.nav.dispatch')}
+      </Link>
+      <Link className={`nav__link${isInvoices ? ' active' : ''}`} to="/app/invoices">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <rect x="2" y="2" width="20" height="20" rx="2" />
+          <line x1="6" y1="6" x2="18" y2="6" />
+          <line x1="6" y1="10" x2="18" y2="10" />
+          <line x1="6" y1="14" x2="12" y2="14" />
+        </svg>
+        {t('dashboard.nav.invoices', 'Facturas')}
       </Link>
       {canManageInventory ? (
         <Link className={`nav__link${isReturns ? ' active' : ''}`} to="/app/returns">
@@ -463,6 +477,12 @@ function SidebarAdminSection({
           >
             Horarios
           </Link>
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/admin/company') ? ' active' : ''}`}
+            to="/app/admin/company"
+          >
+            {t('dashboard.nav.company', 'Empresa')}
+          </Link>
         </div>
       ) : null}
     </div>
@@ -477,6 +497,7 @@ function ShellRail({
   isInventory,
   isReception,
   isDispatch,
+  isInvoices,
   isReturns,
   isAlerts,
   isCatalog,
@@ -531,6 +552,14 @@ function ShellRail({
           <path d="M5 12h14M12 5l7 7-7 7" />
         </svg>
       </Link>
+      <Link className={`rail__btn${isInvoices ? ' active' : ''}`} title={t('dashboard.nav.invoices')} to="/app/invoices">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <rect x="2" y="2" width="20" height="20" rx="2" />
+          <line x1="6" y1="6" x2="18" y2="6" />
+          <line x1="6" y1="10" x2="18" y2="10" />
+          <line x1="6" y1="14" x2="12" y2="14" />
+        </svg>
+      </Link>
       <div className="rail__sep"></div>
       {canManageInventory ? (
         <Link className={`rail__btn${isReturns ? ' active' : ''}`} title={t('dashboard.nav.returns')} to="/app/returns">
@@ -579,6 +608,7 @@ function ShellSidebar({
   isInventory,
   isReception,
   isDispatch,
+  isInvoices,
   isReturns,
   isAlerts,
   isCatalog,
@@ -632,6 +662,7 @@ function ShellSidebar({
           isInventory={isInventory}
           isReception={isReception}
           isDispatch={isDispatch}
+          isInvoices={isInvoices}
           isReturns={isReturns}
           isAlerts={isAlerts}
         />
@@ -644,6 +675,7 @@ function ShellSidebar({
           isInventory={isInventory}
           isReception={isReception}
           isDispatch={isDispatch}
+          isInvoices={isInvoices}
           isReturns={isReturns}
           isAlerts={isAlerts}
           isCatalog={isCatalog}
@@ -659,6 +691,7 @@ function ShellSidebar({
           isInventory={isInventory}
           isReception={isReception}
           isDispatch={isDispatch}
+          isInvoices={isInvoices}
           isReturns={isReturns}
           isAlerts={isAlerts}
           isPurchasing={isPurchasing}
@@ -674,6 +707,7 @@ function ShellSidebar({
           isInventory={isInventory}
           isReception={isReception}
           isDispatch={isDispatch}
+          isInvoices={isInvoices}
           isReturns={isReturns}
           isAlerts={isAlerts}
           isLocations={isLocations}
@@ -689,6 +723,7 @@ function ShellSidebar({
           isInventory={isInventory}
           isReception={isReception}
           isDispatch={isDispatch}
+          isInvoices={isInvoices}
           isReturns={isReturns}
           isAlerts={isAlerts}
         />
@@ -701,6 +736,7 @@ function ShellSidebar({
           isInventory={isInventory}
           isReception={isReception}
           isDispatch={isDispatch}
+          isInvoices={isInvoices}
           isReturns={isReturns}
           isAlerts={isAlerts}
           isAdmin={isAdmin}
@@ -767,6 +803,7 @@ function AppShellChrome({
   isInventory,
   isReception,
   isDispatch,
+  isInvoices,
   isReturns,
   isAlerts,
   isCatalog,
@@ -786,6 +823,7 @@ function AppShellChrome({
         isInventory={isInventory}
         isReception={isReception}
         isDispatch={isDispatch}
+        isInvoices={isInvoices}
         isReturns={isReturns}
         isAlerts={isAlerts}
         isCatalog={isCatalog}
@@ -805,6 +843,7 @@ function AppShellChrome({
         isInventory={isInventory}
         isReception={isReception}
         isDispatch={isDispatch}
+        isInvoices={isInvoices}
         isReturns={isReturns}
         isAlerts={isAlerts}
         isCatalog={isCatalog}
@@ -861,6 +900,8 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
 
   const isDispatch = location.pathname.startsWith('/app/dispatch')
 
+  const isInvoices = location.pathname.startsWith('/app/invoices')
+
   const isReturns = location.pathname.startsWith('/app/returns')
 
   const isAlerts = location.pathname.startsWith('/app/alerts')
@@ -900,6 +941,7 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
       isInventory={isInventory}
       isReception={isReception}
       isDispatch={isDispatch}
+      isInvoices={isInvoices}
       isReturns={isReturns}
       isAlerts={isAlerts}
       isCatalog={isCatalog}

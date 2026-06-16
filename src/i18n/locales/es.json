@@ -204,7 +204,9 @@
       "suppliers": "Proveedores",
       "purchaseOrders": "Órdenes de Compra",
       "logout": "Cerrar sesion",
-      "transfers": "Transferencias"
+      "transfers": "Transferencias",
+      "invoices": "Facturas",
+      "company": "Empresa"
     },
     "sidebar": {
       "brandName": "Import Corporal Medical",
@@ -1153,6 +1155,96 @@
       "scheduleReset": "Horario restablecido al predeterminado.",
       "permitGranted": "Permiso temporal otorgado correctamente.",
       "permitRevoked": "Permiso temporal revocado correctamente."
+    }
+  },
+  "billing": {
+    "page": {
+      "title": "Facturación",
+      "subtitle": "Historial de facturas electrónicas",
+      "createInvoice": "Nueva factura",
+      "filterDateFrom": "Desde",
+      "filterDateTo": "Hasta",
+      "filterType": "Tipo",
+      "filterSearch": "Buscar por NIT o cliente...",
+      "filterClear": "Limpiar filtros",
+      "statsInvoiceCount": "Facturas",
+      "statsTotalToday": "Vendido hoy",
+      "statsTotalMonth": "Vendido mes",
+      "noResults": "No se encontraron facturas.",
+      "voidConfirmTitle": "Anular factura",
+      "voidConfirmMessage": "¿Está seguro de anular la factura {number}? Se revertirá el stock de todos los productos.",
+      "voidReason": "Motivo de anulación",
+      "voidReasonPlaceholder": "Ingrese el motivo obligatorio",
+      "voidSuccess": "Factura anulada correctamente.",
+      "voidError": "Error al anular la factura.",
+      "createdSuccess": "Factura creada exitosamente",
+      "detailTitle": "Factura {number}",
+      "actionsPrint": "Imprimir",
+      "actionsView": "Ver",
+      "actionsVoid": "Anular",
+      "actionsClose": "Cerrar",
+      "actionsNewSale": "Nueva venta",
+      "fields": {
+        "number": "N° Factura",
+        "date": "Fecha",
+        "type": "Tipo",
+        "client": "Cliente / NIT",
+        "items": "Items",
+        "total": "Total",
+        "status": "Estado",
+        "createdBy": "Creado por"
+      },
+      "types": {
+        "minorista": "Minorista",
+        "mayorista": "Mayorista"
+      },
+      "status": {
+        "active": "Activa",
+        "voided": "Anulada"
+      }
+    },
+    "config": {
+      "title": "Datos de empresa",
+      "subtitle": "Configuración del emisor en facturas",
+      "companyInfo": "Información de la empresa",
+      "billingInfo": "Facturación",
+      "companyName": "Razón social",
+      "nit": "NIT",
+      "address": "Dirección",
+      "phone": "Teléfono",
+      "email": "Email",
+      "invoiceSeries": "Serie de facturación",
+      "dianResolution": "Resolución DIAN",
+      "dianRangeFrom": "Rango desde",
+      "dianRangeTo": "Rango hasta",
+      "invoiceFooter": "Pie de factura",
+      "save": "Guardar cambios",
+      "saving": "Guardando...",
+      "saveSuccess": "Datos de empresa actualizados",
+      "saveError": "Error al guardar datos de la empresa",
+      "loadError": "Error al cargar datos de la empresa",
+      "loading": "Cargando..."
+    },
+    "receipt": {
+      "title": "FACTURA DE VENTA",
+      "nit": "NIT",
+      "phone": "Tel",
+      "invoiceNumber": "Factura N°",
+      "date": "Fecha",
+      "cashier": "Cajero",
+      "client": "Cliente",
+      "qty": "Cant",
+      "description": "Descripción",
+      "price": "Precio",
+      "total": "Total",
+      "itemTotal": "Total",
+      "subtotal": "Subtotal",
+      "tax": "IVA",
+      "grandTotal": "TOTAL",
+      "footerThanks": "¡Gracias por su compra!",
+      "footerNote": "Factura de venta — no es documento electrónico DIAN",
+      "voided": "** FACTURA ANULADA **",
+      "items": "Items"
     }
   }
 }
