@@ -1,4 +1,4 @@
-import { Mail, Lock } from 'lucide-react'
+import { Home, Mail, Lock } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -60,6 +60,14 @@ function LoginPage() {
       title={t('auth.login.title')}
       subtitle={t('auth.login.subtitle')}
     >
+      <div className="relative">
+      <Link
+        to="/"
+        className="absolute -top-1 -left-1 text-[color:var(--color-text-muted)] hover:text-[color:var(--color-accent)] transition-colors"
+        title="Ir a inicio"
+      >
+        <Home className="h-5 w-5" />
+      </Link>
       <form
         onSubmit={handleSubmit(onSubmit)}
         className="space-y-6"
@@ -110,6 +118,7 @@ function LoginPage() {
           {t('auth.login.managedAccess')}
         </div>
       </form>
+      </div>
     </AuthLayout>
   )
 }
