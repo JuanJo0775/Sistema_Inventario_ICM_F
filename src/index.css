@@ -4575,7 +4575,7 @@ input.f-input[type="date"] {
 }
 
 /* ═══════════════════════════════════════════════════
-   THERMAL RECEIPT (factura térmica 80mm)
+   THERMAL RECEIPT (factura térmica 72mm)
    ═══════════════════════════════════════════════════ */
 .thermal-receipt {
   font-family: 'Courier New', Courier, monospace;
@@ -4583,96 +4583,131 @@ input.f-input[type="date"] {
   width: 72mm;
   color: #000;
   background: #fff;
-  line-height: 1.3;
-  padding: 2mm;
+  line-height: 1.5;
+  padding: 3mm 4mm;
+  margin: 0 auto;
 }
 
-.tr-header {
+.thermal-receipt * {
+  color: #000;
+  background: transparent;
+  border-color: #000;
+}
+
+.thermal-receipt .tr-header {
   text-align: center;
-  margin-bottom: 4px;
-}
-
-.tr-title {
-  font-weight: 700;
-  font-size: 12px;
-  text-transform: uppercase;
   margin-bottom: 2px;
 }
 
-.tr-muted {
+.thermal-receipt .tr-title {
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  line-height: 1.25;
+}
+
+.thermal-receipt .tr-muted {
   color: #555;
   font-size: 10px;
 }
 
-.tr-divider {
+.thermal-receipt .tr-divider {
   text-align: center;
+  letter-spacing: 4px;
+  margin: 3px 0;
   font-size: 10px;
-  margin: 4px 0;
-  letter-spacing: 1px;
+  color: #000;
 }
 
-.tr-doc-title {
+.thermal-receipt .tr-divider-double {
+  text-align: center;
+  letter-spacing: 4px;
+  margin: 4px 0;
+  font-weight: 700;
+  font-size: 10px;
+  color: #000;
+}
+
+.thermal-receipt .tr-doc-title {
   text-align: center;
   font-weight: 700;
   font-size: 12px;
   margin: 4px 0;
 }
 
-.tr-doc-ref {
+.thermal-receipt .tr-doc-ref {
   text-align: center;
   font-size: 11px;
   margin-bottom: 4px;
 }
 
-.tr-section-label {
+.thermal-receipt .tr-invoice-num {
+  text-align: center;
+  margin: 4px 0;
+}
+
+.thermal-receipt .tr-section-label {
   font-weight: 700;
-  font-size: 11px;
+  letter-spacing: 2px;
   margin-bottom: 2px;
 }
 
-.tr-line {
+.thermal-receipt .tr-line {
   display: flex;
   justify-content: space-between;
   font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
-.tr-item-block {
+.thermal-receipt .tr-row-space {
+  display: flex;
+  justify-content: space-between;
+}
+
+.thermal-receipt .tr-total {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.thermal-receipt .tr-item-block {
   margin-bottom: 4px;
 }
 
-.tr-item-name {
+.thermal-receipt .tr-item-name {
   font-weight: 600;
   font-size: 11px;
 }
 
-.tr-item-sku {
+.thermal-receipt .tr-item-sku {
   font-size: 9px;
   color: #555;
 }
 
-.tr-item-line {
+.thermal-receipt .tr-item-line {
   display: flex;
   justify-content: space-between;
   font-size: 11px;
 }
 
-.tr-item-spacer {
+.thermal-receipt .tr-item-spacer {
   height: 4px;
 }
 
-.tr-amount {
+.thermal-receipt .tr-amount {
   text-align: right;
   font-weight: 600;
 }
 
-.tr-total-line {
+.thermal-receipt .tr-total-line {
   display: flex;
   justify-content: space-between;
   font-size: 11px;
   margin-bottom: 2px;
 }
 
-.tr-grand-total {
+.thermal-receipt .tr-grand-total {
   display: flex;
   justify-content: space-between;
   font-size: 13px;
@@ -4680,14 +4715,14 @@ input.f-input[type="date"] {
   margin: 4px 0;
 }
 
-.tr-footer-text {
+.thermal-receipt .tr-footer-text {
   text-align: center;
   font-size: 10px;
   color: #333;
   margin-bottom: 2px;
 }
 
-.tr-footer-thanks {
+.thermal-receipt .tr-footer-thanks {
   font-style: italic;
   margin-top: 4px;
 }
@@ -4725,90 +4760,16 @@ input.f-input[type="date"] {
   animation: spin 1s linear infinite;
 }
 
-/* ─── Thermal receipt for SAT 22T ─── */
-.thermal-receipt {
-  font-family: 'Courier New', 'Courier', monospace;
-  font-size: 11px;
-  width: 72mm;
-  color: #000;
-  background: #fff;
-  padding: 3mm 4mm;
-  margin: 0 auto;
-  line-height: 1.5;
-}
-
-.thermal-receipt .tr-header {
-  text-align: center;
-  margin-bottom: 2px;
-}
-
-.thermal-receipt .tr-title {
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.25;
-  margin-bottom: 4px;
-}
-
-.thermal-receipt .tr-divider {
-  text-align: center;
-  letter-spacing: 4px;
-  margin: 3px 0;
-  font-size: 10px;
-  color: #000;
-}
-
-.thermal-receipt .tr-divider-double {
-  text-align: center;
-  letter-spacing: 4px;
-  margin: 4px 0;
-  font-weight: 700;
-  font-size: 10px;
-  color: #000;
-}
-
-.thermal-receipt .tr-invoice-num {
-  text-align: center;
-  margin: 4px 0;
-}
-
-.thermal-receipt .tr-line {
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.thermal-receipt .tr-section-label {
-  font-weight: 700;
-  letter-spacing: 2px;
-  margin-bottom: 2px;
-}
-
-.thermal-receipt .tr-row-space {
-  display: flex;
-  justify-content: space-between;
-}
-
-.thermal-receipt .tr-total {
-  font-weight: 700;
-  font-size: 13px;
-}
-
-.thermal-receipt .tr-item-block {
-  margin-bottom: 4px;
-}
-
-.thermal-receipt .tr-footer-text {
-  text-align: center;
-  font-size: 10px;
-  line-height: 1.4;
-}
-
-/* ─── @media print: thermal receipt ─── */
+/* ─── @media print: thermal receipt (unificado para #thermal-receipt-root y #print-root) ─── */
 @media print {
-  body > *:not(#thermal-receipt-root) {
+  body > *:not(#thermal-receipt-root):not(#print-root) {
     display: none !important;
+    visibility: hidden !important;
   }
-  #thermal-receipt-root {
+  #thermal-receipt-root,
+  #print-root {
     display: block !important;
+    visibility: visible !important;
     position: fixed !important;
     inset: 0 !important;
     width: 100% !important;
@@ -4828,6 +4789,13 @@ input.f-input[type="date"] {
     font-size: 11px !important;
     color: #000 !important;
     background: #fff !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    line-height: 1.4 !important;
+  }
+  #thermal-receipt * {
+    color: #000 !important;
+    background: transparent !important;
+    border-color: #000 !important;
   }
   @page {
     margin: 2mm;

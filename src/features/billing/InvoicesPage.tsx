@@ -76,7 +76,6 @@ export default function InvoicesPage() {
   const [voidTarget, setVoidTarget] = useState<BillingInvoiceListItem | null>(null)
   const [voidReason, setVoidReason] = useState('')
   const [voiding, setVoiding] = useState(false)
-  const [printRoot, setPrintRoot] = useState<HTMLElement | null>(null)
 
   const loadInvoices = useCallback(async () => {
     setLoading(true)
@@ -126,19 +125,7 @@ export default function InvoicesPage() {
     setPage(1)
   }
 
-  useEffect(() => {
-    if (detailInvoice) {
-      let el = document.getElementById('print-root')
-      if (!el) {
-        el = document.createElement('div')
-        el.id = 'print-root'
-        document.body.appendChild(el)
-      }
-      setPrintRoot(el)
-    } else {
-      setPrintRoot(null)
-    }
-  }, [detailInvoice])
+
 
   const handleViewDetail = async (inv: BillingInvoiceListItem) => {
     try {
@@ -427,12 +414,12 @@ export default function InvoicesPage() {
               <ThermalReceipt invoice={detailInvoice} company={company} />
             </div>
 
-            {/* Portal receipt to print-root for window.print() */}
-            {printRoot && createPortal(
-              <div style={{ display: 'none' }} aria-hidden="true">
+            {/* Portal receipt for window.print() — hidden on screen via global CSS @media print */}
+            {createPortal(
+              <div id="thermal-receipt-root">
                 <ThermalReceipt invoice={detailInvoice} company={company} />
               </div>,
-              printRoot,
+              document.body,
             )}
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
@@ -491,33 +478,7 @@ export default function InvoicesPage() {
         </ModalPortal>
       )}
 
-      {/* Print styles */}
-      <style>{`
-        @media print {
-          body > * { display: none !important; visibility: hidden !important; }
-          #print-root,
-          #print-root > * { display: block !important; visibility: visible !important; }
-          .thermal-receipt {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 72mm !important;
-            margin: 0 !important;
-            padding: 2mm !important;
-            color: #000 !important;
-            background: #fff !important;
-            font-family: 'Courier New', Courier, monospace !important;
-            font-size: 11px !important;
-            line-height: 1.4 !important;
-          }
-          .thermal-receipt * {
-            color: #000 !important;
-            background: transparent !important;
-            border-color: #000 !important;
-          }
-        }
-        @page { margin: 2mm; size: 80mm auto; }
-      `}</style>
+
     </>
   )
 }

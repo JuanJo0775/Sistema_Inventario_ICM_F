@@ -15,18 +15,9 @@ type Props = {
 
 export default function InvoiceResultModal({ invoice, onClose, onNewSale }: Props) {
   const [company, setCompany] = useState<CompanyInfo | null>(null)
-  const [printRoot, setPrintRoot] = useState<HTMLElement | null>(null)
 
   useEffect(() => {
     fetchCompanyInfo().then(setCompany).catch(() => {})
-    // Create or get print root
-    let el = document.getElementById('print-root')
-    if (!el) {
-      el = document.createElement('div')
-      el.id = 'print-root'
-      document.body.appendChild(el)
-    }
-    setPrintRoot(el)
   }, [])
 
   const handlePrint = useCallback(() => {
@@ -130,42 +121,13 @@ export default function InvoiceResultModal({ invoice, onClose, onNewSale }: Prop
         </div>
       </div>
 
-      {/* Thermal receipt for printing (mounted outside app tree) */}
-      {printRoot &&
-        createPortal(
-          <div style={{ display: 'none' }} aria-hidden="true">
-            <ThermalReceipt invoice={invoice} company={company} />
-          </div>,
-          printRoot,
-        )}
-
-      {/* @media print styles */}
-      <style>{`
-        @media print {
-          body > * { display: none !important; visibility: hidden !important; }
-          #print-root,
-          #print-root > * { display: block !important; visibility: visible !important; }
-          .thermal-receipt {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 72mm !important;
-            margin: 0 !important;
-            padding: 2mm !important;
-            color: #000 !important;
-            background: #fff !important;
-            font-family: 'Courier New', Courier, monospace !important;
-            font-size: 11px !important;
-            line-height: 1.4 !important;
-          }
-          .thermal-receipt * {
-            color: #000 !important;
-            background: transparent !important;
-            border-color: #000 !important;
-          }
-        }
-        @page { margin: 2mm; size: 80mm auto; }
-      `}</style>
+      {/* Portal receipt for window.print() — hidden on screen via global CSS @media print */}
+      {createPortal(
+        <div id="thermal-receipt-root">
+          <ThermalReceipt invoice={invoice} company={company} />
+        </div>,
+        document.body,
+      )}
     </>
   )
 }
