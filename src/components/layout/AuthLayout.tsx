@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
 type AuthLayoutProps = {
@@ -45,7 +46,7 @@ function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
             </fieldset>
           </div>
           <div className="fade-slide-up" style={{ animationDelay: '40ms' }}>
-            <div className="flex items-center gap-3">
+            <Link to="/" className="flex items-center gap-3" style={{ textDecoration: 'none' }}>
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--color-primary)] text-white shadow-[0_10px_24px_-14px_rgba(14,74,80,0.8)]">
                 <span className="font-mono text-lg">ICM</span>
               </div>
@@ -57,7 +58,7 @@ function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
                   {t('auth.brand.tagline')}
                 </p>
               </div>
-            </div>
+            </Link>
           </div>
           <div className="fade-slide-up" style={{ animationDelay: '120ms' }}>
             <h1 className="font-display text-4xl text-[color:var(--color-text)]">

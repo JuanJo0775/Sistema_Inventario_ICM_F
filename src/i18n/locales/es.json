@@ -1337,5 +1337,76 @@
       "voided": "** FACTURA ANULADA **",
       "items": "Items"
     }
+  },
+  "landing": {
+    "nav": {
+      "categories": "Categorías",
+      "benefits": "Beneficios",
+      "quality": "Calidad",
+      "contact": "Contacto",
+      "login": "Iniciar sesión"
+    },
+    "hero": {
+      "eyebrow": "Artículos médicos y de fisioterapia",
+      "title": "Equipamiento clínico confiable, con trazabilidad de punta a punta",
+      "subtitle": "Import Corporal Medical distribuye equipos de electroterapia, manoterapia y rehabilitación con control de inventario preciso, validación cruzada en cada despacho y cumplimiento normativo en cada entrega.",
+      "ctaPrimary": "Iniciar sesión",
+      "ctaTertiary": "Ver categorías",
+      "stat1Value": "100%",
+      "stat1Label": "Trazabilidad de movimientos",
+      "stat2Value": "24/7",
+      "stat2Label": "Stock por ubicación en tiempo real",
+      "stat3Value": "DIAN",
+      "stat3Label": "Factura electrónica"
+    },
+    "categories": {
+      "eyebrow": "Catálogo",
+      "title": "Categorías principales",
+      "subtitle": "Equipos y consumibles organizados por familia clínica, listos para tu operación.",
+      "items": [
+        { "name": "Electroterapia", "description": "Equipos de estimulación y ultrasonido con control de número de serie por seguridad eléctrica." },
+        { "name": "Manoterapia", "description": "Instrumental y dispositivos manuales para terapia física y rehabilitación." },
+        { "name": "Mesas de Fisioterapia", "description": "Camillas y mesas clínicas para consultorios y centros de rehabilitación." },
+        { "name": "Rehabilitación", "description": "Accesorios y equipos de apoyo para procesos de recuperación funcional." },
+        { "name": "Consumibles", "description": "Insumos de uso frecuente con control de vencimiento y reposición oportuna." },
+        { "name": "Electrónicos", "description": "Dispositivos médicos electrónicos con trazabilidad de serial y cadena de frío cuando aplica." }
+      ]
+    },
+    "benefits": {
+      "eyebrow": "Por qué elegirnos",
+      "title": "Razones para confiar en nuestro inventario",
+      "subtitle": "Cada operación está respaldada por reglas de negocio claras y procesos auditables.",
+      "items": [
+        { "title": "Trazabilidad total", "description": "Cada entrada, salida y traslado queda registrado de forma inmutable y auditable." },
+        { "title": "Stock por ubicación", "description": "Visibilidad en tiempo real del inventario disponible en cada bodega y ubicación." },
+        { "title": "Validación cruzada en despacho", "description": "Cada salida se verifica contra el código escaneado antes de confirmar la entrega." },
+        { "title": "Seguridad y cadena de frío", "description": "Alertas de vencimiento, cadena de frío y seguridad eléctrica en productos sensibles." }
+      ]
+    },
+    "quality": {
+      "eyebrow": "Calidad y servicio",
+      "title": "Atención profesional, procesos auditables",
+      "description": "Detrás de cada despacho hay un proceso documentado: recepción con validación de discrepancias, ajustes siempre justificados y facturación con numeración secuencial. Así garantizamos confianza en cada entrega.",
+      "checks": [
+        "Historial completo de entradas, salidas y traslados",
+        "Notas de discrepancia y ajustes siempre justificados",
+        "Factura electrónica con numeración secuencial",
+        "Alertas operativas de vencimiento y stock mínimo"
+      ]
+    },
+    "cta": {
+      "title": "¿Listo para gestionar tu inventario clínico?",
+      "subtitle": "Accede a la plataforma con tu cuenta. El acceso es gestionado por un administrador.",
+      "primary": "Iniciar sesión"
+    },
+    "footer": {
+      "description": "Distribución de equipos médicos y de fisioterapia con trazabilidad de inventario de punta a punta.",
+      "companyHeading": "Navegación",
+      "contactHeading": "Contacto",
+      "contactPhone": "+57 (1) 000 0000",
+      "contactEmail": "contacto@importcorporalmedical.com",
+      "contactAddress": "Bogotá, Colombia",
+      "rights": "Todos los derechos reservados."
+    }
   }
 }
