@@ -56,70 +56,70 @@ function LoginPage() {
   }
 
   return (
-    <AuthLayout
-      title={t('auth.login.title')}
-      subtitle={t('auth.login.subtitle')}
-    >
-      <div className="relative">
+    <>
       <Link
         to="/"
-        className="absolute -top-1 -left-1 text-[color:var(--color-text-muted)] hover:text-[color:var(--color-accent)] transition-colors"
+        className="fixed top-4 left-4 z-50 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 shadow-sm text-[color:var(--color-text-muted)] hover:text-[color:var(--color-accent)] hover:bg-white transition-colors backdrop-blur-sm"
         title="Ir a inicio"
       >
-        <Home className="h-5 w-5" />
+        <Home className="h-4 w-4" />
       </Link>
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="space-y-6"
-        noValidate
+      <AuthLayout
+        title={t('auth.login.title')}
+        subtitle={t('auth.login.subtitle')}
       >
-        <PhysioInput
-          label={t('auth.login.identifierLabel')}
-          type="text"
-          placeholder={t('auth.login.identifierPlaceholder')}
-          icon={<Mail className="h-4 w-4" />}
-          error={errMsg(errors.identifier?.message)}
-          {...register('identifier')}
-        />
-        <PhysioInput
-          label={t('auth.login.passwordLabel')}
-          type="password"
-          placeholder={t('auth.login.passwordPlaceholder')}
-          icon={<Lock className="h-4 w-4" />}
-          showPasswordToggle
-          error={errMsg(errors.password?.message)}
-          {...register('password')}
-        />
-        <div className="flex justify-end text-sm">
-          <Link
-            to="/forgot-password"
-            className="text-[color:var(--color-accent)] hover:underline"
-          >
-            {t('auth.login.forgot')}
-          </Link>
-        </div>
-        {formError ? (
-          <div
-            className="rounded-lg border border-[color:var(--color-danger)] bg-[#fdf3f2] px-4 py-3 text-xs text-[color:var(--color-danger)]"
-            role="alert"
-          >
-            {formError}
-          </div>
-        ) : null}
-        <PhysioButton
-          type="submit"
-          variant="primary"
-          fullWidth
-          loading={isSubmitting}
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-6"
+          noValidate
         >
-          {t('auth.login.submit')}
-        </PhysioButton>
-        <div className="text-center text-sm text-[color:var(--color-text-muted)]">
-          {t('auth.login.managedAccess')}
-        </div>
-      </form>
-      </div>
-    </AuthLayout>
+          <PhysioInput
+            label={t('auth.login.identifierLabel')}
+            type="text"
+            placeholder={t('auth.login.identifierPlaceholder')}
+            icon={<Mail className="h-4 w-4" />}
+            error={errMsg(errors.identifier?.message)}
+            {...register('identifier')}
+          />
+          <PhysioInput
+            label={t('auth.login.passwordLabel')}
+            type="password"
+            placeholder={t('auth.login.passwordPlaceholder')}
+            icon={<Lock className="h-4 w-4" />}
+            showPasswordToggle
+            error={errMsg(errors.password?.message)}
+            {...register('password')}
+          />
+          <div className="flex justify-end text-sm">
+            <Link
+              to="/forgot-password"
+              className="text-[color:var(--color-accent)] hover:underline"
+            >
+              {t('auth.login.forgot')}
+            </Link>
+          </div>
+          {formError ? (
+            <div
+              className="rounded-lg border border-[color:var(--color-danger)] bg-[#fdf3f2] px-4 py-3 text-xs text-[color:var(--color-danger)]"
+              role="alert"
+            >
+              {formError}
+            </div>
+          ) : null}
+          <PhysioButton
+            type="submit"
+            variant="primary"
+            fullWidth
+            loading={isSubmitting}
+          >
+            {t('auth.login.submit')}
+          </PhysioButton>
+          <div className="text-center text-sm text-[color:var(--color-text-muted)]">
+            {t('auth.login.managedAccess')}
+          </div>
+        </form>
+      </AuthLayout>
+    </>
   )
 }
 
