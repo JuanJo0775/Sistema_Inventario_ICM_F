@@ -1,3 +1,4 @@
+import React from 'react'
 import type { ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -26,7 +27,13 @@ type AppShellChromeProps = Readonly<{
   isInventory: boolean
   isReception: boolean
   isDispatch: boolean
+  isInvoices: boolean
+  isReturns: boolean
   isAlerts: boolean
+  isCatalog: boolean
+  isLocations: boolean
+  isPurchasing: boolean
+  isAdmin: boolean
   handleLanguageChange: (next: 'es' | 'en') => void
   handleLogout: () => void
 }>
@@ -39,7 +46,13 @@ type ShellRailProps = Readonly<{
   isInventory: boolean
   isReception: boolean
   isDispatch: boolean
+  isInvoices: boolean
+  isReturns: boolean
   isAlerts: boolean
+  isCatalog: boolean
+  isLocations: boolean
+  isPurchasing: boolean
+  isAdmin: boolean
 }>
 
 type ShellSidebarProps = Readonly<{
@@ -53,6 +66,13 @@ type ShellSidebarProps = Readonly<{
   isInventory: boolean
   isReception: boolean
   isDispatch: boolean
+  isInvoices: boolean
+  isReturns: boolean
+  isAlerts: boolean
+  isCatalog: boolean
+  isLocations: boolean
+  isPurchasing: boolean
+  isAdmin: boolean
   handleLogout: () => void
 }>
 
@@ -66,7 +86,7 @@ type ShellTopbarProps = Readonly<{
 }>
 
 function getRoleLabel(
-  t: (key: string) => string,
+  t: any,
   role: string | undefined,
 ) {
   switch (role) {
@@ -82,7 +102,7 @@ function getRoleLabel(
 }
 
 function getDisplayName(
-  t: (key: string) => string,
+  t: any,
   user: {
     first_name?: string | null
     last_name?: string | null
@@ -113,6 +133,372 @@ function getAvatarInitials(displayName: string) {
   return letters.join('') || 'ICM'
 }
 
+type SidebarNavCommonProps = Readonly<{
+  t: any
+  locationPathname: string
+  canManageInventory: boolean
+  canManageAdmin: boolean
+  isDashboard: boolean
+  isInventory: boolean
+  isReception: boolean
+  isDispatch: boolean
+  isInvoices: boolean
+  isReturns: boolean
+  isAlerts: boolean
+}>
+
+function SidebarGeneralSection({ t, isDashboard, isInventory, canManageInventory }: SidebarNavCommonProps) {
+  return (
+    <div className="nav__section">
+      <span className="nav__label">{t('dashboard.nav.general')}</span>
+      <Link className={`nav__link${isDashboard ? ' active' : ''}`} to="/app">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+        </svg>
+        {t('dashboard.nav.dashboard')}
+      </Link>
+      {canManageInventory ? (
+        <Link className={`nav__link${isInventory ? ' active' : ''}`} to="/app/inventory">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+          </svg>
+          {t('dashboard.nav.inventory')}
+        </Link>
+      ) : null}
+    </div>
+  )
+}
+
+type SidebarCatalogSectionProps = Readonly<SidebarNavCommonProps & {
+  isCatalog: boolean
+  catalogOpen: boolean
+  setCatalogOpen: React.Dispatch<React.SetStateAction<boolean>>
+}>
+
+function SidebarCatalogSection({ t, locationPathname, isCatalog, catalogOpen, setCatalogOpen }: SidebarCatalogSectionProps) {
+  return (
+    <div className="nav__section">
+      <span className="nav__label">{t('catalog.nav.title')}</span>
+      <button
+        type="button"
+        className={`nav__link nav__link--group${isCatalog ? ' active' : ''}`}
+        onClick={() => setCatalogOpen((open) => !open)}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+        </svg>
+        {t('dashboard.nav.catalog')}
+        <svg
+          className={`nav__chevron${catalogOpen ? ' nav__chevron--open' : ''}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {catalogOpen ? (
+        <div className="nav__submenu">
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/catalog/products') ? ' active' : ''}`}
+            to="/app/catalog/products"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="2" y="2" width="20" height="8" rx="1" />
+              <rect x="2" y="14" width="20" height="8" rx="1" />
+            </svg>
+            {t('catalog.nav.products')}
+          </Link>
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/catalog/categories') ? ' active' : ''}`}
+            to="/app/catalog/categories"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+            </svg>
+            {t('catalog.nav.categories')}
+          </Link>
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/catalog/brands') ? ' active' : ''}`}
+            to="/app/catalog/brands"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+              <line x1="7" y1="7" x2="7.01" y2="7" />
+            </svg>
+            {t('catalog.nav.brands')}
+          </Link>
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/catalog/combos') ? ' active' : ''}`}
+            to="/app/catalog/combos"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="2" y="6" width="20" height="12" rx="2" />
+              <path d="M12 2v4M12 18v4M8 12h8" />
+            </svg>
+            {t('catalog.nav.combos')}
+          </Link>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+type SidebarPurchasingSectionProps = Readonly<SidebarNavCommonProps & {
+  isPurchasing: boolean
+  purchasingOpen: boolean
+  setPurchasingOpen: React.Dispatch<React.SetStateAction<boolean>>
+}>
+
+function SidebarPurchasingSection({ t, locationPathname, isPurchasing, purchasingOpen, setPurchasingOpen }: SidebarPurchasingSectionProps) {
+  return (
+    <div className="nav__section">
+      <span className="nav__label">{t('dashboard.nav.purchasingSection', 'COMPRAS')}</span>
+      <button
+        type="button"
+        className={`nav__link nav__link--group${isPurchasing ? ' active' : ''}`}
+        onClick={() => setPurchasingOpen((open) => !open)}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <path d="M16 10a4 4 0 01-8 0" />
+        </svg>
+        {t('dashboard.nav.purchasing', 'Compras')}
+        <svg
+          className={`nav__chevron${purchasingOpen ? ' nav__chevron--open' : ''}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {purchasingOpen ? (
+        <div className="nav__submenu">
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/purchasing/suppliers') ? ' active' : ''}`}
+            to="/app/purchasing/suppliers"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+            </svg>
+            {t('dashboard.nav.suppliers', 'Proveedores')}
+          </Link>
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/purchasing/purchase-orders') ? ' active' : ''}`}
+            to="/app/purchasing/purchase-orders"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg>
+            {t('dashboard.nav.purchaseOrders', 'Órdenes de Compra')}
+          </Link>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+type SidebarLocationsSectionProps = Readonly<SidebarNavCommonProps & {
+  isLocations: boolean
+  locationsOpen: boolean
+  setLocationsOpen: React.Dispatch<React.SetStateAction<boolean>>
+}>
+
+function SidebarLocationsSection({ t, locationPathname, isLocations, locationsOpen, setLocationsOpen }: SidebarLocationsSectionProps) {
+  return (
+    <div className="nav__section">
+      <span className="nav__label">{t('dashboard.nav.locationsSection', 'LOCACIÓN')}</span>
+      <button
+        type="button"
+        className={`nav__link nav__link--group${isLocations ? ' active' : ''}`}
+        onClick={() => setLocationsOpen((open) => !open)}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+        {t('dashboard.nav.locations', 'LOCACIÓN')}
+        <svg
+          className={`nav__chevron${locationsOpen ? ' nav__chevron--open' : ''}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {locationsOpen ? (
+        <div className="nav__submenu">
+          <Link
+            className={`nav__sublink${locationPathname === '/app/locations' ? ' active' : ''}`}
+            to="/app/locations"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+            {t('dashboard.nav.warehouse', 'Bodegas')}
+          </Link>
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/locations/transfers') ? ' active' : ''}`}
+            to="/app/locations/transfers"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 3l4 4l-4 4" />
+              <path d="M3 7h18" />
+              <path d="M7 21l-4-4l4-4" />
+              <path d="M21 17H3" />
+            </svg>
+            {t('dashboard.nav.transfers', 'Transferencias')}
+          </Link>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function SidebarOperationsSection({
+  t,
+  locationPathname,
+  canManageInventory,
+  isReception,
+  isDispatch,
+  isInvoices,
+  isReturns,
+  isAlerts,
+}: SidebarNavCommonProps) {
+  return (
+    <div className="nav__section">
+      <span className="nav__label">{t('dashboard.nav.operations')}</span>
+      <Link className={`nav__link${isReception ? ' active' : ''}`} to="/app/reception">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M12 2v20M2 12h20" />
+        </svg>
+        {t('dashboard.nav.reception')}
+      </Link>
+      <Link className={`nav__link${isDispatch ? ' active' : ''}`} to="/app/dispatch">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M5 12h14M12 5l7 7-7 7" />
+        </svg>
+        {t('dashboard.nav.dispatch')}
+      </Link>
+      <Link className={`nav__link${isInvoices ? ' active' : ''}`} to="/app/invoices">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <rect x="2" y="2" width="20" height="20" rx="2" />
+          <line x1="6" y1="6" x2="18" y2="6" />
+          <line x1="6" y1="10" x2="18" y2="10" />
+          <line x1="6" y1="14" x2="12" y2="14" />
+        </svg>
+        {t('dashboard.nav.invoices', 'Facturas')}
+      </Link>
+      {canManageInventory ? (
+        <Link className={`nav__link${isReturns ? ' active' : ''}`} to="/app/returns">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M9 14L4 9l5-5" />
+            <path d="M4 9h11a6 6 0 010 12h-1" />
+          </svg>
+          {t('dashboard.nav.returns')}
+        </Link>
+      ) : null}
+      {canManageInventory ? (
+        <Link className={`nav__link${locationPathname.startsWith('/app/adjustments') ? ' active' : ''}`} to="/app/adjustments">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M3 3h18v4H3z" />
+            <path d="M3 11h18v10H3z" />
+          </svg>
+          {t('dashboard.nav.adjustments')}
+        </Link>
+      ) : null}
+      <Link className={`nav__link${isAlerts ? ' active' : ''}`} to="/app/alerts">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 01-3.46 0" />
+        </svg>
+        {t('dashboard.nav.alerts')}
+      </Link>
+    </div>
+  )
+}
+
+function SidebarAdminSection({
+  t,
+  locationPathname,
+  canManageAdmin,
+  isAdmin,
+}: SidebarNavCommonProps & { isAdmin: boolean }) {
+  const [adminOpen, setAdminOpen] = React.useState(isAdmin)
+
+  React.useEffect(() => {
+    if (isAdmin) setAdminOpen(true)
+  }, [isAdmin])
+
+  if (!canManageAdmin) {
+    return null
+  }
+
+  return (
+    <div className="nav__section">
+      <span className="nav__label">{t('dashboard.nav.administration')}</span>
+      <button
+        type="button"
+        className={`nav__link nav__link--group${isAdmin ? ' active' : ''}`}
+        onClick={() => setAdminOpen((open) => !open)}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+        {t('dashboard.nav.administration')}
+        <svg
+          className={`nav__chevron${adminOpen ? ' nav__chevron--open' : ''}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {adminOpen ? (
+        <div className="nav__submenu">
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/admin/audit') ? ' active' : ''}`}
+            to="/app/admin/audit"
+          >
+            {t('dashboard.nav.audit')}
+          </Link>
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/admin/users') ? ' active' : ''}`}
+            to="/app/admin/users"
+          >
+            Usuarios
+          </Link>
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/admin/horarios') ? ' active' : ''}`}
+            to="/app/admin/horarios"
+          >
+            Horarios
+          </Link>
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/admin/company') ? ' active' : ''}`}
+            to="/app/admin/company"
+          >
+            {t('dashboard.nav.company', 'Empresa')}
+          </Link>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 function ShellRail({
   t,
   canManageInventory,
@@ -121,7 +507,13 @@ function ShellRail({
   isInventory,
   isReception,
   isDispatch,
+  isInvoices,
+  isReturns,
   isAlerts,
+  isCatalog,
+  isLocations,
+  isPurchasing,
+  isAdmin,
 }: ShellRailProps) {
   return (
     <nav className="rail" aria-label={t('dashboard.nav.quickAccess')}>
@@ -140,6 +532,26 @@ function ShellRail({
           </svg>
         </Link>
       ) : null}
+      <Link className={`rail__btn${isCatalog ? ' active' : ''}`} title={t('dashboard.nav.catalog')} to="/app/catalog/products">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+        </svg>
+      </Link>
+      <Link className={`rail__btn${isPurchasing ? ' active' : ''}`} title={t('dashboard.nav.purchasing')} to="/app/purchasing/suppliers">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <path d="M16 10a4 4 0 01-8 0" />
+        </svg>
+      </Link>
+      {canManageInventory ? (
+        <Link className={`rail__btn${isLocations ? ' active' : ''}`} title={t('dashboard.nav.locations') || 'LOCACIÓN'} to="/app/locations">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </Link>
+      ) : null}
       <Link className={`rail__btn${isReception ? ' active' : ''}`} title={t('dashboard.nav.reception')} to="/app/reception">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M12 2v20M2 12h20" />
@@ -150,20 +562,29 @@ function ShellRail({
           <path d="M5 12h14M12 5l7 7-7 7" />
         </svg>
       </Link>
-      <div className="rail__sep"></div>
-      <button className="rail__btn" title={t('dashboard.nav.returns')} type="button">
+      <Link className={`rail__btn${isInvoices ? ' active' : ''}`} title={t('dashboard.nav.invoices')} to="/app/invoices">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M9 14L4 9l5-5" />
-          <path d="M4 9h11a6 6 0 010 12h-1" />
+          <rect x="2" y="2" width="20" height="20" rx="2" />
+          <line x1="6" y1="6" x2="18" y2="6" />
+          <line x1="6" y1="10" x2="18" y2="10" />
+          <line x1="6" y1="14" x2="12" y2="14" />
         </svg>
-      </button>
-      {canManageAdmin ? (
-        <button className="rail__btn" title={t('dashboard.nav.settings')} type="button">
+      </Link>
+      <div className="rail__sep"></div>
+      {canManageInventory ? (
+        <Link className={`rail__btn${isReturns ? ' active' : ''}`} title={t('dashboard.nav.returns')} to="/app/returns">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3" />
+            <path d="M9 14L4 9l5-5" />
+            <path d="M4 9h11a6 6 0 010 12h-1" />
           </svg>
-        </button>
+        </Link>
+      ) : null}
+      {canManageAdmin ? (
+        <Link className={`rail__btn${isAdmin ? ' active' : ''}`} title={t('dashboard.nav.audit')} to="/app/admin/audit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+        </Link>
       ) : null}
       <div className="rail__spacer"></div>
       <Link className={`rail__btn${isAlerts ? ' active' : ''}`} title={t('dashboard.nav.alerts')} to="/app/alerts">
@@ -197,8 +618,32 @@ function ShellSidebar({
   isInventory,
   isReception,
   isDispatch,
+  isInvoices,
+  isReturns,
+  isAlerts,
+  isCatalog,
+  isLocations,
+  isPurchasing,
+  isAdmin,
   handleLogout,
 }: ShellSidebarProps) {
+  const location = useLocation()
+  const [catalogOpen, setCatalogOpen] = React.useState(isCatalog)
+  const [locationsOpen, setLocationsOpen] = React.useState(isLocations)
+  const [purchasingOpen, setPurchasingOpen] = React.useState(isPurchasing)
+
+  React.useEffect(() => {
+    if (isCatalog) setCatalogOpen(true)
+  }, [isCatalog])
+
+  React.useEffect(() => {
+    if (isLocations) setLocationsOpen(true)
+  }, [isLocations])
+
+  React.useEffect(() => {
+    if (isPurchasing) setPurchasingOpen(true)
+  }, [isPurchasing])
+
   return (
     <aside className="sidebar">
       <header className="sidebar__header">
@@ -218,71 +663,94 @@ function ShellSidebar({
         </div>
       </header>
       <nav aria-label={t('dashboard.nav.mainMenu')}>
-        <div className="nav__section">
-          <span className="nav__label">{t('dashboard.nav.general')}</span>
-          <Link className={`nav__link${isDashboard ? ' active' : ''}`} to="/app">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <rect x="3" y="3" width="7" height="7" />
-              <rect x="14" y="3" width="7" height="7" />
-              <rect x="14" y="14" width="7" height="7" />
-              <rect x="3" y="14" width="7" height="7" />
-            </svg>
-            {t('dashboard.nav.dashboard')}
-          </Link>
-          {canManageInventory ? (
-            <Link className={`nav__link${isInventory ? ' active' : ''}`} to="/app/inventory">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
-              </svg>
-              {t('dashboard.nav.inventory')}
-            </Link>
-          ) : null}
-        </div>
-
-        <div className="nav__section">
-          <span className="nav__label">{t('dashboard.nav.operations')}</span>
-          <Link className={`nav__link${isReception ? ' active' : ''}`} to="/app/reception">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M12 2v20M2 12h20" />
-            </svg>
-            {t('dashboard.nav.reception')}
-          </Link>
-          <Link className={`nav__link${isDispatch ? ' active' : ''}`} to="/app/dispatch">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-            {t('dashboard.nav.dispatch')}
-          </Link>
-        </div>
-
-        {canManageAdmin ? (
-          <div className="nav__section">
-            <span className="nav__label">{t('dashboard.nav.admin')}</span>
-            <button className="nav__link" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-              </svg>
-              {t('dashboard.nav.audit')}
-            </button>
-            <button className="nav__link" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-              </svg>
-              {t('dashboard.nav.users')}
-            </button>
-            <button className="nav__link" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <rect x="2" y="3" width="4" height="18" />
-                <rect x="10" y="3" width="4" height="18" />
-                <rect x="18" y="3" width="4" height="18" />
-              </svg>
-              {t('dashboard.nav.catalog')}
-            </button>
-          </div>
-        ) : null}
+        <SidebarGeneralSection
+          t={t}
+          locationPathname={location.pathname}
+          canManageInventory={canManageInventory}
+          canManageAdmin={canManageAdmin}
+          isDashboard={isDashboard}
+          isInventory={isInventory}
+          isReception={isReception}
+          isDispatch={isDispatch}
+          isInvoices={isInvoices}
+          isReturns={isReturns}
+          isAlerts={isAlerts}
+        />
+        <SidebarCatalogSection
+          t={t}
+          locationPathname={location.pathname}
+          canManageInventory={canManageInventory}
+          canManageAdmin={canManageAdmin}
+          isDashboard={isDashboard}
+          isInventory={isInventory}
+          isReception={isReception}
+          isDispatch={isDispatch}
+          isInvoices={isInvoices}
+          isReturns={isReturns}
+          isAlerts={isAlerts}
+          isCatalog={isCatalog}
+          catalogOpen={catalogOpen}
+          setCatalogOpen={setCatalogOpen}
+        />
+        <SidebarPurchasingSection
+          t={t}
+          locationPathname={location.pathname}
+          canManageInventory={canManageInventory}
+          canManageAdmin={canManageAdmin}
+          isDashboard={isDashboard}
+          isInventory={isInventory}
+          isReception={isReception}
+          isDispatch={isDispatch}
+          isInvoices={isInvoices}
+          isReturns={isReturns}
+          isAlerts={isAlerts}
+          isPurchasing={isPurchasing}
+          purchasingOpen={purchasingOpen}
+          setPurchasingOpen={setPurchasingOpen}
+        />
+        <SidebarLocationsSection
+          t={t}
+          locationPathname={location.pathname}
+          canManageInventory={canManageInventory}
+          canManageAdmin={canManageAdmin}
+          isDashboard={isDashboard}
+          isInventory={isInventory}
+          isReception={isReception}
+          isDispatch={isDispatch}
+          isInvoices={isInvoices}
+          isReturns={isReturns}
+          isAlerts={isAlerts}
+          isLocations={isLocations}
+          locationsOpen={locationsOpen}
+          setLocationsOpen={setLocationsOpen}
+        />
+        <SidebarOperationsSection
+          t={t}
+          locationPathname={location.pathname}
+          canManageInventory={canManageInventory}
+          canManageAdmin={canManageAdmin}
+          isDashboard={isDashboard}
+          isInventory={isInventory}
+          isReception={isReception}
+          isDispatch={isDispatch}
+          isInvoices={isInvoices}
+          isReturns={isReturns}
+          isAlerts={isAlerts}
+        />
+        <SidebarAdminSection
+          t={t}
+          locationPathname={location.pathname}
+          canManageInventory={canManageInventory}
+          canManageAdmin={canManageAdmin}
+          isDashboard={isDashboard}
+          isInventory={isInventory}
+          isReception={isReception}
+          isDispatch={isDispatch}
+          isInvoices={isInvoices}
+          isReturns={isReturns}
+          isAlerts={isAlerts}
+          isAdmin={isAdmin}
+        />
       </nav>
       <footer className="sidebar__footer">
         <button className="nav__link" onClick={handleLogout} type="button">
@@ -345,7 +813,13 @@ function AppShellChrome({
   isInventory,
   isReception,
   isDispatch,
+  isInvoices,
+  isReturns,
   isAlerts,
+  isCatalog,
+  isLocations,
+  isPurchasing,
+  isAdmin,
   handleLanguageChange,
   handleLogout,
 }: AppShellChromeProps) {
@@ -359,7 +833,13 @@ function AppShellChrome({
         isInventory={isInventory}
         isReception={isReception}
         isDispatch={isDispatch}
+        isInvoices={isInvoices}
+        isReturns={isReturns}
         isAlerts={isAlerts}
+        isCatalog={isCatalog}
+        isLocations={isLocations}
+        isPurchasing={isPurchasing}
+        isAdmin={isAdmin}
       />
 
       <ShellSidebar
@@ -373,6 +853,13 @@ function AppShellChrome({
         isInventory={isInventory}
         isReception={isReception}
         isDispatch={isDispatch}
+        isInvoices={isInvoices}
+        isReturns={isReturns}
+        isAlerts={isAlerts}
+        isCatalog={isCatalog}
+        isLocations={isLocations}
+        isPurchasing={isPurchasing}
+        isAdmin={isAdmin}
         handleLogout={handleLogout}
       />
 
@@ -412,7 +899,8 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
     user?.role === 'almacenista'
 
   const canManageAdmin =
-    user?.role === 'administrador'
+    user?.role === 'administrador' ||
+    user?.role === 'almacenista'
 
   const isDashboard = location.pathname === '/app'
 
@@ -422,7 +910,19 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
 
   const isDispatch = location.pathname.startsWith('/app/dispatch')
 
+  const isInvoices = location.pathname.startsWith('/app/invoices')
+
+  const isReturns = location.pathname.startsWith('/app/returns')
+
   const isAlerts = location.pathname.startsWith('/app/alerts')
+
+  const isCatalog = location.pathname.startsWith('/app/catalog')
+
+  const isLocations = location.pathname.startsWith('/app/locations')
+
+  const isPurchasing = location.pathname.startsWith('/app/purchasing')
+
+  const isAdmin = location.pathname.startsWith('/app/admin')
 
   const handleLanguageChange = (next: 'es' | 'en') => {
     if (next !== language) {
@@ -430,10 +930,10 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
     }
   }
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   return (
     <AppShellChrome
@@ -451,7 +951,13 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
       isInventory={isInventory}
       isReception={isReception}
       isDispatch={isDispatch}
+      isInvoices={isInvoices}
+      isReturns={isReturns}
       isAlerts={isAlerts}
+      isCatalog={isCatalog}
+      isLocations={isLocations}
+      isPurchasing={isPurchasing}
+      isAdmin={isAdmin}
       handleLanguageChange={handleLanguageChange}
       handleLogout={handleLogout}
     >

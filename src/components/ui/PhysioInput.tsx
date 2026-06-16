@@ -1,15 +1,22 @@
-import React from 'react'
+import React, { useState } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 
 type PhysioInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   label: string
   icon?: React.ReactNode
   error?: string
+  showPasswordToggle?: boolean
 }
 
 const PhysioInput = React.forwardRef<HTMLInputElement, PhysioInputProps>(
-  ({ label, icon, error, className, id, ...props }, ref) => {
+  ({ label, icon, error, className, id, showPasswordToggle, type, ...props }, ref) => {
     const inputId = id ?? props.name
     const errorId = error ? `${inputId}-error` : undefined
+    const [visible, setVisible] = useState(false)
+
+    const isPassword = type === 'password'
+    const showToggle = showPasswordToggle && isPassword
+    const resolvedType = showToggle && visible ? 'text' : type
 
     return (
       <label
@@ -30,13 +37,26 @@ const PhysioInput = React.forwardRef<HTMLInputElement, PhysioInputProps>(
             </span>
           ) : null}
           <input
+            key={resolvedType}
             ref={ref}
             id={inputId}
+            type={resolvedType}
             aria-invalid={Boolean(error)}
             aria-describedby={errorId}
             className="w-full bg-transparent text-sm text-[color:var(--color-text)] placeholder:text-[#B0C8CB] focus:outline-none"
             {...props}
           />
+          {showToggle ? (
+            <button
+              type="button"
+              tabIndex={-1}
+              aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              className="flex cursor-pointer items-center text-[#A8C4C8] hover:text-[color:var(--color-text-muted)]"
+              onClick={() => setVisible((v) => !v)}
+            >
+              {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          ) : null}
         </div>
         {error ? (
           <span

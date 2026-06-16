@@ -33,9 +33,39 @@
     },
     "forgot": {
       "title": "Recover access",
-      "subtitle": "This flow will be available in the next phase.",
-      "note": "For now, contact the administrator to reset your access.",
+      "subtitle": "Enter your email to receive a recovery link.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@email.com",
+      "submit": "Send recovery link",
+      "success": "If the email exists, you will receive a recovery link in the next few minutes.",
       "back": "Back to login"
+    },
+    "reset": {
+      "title": "Reset password",
+      "subtitle": "Enter your new password.",
+      "passwordLabel": "New password",
+      "passwordPlaceholder": "Minimum 8 characters",
+      "confirmLabel": "Confirm password",
+      "confirmPlaceholder": "Repeat the password",
+      "submit": "Reset",
+      "success": "Password has been reset successfully.",
+      "login": "Sign in",
+      "errors": {
+        "noToken": "The recovery link is invalid or has expired.",
+        "mismatch": "Passwords do not match.",
+        "minLength": "Minimum 8 characters",
+        "uppercase": "Must contain at least one uppercase letter",
+        "lowercase": "Must contain at least one lowercase letter",
+        "number": "Must contain at least one number",
+        "specialChar": "Must contain at least one special character",
+        "weak": "Password is too weak",
+        "fallback": "Could not reset password"
+      },
+      "strength": {
+        "weak": "Weak",
+        "medium": "Medium",
+        "strong": "Strong"
+      }
     }
   },
   "common": {
@@ -50,7 +80,11 @@
     "actions": {
       "refresh": "Refresh",
       "clear": "Clear"
-    }
+    },
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete"
   },
   "inventory": {
     "title": "Inventory",
@@ -80,16 +114,16 @@
       "searchLabel": "Search",
       "searchPlaceholder": "Search by name, SKU, or barcode...",
       "categoryLabel": "Category",
-      "subcategoryLabel": "Subcategory",
+      "subcategoryLabel": "Brand",
       "categoryAll": "All categories",
-      "subcategoryAll": "All subcategories"
+      "subcategoryAll": "All brands"
     },
     "table": {
       "ariaLabel": "Inventory list",
       "sku": "SKU",
       "product": "Product",
       "category": "Category",
-      "subcategory": "Subcategory",
+      "subcategory": "Brand",
       "stock": "Stock",
       "reorderPoint": "Reorder point",
       "status": "Status",
@@ -114,14 +148,31 @@
     },
     "errors": {
       "categories": "Could not load categories",
-      "subcategories": "Could not load subcategories",
-      "products": "Could not load inventory"
+      "subcategories": "Could not load brands",
+      "products": "Could not load inventory",
+      "combos": "Could not load combos"
+    },
+    "combosSection": {
+      "tabs": {
+        "products": "Products",
+        "combos": "Combos"
+      },
+      "sku": "SKU",
+      "name": "Name",
+      "stock": "Combo stock",
+      "productsCount": "Products",
+      "status": "Status",
+      "empty": "No combos available.",
+      "emptyStock": "Out of stock",
+      "muted": "Inactive",
+      "active": "Active"
     }
   },
   "dashboard": {
     "errors": {
       "load": "Could not load the dashboard overview"
     },
+    "readOnlyMessage": "Read-only mode. You cannot make changes to the system.",
     "roles": {
       "auxiliar_despacho": {
         "upper": "DISPATCH ASSISTANT",
@@ -155,13 +206,23 @@
       "reception": "Receiving",
       "dispatch": "Dispatch",
       "returns": "Returns",
+      "adjustments": "Adjustments",
       "settings": "Settings",
       "reports": "Reports",
       "alerts": "Alerts",
       "audit": "Audit",
       "users": "Users",
       "catalog": "Catalog",
-      "logout": "Sign out"
+      "locations": "Location",
+      "warehouse": "Warehouses",
+      "purchasingSection": "PURCHASING",
+      "purchasing": "Purchasing",
+      "suppliers": "Suppliers",
+      "purchaseOrders": "Purchase Orders",
+      "logout": "Sign out",
+      "transfers": "Transfers",
+      "invoices": "Invoices",
+      "company": "Company"
     },
     "sidebar": {
       "brandName": "Import Corporal Medical",
@@ -459,7 +520,9 @@
       "expectedEmpty": "Select an order to see the expected quantity.",
       "discrepancyNote": "Discrepancy note (required)",
       "confirm": "Confirm intake",
-      "saving": "Saving..."
+      "saving": "Saving...",
+      "coldChainAck": "I confirm cold chain compliance for this reception",
+      "electricalSafetyAck": "I confirm electrical safety protocol has been reviewed"
     },
     "movements": {
       "ariaLabel": "Recent intake movements",
@@ -475,7 +538,9 @@
       "location": "Select a destination location",
       "serials": "You must enter exactly {{count}} serial number(s)",
       "discrepancyNote": "You must add a note explaining the discrepancy",
-      "scanNotFound": "No order found with that code"
+      "scanNotFound": "No order found with that code",
+      "coldChain": "You must confirm the cold chain to continue",
+      "electricalSafety": "You must confirm electrical safety to continue"
     },
     "success": {
       "confirmed": "Intake registered successfully for SKU {{sku}}"
@@ -522,15 +587,11 @@
     "scan": {
       "label": "Scan expected SKU / Barcode",
       "placeholder": "Scan the product barcode...",
+      "helper": "If the scanner fails, type the SKU or barcode manually and validate.",
       "action": "Validate"
     },
     "search": {
       "label": "Search invoice / customer",
-    "scan": {
-      "label": "Scan / manual code",
-      "placeholder": "Scan or type the SKU / barcode...",
-      "helper": "If the scanner fails, type the SKU or barcode manually and validate anyway."
-    },
       "placeholder": "Invoice number or customer name..."
     },
     "orders": {
@@ -581,7 +642,10 @@
       "saving": "Dispatching...",
       "invoiceGenerated": "Invoice generated: {{invoice}}",
       "downloadInvoice": "Download Invoice PDF",
-      "close": "Close"
+      "close": "Close",
+      "customerEmail": "Email address",
+      "customerPhone": "Phone number",
+      "customerAddress": "Delivery address"
     },
     "movements": {
       "ariaLabel": "Recent dispatch movements",
@@ -603,24 +667,148 @@
       "coldChain": "You must confirm cold chain compliance to continue",
       "electricalSafety": "You must confirm electrical safety to continue",
       "scanMismatch": "Cross validation error! Scanned code ({{scanned}}) does not match expected SKU ({{expected}})",
-      "scanSuccess": "✓ Cross validation successful. SKU matches."
+      "scanSuccess": "✓ Cross validation successful. SKU matches.",
+      "customerEmail": "Enter the customer email address",
+      "customerPhone": "Enter the customer phone number",
+      "customerAddress": "Enter the customer delivery address"
     },
     "success": {
       "confirmed": "Outbound registered successfully for SKU {{sku}}"
     }
   },
+  "returns": {
+    "title": "Returns",
+    "subtitle": "Return registration and tracking",
+    "alerts": {
+      "policyPrefix": "Return restriction:",
+      "policy": "only Electrotherapy and Electronics allow returns. Tables and Manotherapy are blocked automatically.",
+      "backendMode": "The backend registers the return and updates stock immediately. Two-stage approval will be available soon."
+    },
+    "stats": {
+      "ariaLabel": "Returns summary",
+      "pending": "Pending",
+      "blocked": "Blocked",
+      "history": "History",
+      "serialRequired": "Require serial"
+    },
+    "validation": {
+      "allowed": "{{sku}} · {{product}} — return allowed",
+      "blocked": "{{product}} — {{reason}}"
+    },
+    "form": {
+      "ariaLabel": "Return form",
+      "title": "Register return",
+      "description": "SKU: {{sku}} · Category: {{category}}",
+      "emptyTitle": "No product selected",
+      "emptyDescription": "Select a product to see the return policy validation.",
+      "product": "Product",
+      "productPlaceholder": "Select a product...",
+      "location": "Location",
+      "locationPlaceholder": "Select location...",
+      "quantity": "Quantity",
+      "serialNumber": "Serial number",
+      "serialPlaceholder": "Enter the serial number...",
+      "serialOptionalPlaceholder": "Optional for this product",
+      "state": "Condition on receipt",
+      "reason": "Declared reason",
+      "reasonPlaceholder": "Failure to power on, open package, missing accessory...",
+      "note": "Notes",
+      "notePlaceholder": "Internal notes or visual evidence...",
+      "relatedMovement": "Origin movement (optional)",
+      "relatedMovementPlaceholder": "Search outgoing movement...",
+      "reset": "Cancel",
+      "submit": "Register return",
+      "saving": "Registering..."
+    },
+    "pending": {
+      "ariaLabel": "Pending returns",
+      "title": "Pending",
+      "empty": "There are no pending returns at the moment.",
+      "approve": "Approve",
+      "reject": "Reject",
+      "details": {
+        "reason": "Reason",
+        "state": "State",
+        "serial": "Serial",
+        "operator": "Registered by",
+        "location": "Location"
+      }
+    },
+    "history": {
+      "ariaLabel": "Returns history",
+      "title": "History",
+      "empty": "There are no registered returns yet."
+    },
+    "status": {
+      "pending": "Pending",
+      "recorded": "Recorded",
+      "reincorporated": "Reincorporated",
+      "rejected": "Rejected",
+      "blocked": "Blocked"
+    },
+    "errors": {
+      "load": "Could not load return information",
+      "save": "Could not register the return. Please try again.",
+      "noProduct": "Select a product to continue",
+      "blocked": "This product does not allow returns.",
+      "quantity": "Enter a valid quantity greater than 0",
+      "location": "Select a location",
+      "serial": "You must enter the serial number",
+      "reason": "Enter the reason declared by the customer"
+    },
+    "success": {
+      "saved": "Return registered successfully for SKU {{sku}}",
+      "approved": "Return reincorporated for SKU {{sku}}",
+      "rejected": "Return rejected for SKU {{sku}}"
+    }
+  },
+  "adjustments": {
+    "title": "Adjustments",
+    "form": {
+      "title": "New adjustment",
+      "description": "Product and physical count to register an adjustment.",
+      "systemStock": "System stock",
+      "product": "Product",
+      "productPlaceholder": "Select a product...",
+      "location": "Location",
+      "locationPlaceholder": "Select location...",
+      "justificationPlaceholder": "Explain why the adjustment is required...",
+      "newQuantity": "New stock (physical)",
+      "justification": "Justification",
+      "justificationLabel": "Mandatory *",
+      "cancel": "Cancel",
+      "submit": "Register adjustment"
+    },
+    "history": {
+      "title": "Adjustments history"
+    },
+    "messages": {
+      "success": "Adjustment registered successfully"
+    }
+  },
   "alerts": {
-    "title": "Operational Alerts",
+    "title": "Operational alerts",
     "subtitle": "Clinical safety and replenishment control center",
+    "hero": {
+      "ariaLabel": "Main alerts summary",
+      "title": "Alerts panel",
+      "subtitle": "Active tracking of stock, expirations, and special protocols.",
+      "meta": "{{count}} resolved alerts logged"
+    },
+    "header": {
+      "activePill": "{{count}} active"
+    },
     "stats": {
       "ariaLabel": "Operational alerts summary",
-      "critical": "Criticals",
+      "critical": "Critical",
       "warning": "Warnings",
+      "special": "Follow-up",
       "resolved": "Resolved"
     },
     "filters": {
       "ariaLabel": "Alerts filters",
       "typeLabel": "Alert type",
+      "hint": "Filter by type to prioritize operational work.",
       "typeAll": "All alerts",
       "LOW_STOCK": "Stock below minimum",
       "EXPIRATION_30": "Expiration in 30 days",
@@ -628,26 +816,530 @@
       "COLD_CHAIN_MISSING": "Cold chain anomaly",
       "STOCK_MISMATCH": "Stock vs ledger desync"
     },
+    "sections": {
+      "stockMinimum": "Stock minimum",
+      "stockMinimumHint": "Reorder and inventory mismatch alerts that require immediate action.",
+      "expiration": "Expiration",
+      "expirationHint": "Lot alerts close to expiry to avoid late rotation.",
+      "specialHandling": "Special handling",
+      "specialHandlingHint": "Alerts that trigger cold chain, traceability, or manual review protocols.",
+      "resolvedHistory": "Recent history",
+      "resolvedHistoryHint": "Already handled alerts for operational traceability."
+    },
+    "badges": {
+      "critical": "Critical",
+      "warning": "Reorder",
+      "special": "Follow-up",
+      "resolved": "Resolved"
+    },
+    "card": {
+      "product": "Product",
+      "lot": "Lot",
+      "noLocation": "No location registered",
+      "createdAt": "Created",
+      "resolvedBy": "Resolved by {{name}}",
+      "system": "System"
+    },
+    "empty": {
+      "active": "There are no active alerts for this filter."
+    },
     "table": {
-      "ariaLabel": "Operational alerts list",
-      "columns": {
-        "type": "Type",
-        "product": "Product",
-        "message": "Detail / Message",
-        "created": "Report date",
-        "status": "Status",
-        "action": "Action"
-      },
       "resolve": "Resolve",
       "resolved": "Resolved"
     },
     "errors": {
       "load": "Could not load alerts information",
       "resolve": "Could not resolve the alert. Please try again.",
-      "unauthorized": "You do not have privileges to resolve this alert. Only Stockkeepers and Administrators can resolve operational alerts."
+      "unauthorized": "You do not have privileges to resolve this alert. Only Stockkeepers can resolve operational alerts.",
+      "unauthorizedShort": "No permission"
     },
     "success": {
       "resolved": "Alert resolved successfully"
+    }
+  },
+  "catalog": {
+    "nav": {
+      "title": "CATALOG",
+      "products": "Products",
+      "categories": "Categories",
+      "brands": "Brands",
+      "combos": "Combos"
+    },
+    "products": {
+      "title": "Product Catalog",
+      "subtitle": "Manage the main portfolio",
+      "new": "Create Product",
+      "edit": "Edit Product",
+      "search": "Search product...",
+      "empty": "No products match your search.",
+      "form": {
+        "basic": "Basic Information",
+        "name": "Product Name",
+        "sku": "SKU",
+        "description": "Description",
+        "classification": "Classification",
+        "category": "Category",
+        "selectCategory": "Select a category",
+        "brand": "Brand (Subcategory)",
+        "selectBrand": "Select a brand",
+        "barcode": "Barcode",
+        "barcodeAuto": "Auto-generated if left blank",
+        "pricing": "Pricing & Base Stock",
+        "price": "Unit Price",
+        "reorderPoint": "Reorder Point",
+        "settings": "Settings",
+        "requiresSerial": "Serial Control",
+        "requiresSerialHint": "Each unit has a unique serial number",
+        "coldChain": "Cold Chain",
+        "coldChainHint": "Requires temperature-controlled conditions",
+        "logistics": "Logistics Configuration",
+        "requiresLots": "Manages Lots",
+        "requiresLotsHint": "Allows registering inbound lots",
+        "requiresExpiration": "Manages Expiration",
+        "requiresExpirationHint": "Tracks expiration date per lot",
+        "isActive": "Active Product"
+      },
+      "detail": {
+        "title": "Product Details",
+        "view": "Detail",
+        "generalInfo": "General Information",
+        "inventorySettings": "Inventory Settings",
+        "back": "Back to products",
+        "edit": "Edit",
+        "status": "Status",
+        "stock": "Current Stock",
+        "price": "Unit Price",
+        "reorder": "Reorder Point",
+        "serial": "Serial Control",
+        "cold": "Cold Chain",
+        "category": "Category",
+        "brand": "Brand",
+        "yes": "Yes",
+        "no": "No",
+        "active": "Active",
+        "inactive": "Inactive",
+        "delete": "Deactivate",
+        "restore": "Reactivate"
+      },
+      "notFound": "Product not found.",
+      "messages": {
+        "created": "Product created successfully",
+        "updated": "Product updated successfully",
+        "error": "Error saving product",
+        "loadError": "Error loading products",
+        "deactivateConfirm": "Are you sure you want to deactivate this product?"
+      }
+    },
+    "categories": {
+      "title": "Categories",
+      "subtitle": "Organize products by family",
+      "new": "New Category",
+      "search": "Search category...",
+      "empty": "No categories found.",
+      "productsCount": "{{count}} products",
+      "form": {
+        "name": "Name",
+        "description": "Description",
+        "save": "Save",
+        "cancel": "Cancel"
+      },
+      "messages": {
+        "created": "Category created",
+        "updated": "Category updated",
+        "error": "Error saving category"
+      }
+    },
+    "brands": {
+      "title": "Brands",
+      "subtitle": "Manage brands (subcategories)",
+      "new": "New Brand",
+      "search": "Search brand...",
+      "empty": "No brands found.",
+      "productsCount": "{{count}} products",
+      "form": {
+        "name": "Name",
+        "description": "Description",
+        "category": "Parent Category",
+        "save": "Save",
+        "cancel": "Cancel"
+      },
+      "messages": {
+        "created": "Brand created",
+        "updated": "Brand updated",
+        "error": "Error saving brand"
+      }
+    },
+    "combos": {
+      "nav": "Combos",
+      "title": "Product Combos",
+      "subtitle": "Group products for bundled sale",
+      "new": "New Combo",
+      "edit": "Edit Combo",
+      "search": "Search combo...",
+      "empty": "No combos match your search.",
+      "stats": {
+        "total": "Total combos",
+        "available": "Available",
+        "noStock": "Out of stock",
+        "inactive": "Inactive"
+      },
+      "card": {
+        "products": "{{count}} products",
+        "product_one": "1 product",
+        "individualPrice": "Individual price",
+        "comboPrice": "Combo price",
+        "discount": "-{{pct}}% discount",
+        "available": "Available",
+        "noStock": "Out of stock",
+        "inactive": "Inactive",
+        "stockOk": "✅ Sufficient stock",
+        "stockWarn": "⚠️ {{count}} units",
+        "stockNone": "❌ Out of stock"
+      },
+      "detail": {
+        "sku": "SKU",
+        "name": "Name",
+        "products": "Combo products",
+        "stock": "Available stock",
+        "comboPrice": "Combo price",
+        "individualTotal": "Individual total",
+        "discount": "Discount"
+      },
+      "form": {
+        "sectionBasic": "Combo info",
+        "nameLabel": "Combo name *",
+        "namePlaceholder": "E.g. Basic TENS Kit",
+        "skuLabel": "SKU *",
+        "skuPlaceholder": "E.g. COMBO-001",
+        "sectionProducts": "Combo products",
+        "searchProduct": "Search product",
+        "searchPlaceholder": "Search by name or SKU...",
+        "noResults": "No products found.",
+        "itemProduct": "Product",
+        "itemSku": "SKU",
+        "itemQuantity": "Qty",
+        "itemStock": "Stock",
+        "itemAction": "Remove",
+        "minProducts": "You must add at least 2 products.",
+        "sectionPricing": "Pricing",
+        "individualTotal": "Individual total (calculated)",
+        "comboPriceLabel": "Combo price *",
+        "discountLabel": "Generated discount",
+        "save": "Save",
+        "cancel": "Cancel"
+      },
+      "messages": {
+        "created": "Combo created successfully",
+        "updated": "Combo updated successfully",
+        "deleted": "Combo deactivated successfully",
+        "restored": "Combo restored successfully",
+        "error": "Error saving combo",
+        "loadError": "Error loading combos",
+        "deleteConfirmTitle": "Deactivate this combo?",
+        "deleteConfirmBody": "Individual products are not affected. The combo will be hidden from the catalog.",
+        "deleteConfirmCancel": "Cancel",
+        "deleteConfirmAction": "Confirm Deactivation",
+        "duplicateConfirmTitle": "Duplicate combo",
+        "duplicateConfirmBody": "A copy will be created with the name \"Copy of {{name}}\"."
+      }
+    },
+    "locations": {
+      "title": "LOCATION",
+      "subtitle": "Manage warehouses and showcases",
+      "new": "New Location",
+      "edit": "Edit Location",
+      "empty": "No locations registered in the system.",
+      "form": {
+        "nameLabel": "Name",
+        "namePlaceholder": "E.g. Main Showcase",
+        "typeLabel": "Type",
+        "typePlaceholder": "Select type...",
+        "capacityLabel": "Relative capacity",
+        "capacityPlaceholder": "E.g. 100",
+        "descriptionLabel": "Description (optional)",
+        "descriptionPlaceholder": "Enter an optional description...",
+        "save": "Save location",
+        "errors": {
+          "nameRequired": "Name is required",
+          "typeRequired": "Type is required",
+          "capacityRequired": "Relative capacity is required",
+          "capacityMin": "Capacity must be greater than 0"
+        }
+      },
+      "deactivate": {
+        "title": "Deactivate Location",
+        "confirm": "Are you sure you want to deactivate this location?",
+        "warning": "A deactivated location cannot receive receptions, transfers, or participate in sales.",
+        "submit": "Confirm Deactivation"
+      },
+      "stats": {
+        "total": "Total locations",
+        "warehouses": "Active warehouses",
+        "showcases": "Active showcases"
+      }
+    }
+  },
+  "users": {
+    "title": "User Administration",
+    "subtitle": "Manage user accounts and system permissions",
+    "createBtn": "Create user",
+    "stats": {
+      "total": "Registered Users",
+      "active": "Active Users",
+      "inactive": "Inactive Users"
+    },
+    "filters": {
+      "searchPlaceholder": "Search by name, email or @username...",
+      "searchBtn": "Search",
+      "roleLabel": "Filter by Role",
+      "roleAll": "All roles",
+      "statusLabel": "Filter by Status",
+      "statusAll": "All",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "clearBtn": "Clear filters"
+    },
+    "table": {
+      "user": "User",
+      "contact": "Contact / Email",
+      "role": "Role",
+      "status": "Status",
+      "action": "Action"
+    },
+    "status": {
+      "active": "ACTIVE",
+      "inactive": "INACTIVE"
+    },
+    "actions": {
+      "edit": "Edit",
+      "reactivate": "Reactivate"
+    },
+    "loading": "Loading system users...",
+    "empty": "No users matched the search filters.",
+    "noName": "No name loaded",
+    "modal": {
+      "createTitle": "Create new user",
+      "editTitle": "Edit user",
+      "fullName": "Full name",
+      "fullNamePlaceholder": "E.g. Carlos Artunduaga",
+      "username": "Username",
+      "email": "Email",
+      "phone": "Phone",
+      "role": "Role",
+      "roleSelectPlaceholder": "Select role",
+      "password": "Temporary password",
+      "passwordPlaceholder": "Min. 8 characters",
+      "cancelBtn": "Cancel",
+      "saveBtn": "Save changes",
+      "createSubmitBtn": "Create user",
+      "savingBtn": "Saving..."
+    },
+    "deactivateModal": {
+      "title": "Deactivate user?",
+      "confirm": "Are you sure you want to deactivate",
+      "warning": "This user will not be able to log in or perform physical inventory operations. Their historical data will be preserved for audit purposes.",
+      "cancelBtn": "Cancel",
+      "confirmBtn": "Confirm deactivation"
+    },
+    "deactivateBtn": "Deactivate user",
+    "roleRestrictions": {
+      "auxiliar_despacho": "Dispatch assistants may only access the system during: 07:00 - 12:00 and 14:00 - 17:00.",
+      "almacenista": "Full 24/7 access. The stockkeeper has privileges to manage the product catalog, locations and inventory.",
+      "administrador": "Full 24/7 access. The administrator has full control over audit logs and access management."
+    },
+    "errors": {
+      "load": "Could not load users.",
+      "save": "Could not save user.",
+      "deactivate": "Could not deactivate user.",
+      "reactivate": "Could not reactivate user.",
+      "nameRequired": "Full name is required.",
+      "usernameRequired": "Username is required.",
+      "emailRequired": "Email address is required.",
+      "roleRequired": "You must select a role for the user.",
+      "passwordRequired": "Temporary password is required and must be at least 8 characters."
+    },
+    "success": {
+      "created": "User created successfully.",
+      "updated": "User updated successfully.",
+      "deactivated": "User {{username}} deactivated successfully.",
+      "reactivated": "User {{username}} reactivated successfully."
+    }
+  },
+  "horarios": {
+    "title": "Schedule Management",
+    "subtitle": "Manage dispatch assistants' access schedules",
+    "stats": {
+      "total": "Active Users",
+      "withCustom": "With custom schedule",
+      "unrestricted": "Unrestricted"
+    },
+    "filters": {
+      "searchPlaceholder": "Search by name, user or email…",
+      "allRoles": "All roles"
+    },
+    "table": {
+      "user": "User",
+      "role": "Role",
+      "schedule": "Schedule",
+      "status": "Status",
+      "action": "Action"
+    },
+    "schedule": {
+      "unrestricted": "No schedule restrictions",
+      "default": "Mon–Fri 07:00-12:00 / 14:00-17:00",
+      "custom": "Mon–Fri {{morning}} / {{afternoon}}",
+      "customMorningOnly": "Mon–Fri {{morning}}",
+      "customAfternoonOnly": "Mon–Fri {{afternoon}}"
+    },
+    "modal": {
+      "title": "Configure schedule",
+      "tabs": {
+        "schedule": "Custom schedule",
+        "permits": "Temporary permits"
+      },
+      "schedule": {
+        "morningStart": "Morning start",
+        "morningEnd": "Morning end",
+        "afternoonStart": "Afternoon start",
+        "afternoonEnd": "Afternoon end",
+        "activeLabel": "Schedule active",
+        "saveBtn": "Save schedule",
+        "resetBtn": "Reset to default",
+        "resetConfirm": "Reset to default schedule?",
+        "noSchedule": "No custom schedule set. Uses default hours.",
+        "saving": "Saving…"
+      },
+      "permits": {
+        "title": "Active temporary permits",
+        "noPermits": "No active temporary permits.",
+        "newBtn": "New temporary permit",
+        "startLabel": "From",
+        "endLabel": "To",
+        "allow247": "24/7 access during period",
+        "morningStart": "Morning window start",
+        "morningEnd": "Morning window end",
+        "afternoonStart": "Afternoon window start",
+        "afternoonEnd": "Afternoon window end",
+        "reasonLabel": "Reason",
+        "reasonPlaceholder": "E.g.: Scheduled night inventory",
+        "grantBtn": "Grant permit",
+        "granting": "Granting…",
+        "revokeBtn": "Revoke",
+        "active": "Active",
+        "expired": "Expired",
+        "range": "{{start}} → {{end}}"
+      },
+      "closeBtn": "Close"
+    },
+    "status": {
+      "active": "ACTIVE",
+      "inactive": "INACTIVE"
+    },
+    "actions": {
+      "extend": "Extend schedule"
+    },
+    "errors": {
+      "load": "Error loading schedule data.",
+      "saveSchedule": "Error saving schedule.",
+      "grantPermit": "Error granting temporary permit.",
+      "revokePermit": "Error revoking temporary permit.",
+      "noAuxiliar": "Schedules can only be configured for dispatch assistants."
+    },
+    "success": {
+      "scheduleSaved": "Schedule saved successfully.",
+      "scheduleReset": "Schedule reset to default.",
+      "permitGranted": "Temporary permit granted successfully.",
+      "permitRevoked": "Temporary permit revoked successfully."
+    }
+  },
+  "billing": {
+    "page": {
+      "title": "Invoices",
+      "subtitle": "Invoice history",
+      "createInvoice": "New invoice",
+      "filterDateFrom": "From",
+      "filterDateTo": "To",
+      "filterType": "Type",
+      "filterSearch": "Search by NIT or client...",
+      "filterClear": "Clear filters",
+      "statsInvoiceCount": "Invoices",
+      "statsTotalToday": "Today's total",
+      "statsTotalMonth": "Month's total",
+      "noResults": "No invoices found.",
+      "voidConfirmTitle": "Void invoice",
+      "voidConfirmMessage": "Are you sure you want to void invoice {number}? Stock for all products will be reversed.",
+      "voidReason": "Reason for voiding",
+      "voidReasonPlaceholder": "Enter mandatory reason",
+      "voidSuccess": "Invoice voided successfully.",
+      "voidError": "Error voiding invoice.",
+      "createdSuccess": "Invoice created successfully",
+      "detailTitle": "Invoice {number}",
+      "actionsPrint": "Print",
+      "actionsView": "View",
+      "actionsVoid": "Void",
+      "actionsClose": "Close",
+      "actionsNewSale": "New sale",
+      "fields": {
+        "number": "Invoice #",
+        "date": "Date",
+        "type": "Type",
+        "client": "Client / NIT",
+        "items": "Items",
+        "total": "Total",
+        "status": "Status",
+        "createdBy": "Created by"
+      },
+      "types": {
+        "minorista": "Retail",
+        "mayorista": "Wholesale"
+      },
+      "status": {
+        "active": "Active",
+        "voided": "Voided"
+      }
+    },
+    "config": {
+      "title": "Company data",
+      "subtitle": "Issuer configuration on invoices",
+      "companyInfo": "Company information",
+      "billingInfo": "Billing",
+      "companyName": "Company name",
+      "nit": "NIT",
+      "address": "Address",
+      "phone": "Phone",
+      "email": "Email",
+      "invoiceSeries": "Invoice series",
+      "dianResolution": "DIAN Resolution",
+      "dianRangeFrom": "Range from",
+      "dianRangeTo": "Range to",
+      "invoiceFooter": "Invoice footer",
+      "save": "Save changes",
+      "saving": "Saving...",
+      "saveSuccess": "Company data updated",
+      "saveError": "Error saving company data",
+      "loadError": "Error loading company data",
+      "loading": "Loading..."
+    },
+    "receipt": {
+      "title": "SALE INVOICE",
+      "nit": "NIT",
+      "phone": "Phone",
+      "invoiceNumber": "Invoice #",
+      "date": "Date",
+      "cashier": "Cashier",
+      "client": "Client",
+      "qty": "Qty",
+      "description": "Description",
+      "price": "Price",
+      "total": "Total",
+      "itemTotal": "Total",
+      "subtotal": "Subtotal",
+      "tax": "VAT",
+      "grandTotal": "TOTAL",
+      "footerThanks": "Thank you for your purchase!",
+      "footerNote": "Sales invoice — not a DIAN electronic document",
+      "voided": "** VOIDED INVOICE **",
+      "items": "Items"
     }
   }
 }

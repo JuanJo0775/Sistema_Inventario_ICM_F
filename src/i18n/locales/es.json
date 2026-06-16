@@ -33,9 +33,39 @@
     },
     "forgot": {
       "title": "Recuperar acceso",
-      "subtitle": "Este flujo estará disponible en la siguiente fase.",
-      "note": "Por ahora contacta al administrador para restablecer tu acceso.",
+      "subtitle": "Ingresa tu correo electrónico para recibir un enlace de recuperación.",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "tu@correo.com",
+      "submit": "Enviar enlace",
+      "success": "Si el correo existe, recibirás un enlace de recuperación en los próximos minutos.",
       "back": "Volver al login"
+    },
+    "reset": {
+      "title": "Restablecer contraseña",
+      "subtitle": "Ingresa tu nueva contraseña.",
+      "passwordLabel": "Nueva contraseña",
+      "passwordPlaceholder": "Mínimo 8 caracteres",
+      "confirmLabel": "Confirmar contraseña",
+      "confirmPlaceholder": "Repite la contraseña",
+      "submit": "Restablecer",
+      "success": "Contraseña restablecida correctamente.",
+      "login": "Iniciar sesión",
+      "errors": {
+        "noToken": "El enlace de recuperación no es válido o ya expiró.",
+        "mismatch": "Las contraseñas no coinciden.",
+        "minLength": "Mínimo 8 caracteres",
+        "uppercase": "Debe contener al menos una mayúscula",
+        "lowercase": "Debe contener al menos una minúscula",
+        "number": "Debe contener al menos un número",
+        "specialChar": "Debe contener al menos un carácter especial",
+        "weak": "La contraseña es insegura",
+        "fallback": "No se pudo restablecer la contraseña"
+      },
+      "strength": {
+        "weak": "Insegura",
+        "medium": "Media",
+        "strong": "Segura"
+      }
     }
   },
   "common": {
@@ -50,7 +80,11 @@
     "actions": {
       "refresh": "Actualizar",
       "clear": "Limpiar"
-    }
+    },
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "edit": "Editar",
+    "delete": "Eliminar"
   },
   "inventory": {
     "title": "Inventario",
@@ -80,16 +114,16 @@
       "searchLabel": "Busqueda",
       "searchPlaceholder": "Buscar por nombre, SKU o barcode...",
       "categoryLabel": "Categoria",
-      "subcategoryLabel": "Subcategoria",
+      "subcategoryLabel": "Marca (Subcategoria)",
       "categoryAll": "Todas las categorias",
-      "subcategoryAll": "Todas las subcategorias"
+      "subcategoryAll": "Todas las marcas"
     },
     "table": {
       "ariaLabel": "Listado de inventario",
       "sku": "SKU",
       "product": "Producto",
       "category": "Categoria",
-      "subcategory": "Subcategoria",
+      "subcategory": "Marca",
       "stock": "Stock",
       "reorderPoint": "Punto reorden",
       "status": "Estado",
@@ -114,14 +148,31 @@
     },
     "errors": {
       "categories": "No se pudieron cargar las categorias",
-      "subcategories": "No se pudieron cargar las subcategorias",
-      "products": "No se pudo cargar el inventario"
+      "subcategories": "No se pudieron cargar las marcas",
+      "products": "No se pudo cargar el inventario",
+      "combos": "No se pudieron cargar los combos"
+    },
+    "combosSection": {
+      "tabs": {
+        "products": "Productos",
+        "combos": "Combos"
+      },
+      "sku": "SKU",
+      "name": "Nombre",
+      "stock": "Stock combo",
+      "productsCount": "Productos",
+      "status": "Estado",
+      "empty": "No hay combos disponibles.",
+      "emptyStock": "Sin stock",
+      "muted": "Inactivo",
+      "active": "Activo"
     }
   },
   "dashboard": {
     "errors": {
       "load": "No se pudo cargar el resumen del dashboard"
     },
+    "readOnlyMessage": "Modo solo lectura. No puedes realizar cambios en el sistema.",
     "roles": {
       "auxiliar_despacho": {
         "upper": "AUXILIAR DESPACHO",
@@ -155,13 +206,23 @@
       "reception": "Recepcion",
       "dispatch": "Despacho",
       "returns": "Devoluciones",
+      "adjustments": "Ajustes",
       "settings": "Ajustes",
       "reports": "Reportes",
       "alerts": "Alertas",
       "audit": "Auditoria",
       "users": "Usuarios",
       "catalog": "Catalogo",
-      "logout": "Cerrar sesion"
+      "locations": "Locación",
+      "warehouse": "Bodegas",
+      "purchasingSection": "COMPRAS",
+      "purchasing": "Compras",
+      "suppliers": "Proveedores",
+      "purchaseOrders": "Órdenes de Compra",
+      "logout": "Cerrar sesion",
+      "transfers": "Transferencias",
+      "invoices": "Facturas",
+      "company": "Empresa"
     },
     "sidebar": {
       "brandName": "Import Corporal Medical",
@@ -459,7 +520,9 @@
       "expectedEmpty": "Selecciona una orden para ver la cantidad esperada.",
       "discrepancyNote": "Nota de discrepancia (obligatoria)",
       "confirm": "Confirmar entrada",
-      "saving": "Guardando..."
+      "saving": "Guardando...",
+      "coldChainAck": "Confirmo cumplimiento de cadena de frío para esta recepción",
+      "electricalSafetyAck": "Confirmo protocolo de seguridad eléctrica revisado"
     },
     "movements": {
       "ariaLabel": "Movimientos de entrada recientes",
@@ -475,7 +538,9 @@
       "location": "Selecciona una ubicación destino",
       "serials": "Debes ingresar exactamente {{count}} número(s) de serie",
       "discrepancyNote": "Debes agregar una nota explicando la discrepancia",
-      "scanNotFound": "No se encontró ninguna orden con ese código"
+      "scanNotFound": "No se encontró ninguna orden con ese código",
+      "coldChain": "Debes confirmar la cadena de frío para continuar",
+      "electricalSafety": "Debes confirmar la seguridad eléctrica para continuar"
     },
     "success": {
       "confirmed": "Entrada registrada correctamente para SKU {{sku}}"
@@ -520,17 +585,13 @@
       "coldChain": "Cadena de frío"
     },
     "scan": {
-      "label": "Escanear SKU / Barcode esperado",
-      "placeholder": "Escanea el código de barras del producto...",
-      "action": "Validar"
+      "label": "Escaneo / código manual",
+      "placeholder": "Escanea o escribe el SKU / código de barras...",
+      "helper": "Si el lector falla, escribe el SKU o el código de barras manualmente y valida igual.",
+      "action": "Buscar"
     },
     "search": {
       "label": "Buscar orden / factura",
-    "scan": {
-      "label": "Escaneo / código manual",
-      "placeholder": "Escanea o escribe el SKU / código de barras...",
-      "helper": "Si el lector falla, escribe el SKU o el código de barras manualmente y valida igual."
-    },
       "placeholder": "Número de factura o cliente..."
     },
     "orders": {
@@ -581,7 +642,10 @@
       "saving": "Despachando...",
       "invoiceGenerated": "Factura generada: {{invoice}}",
       "downloadInvoice": "Descargar PDF Factura",
-      "close": "Cerrar"
+      "close": "Cerrar",
+      "customerEmail": "Correo electrónico",
+      "customerPhone": "Teléfono",
+      "customerAddress": "Dirección de entrega"
     },
     "movements": {
       "ariaLabel": "Despachos recientes",
@@ -603,24 +667,148 @@
       "coldChain": "Debes confirmar la cadena de frío para continuar",
       "electricalSafety": "Debes confirmar la seguridad eléctrica para continuar",
       "scanMismatch": "¡Error de validación cruzada! El código escaneado ({{scanned}}) no coincide con el SKU esperado ({{expected}})",
-      "scanSuccess": "✓ Validación cruzada exitosa. El SKU coincide."
+      "scanSuccess": "✓ Validación cruzada exitosa. El SKU coincide.",
+      "customerEmail": "Ingresa el correo electrónico del cliente",
+      "customerPhone": "Ingresa el teléfono del cliente",
+      "customerAddress": "Ingresa la dirección de entrega del cliente"
     },
     "success": {
       "confirmed": "Salida registrada correctamente para SKU {{sku}}"
     }
   },
+  "returns": {
+    "title": "Devoluciones",
+    "subtitle": "Registro y seguimiento de devoluciones de productos",
+    "alerts": {
+      "policyPrefix": "Restricción de devolución:",
+      "policy": "solo Electroterapia y Electrónicos admiten devolución. Mesas y Manoterapia se bloquean automáticamente.",
+      "backendMode": "El backend registra la devolución y actualiza stock de inmediato. La aprobación en dos etapas estará disponible próximamente."
+    },
+    "stats": {
+      "ariaLabel": "Resumen de devoluciones",
+      "pending": "Pendientes",
+      "blocked": "Bloqueadas",
+      "history": "Historial",
+      "serialRequired": "Requieren serie"
+    },
+    "validation": {
+      "allowed": "{{sku}} · {{product}} — devolución permitida",
+      "blocked": "{{product}} — {{reason}}"
+    },
+    "form": {
+      "ariaLabel": "Formulario de devolución",
+      "title": "Registrar devolución",
+      "description": "SKU: {{sku}} · Categoría: {{category}}",
+      "emptyTitle": "Sin producto seleccionado",
+      "emptyDescription": "Selecciona un producto para ver la validación de la política de devolución.",
+      "product": "Producto",
+      "productPlaceholder": "Selecciona un producto...",
+      "location": "Ubicación",
+      "locationPlaceholder": "Selecciona ubicación...",
+      "quantity": "Cantidad",
+      "serialNumber": "Número de serie",
+      "serialPlaceholder": "Ingresa el número de serie...",
+      "serialOptionalPlaceholder": "Opcional para este producto",
+      "state": "Estado al recibir",
+      "reason": "Motivo declarado",
+      "reasonPlaceholder": "Falla al encender, empaque abierto, accesorio faltante...",
+      "note": "Observaciones",
+      "notePlaceholder": "Notas internas o evidencia visual...",
+      "relatedMovement": "Movimiento de origen (opcional)",
+      "relatedMovementPlaceholder": "Buscar movimiento de salida...",
+      "reset": "Cancelar",
+      "submit": "Registrar devolución",
+      "saving": "Registrando..."
+    },
+    "pending": {
+      "ariaLabel": "Devoluciones pendientes",
+      "title": "Pendientes",
+      "empty": "No hay devoluciones pendientes en este momento.",
+      "approve": "Aprobar",
+      "reject": "Rechazar",
+      "details": {
+        "reason": "Motivo",
+        "state": "Estado",
+        "serial": "Serie",
+        "operator": "Registrado por",
+        "location": "Ubicación"
+      }
+    },
+    "history": {
+      "ariaLabel": "Historial de devoluciones",
+      "title": "Historial",
+      "empty": "Todavía no hay devoluciones registradas."
+    },
+    "status": {
+      "pending": "Pendiente",
+      "recorded": "Registrada",
+      "reincorporated": "Reincorporada",
+      "rejected": "Rechazada",
+      "blocked": "Bloqueada"
+    },
+    "errors": {
+      "load": "No se pudo cargar la información de devoluciones",
+      "save": "No se pudo registrar la devolución. Intenta de nuevo.",
+      "noProduct": "Selecciona un producto para continuar",
+      "blocked": "Este producto no admite devoluciones",
+      "quantity": "Ingresa una cantidad válida mayor a 0",
+      "location": "Selecciona una ubicación",
+      "serial": "Debes ingresar el número de serie",
+      "reason": "Ingresa el motivo declarado por el cliente"
+    },
+    "success": {
+      "saved": "Devolución registrada correctamente para SKU {{sku}}",
+      "approved": "Devolución reincorporada para SKU {{sku}}",
+      "rejected": "Devolución rechazada para SKU {{sku}}"
+    }
+  },
+  "adjustments": {
+    "title": "Ajustes de inventario",
+    "form": {
+      "title": "Nuevo ajuste",
+      "description": "Producto y conteo físico para registrar un ajuste.",
+      "systemStock": "Stock en sistema",
+      "product": "Producto",
+      "productPlaceholder": "Selecciona un producto...",
+      "location": "Ubicación",
+      "locationPlaceholder": "Selecciona ubicación...",
+      "justificationPlaceholder": "Explique por qué se requiere el ajuste...",
+      "newQuantity": "Stock real (conteo físico)",
+      "justification": "Justificación",
+      "justificationLabel": "Obligatoria *",
+      "cancel": "Cancelar",
+      "submit": "Registrar ajuste"
+    },
+    "history": {
+      "title": "Historial de ajustes"
+    },
+    "messages": {
+      "success": "Ajuste registrado correctamente"
+    }
+  },
   "alerts": {
-    "title": "Alertas Operativas",
+    "title": "Alertas operativas",
     "subtitle": "Centro de control de seguridad clínica y reabastecimiento",
+    "hero": {
+      "ariaLabel": "Resumen principal de alertas",
+      "title": "Panel de alertas",
+      "subtitle": "Seguimiento activo de stock, vencimientos y protocolos especiales.",
+      "meta": "{{count}} alertas resueltas registradas"
+    },
+    "header": {
+      "activePill": "{{count}} activas"
+    },
     "stats": {
       "ariaLabel": "Resumen de alertas operativas",
       "critical": "Críticas",
       "warning": "Advertencias",
+      "special": "Seguimiento",
       "resolved": "Resueltas"
     },
     "filters": {
       "ariaLabel": "Filtros de alertas",
       "typeLabel": "Tipo de alerta",
+      "hint": "Filtra por tipo para priorizar el trabajo operativo.",
       "typeAll": "Todas las alertas",
       "LOW_STOCK": "Stock bajo mínimo",
       "EXPIRATION_30": "Vencimiento en 30 días",
@@ -628,26 +816,526 @@
       "COLD_CHAIN_MISSING": "Cadena de frío irregular",
       "STOCK_MISMATCH": "Desincronización stock vs ledger"
     },
+    "sections": {
+      "stockMinimum": "Stock mínimo",
+      "stockMinimumHint": "Alertas de reorden y desajustes de inventario que requieren acción inmediata.",
+      "expiration": "Vencimiento",
+      "expirationHint": "Alertas de lotes próximos a vencer para evitar rotación tardía.",
+      "specialHandling": "Manejo especial",
+      "specialHandlingHint": "Alertas que activan protocolos de frío, trazabilidad o revisión manual.",
+      "resolvedHistory": "Historial reciente",
+      "resolvedHistoryHint": "Alertas ya tratadas para dejar trazabilidad operativa."
+    },
+    "badges": {
+      "critical": "Crítico",
+      "warning": "Reorden",
+      "special": "Seguimiento",
+      "resolved": "Resuelta"
+    },
+    "card": {
+      "product": "Producto",
+      "lot": "Lote",
+      "noLocation": "Sin ubicación registrada",
+      "createdAt": "Creada",
+      "resolvedBy": "Resuelta por {{name}}",
+      "system": "Sistema"
+    },
+    "empty": {
+      "active": "No hay alertas activas para este filtro."
+    },
     "table": {
-      "ariaLabel": "Listado de alertas operativas",
-      "columns": {
-        "type": "Tipo",
-        "product": "Producto",
-        "message": "Detalle / Mensaje",
-        "created": "Fecha de reporte",
-        "status": "Estado",
-        "action": "Acción"
-      },
       "resolve": "Resolver",
       "resolved": "Resuelta"
     },
     "errors": {
       "load": "No se pudo cargar la información de alertas",
       "resolve": "No se pudo resolver la alerta. Intenta de nuevo.",
-      "unauthorized": "No tienes privilegios para resolver esta alerta. Solo Almacenistas y Administradores pueden resolver alertas operativas."
+      "unauthorized": "No tienes privilegios para resolver esta alerta. Solo los Almacenistas pueden resolver alertas operativas.",
+      "unauthorizedShort": "Sin permisos"
     },
     "success": {
       "resolved": "Alerta resuelta correctamente"
+    }
+  },
+  "catalog": {
+    "nav": {
+      "title": "CATÁLOGO",
+      "products": "Productos",
+      "categories": "Categorías",
+      "brands": "Marcas",
+      "combos": "Combos"
+    },
+    "products": {
+      "title": "Catálogo de Productos",
+      "subtitle": "Administra el portafolio principal",
+      "new": "Crear Producto",
+      "edit": "Editar Producto",
+      "search": "Buscar producto...",
+      "empty": "No hay productos que coincidan con la búsqueda.",
+      "form": {
+        "basic": "Información Básica",
+        "name": "Nombre del Producto",
+        "sku": "SKU",
+        "description": "Descripción",
+        "classification": "Clasificación",
+        "category": "Categoría",
+        "selectCategory": "Selecciona una categoría",
+        "brand": "Marca",
+        "selectBrand": "Selecciona una marca",
+        "barcode": "Código de barras",
+        "barcodeAuto": "Se genera automáticamente si se deja vacío",
+        "pricing": "Precios y Stock Base",
+        "price": "Precio Unitario",
+        "reorderPoint": "Punto de Reorden",
+        "settings": "Configuración",
+        "requiresSerial": "Control Serial",
+        "coldChain": "Cadena de Frío",
+        "logistics": "Configuración Logística",
+        "requiresLots": "Maneja Lotes",
+        "requiresExpiration": "Maneja Vencimiento",
+        "isActive": "Producto Activo"
+      },
+      "detail": {
+        "title": "Detalles del Producto",
+        "view": "Detalle",
+        "generalInfo": "Información General",
+        "inventorySettings": "Configuración de Inventario",
+        "back": "Volver a productos",
+        "edit": "Editar",
+        "status": "Estado",
+        "stock": "Stock Actual",
+        "price": "Precio Unitario",
+        "reorder": "Punto Reorden",
+        "serial": "Control Serial",
+        "cold": "Cadena Frío",
+        "category": "Categoría",
+        "brand": "Marca",
+        "yes": "Sí",
+        "no": "No",
+        "active": "Activo",
+        "inactive": "Inactivo",
+        "delete": "Desactivar",
+        "restore": "Reactivar"
+      },
+      "notFound": "Producto no encontrado.",
+      "messages": {
+        "created": "Producto creado correctamente",
+        "updated": "Producto actualizado correctamente",
+        "error": "Error al guardar el producto",
+        "loadError": "Error al cargar los productos",
+        "deactivateConfirm": "¿Estás seguro de que deseas desactivar este producto?"
+      }
+    },
+    "categories": {
+      "title": "Categorías",
+      "subtitle": "Organiza los productos por familia",
+      "new": "Nueva Categoría",
+      "search": "Buscar categoría...",
+      "empty": "No hay categorías.",
+      "productsCount": "{{count}} productos",
+      "form": {
+        "name": "Nombre",
+        "description": "Descripción",
+        "save": "Guardar",
+        "cancel": "Cancelar"
+      },
+      "messages": {
+        "created": "Categoría creada",
+        "updated": "Categoría actualizada",
+        "error": "Error al guardar la categoría"
+      }
+    },
+    "brands": {
+      "title": "Marcas",
+      "subtitle": "Gestión de marcas (subcategorías)",
+      "new": "Nueva Marca",
+      "search": "Buscar marca...",
+      "empty": "No hay marcas.",
+      "productsCount": "{{count}} productos",
+      "form": {
+        "name": "Nombre",
+        "description": "Descripción",
+        "category": "Categoría Padre",
+        "save": "Guardar",
+        "cancel": "Cancelar"
+      },
+      "messages": {
+        "created": "Marca creada",
+        "updated": "Marca actualizada",
+        "error": "Error al guardar la marca"
+      }
+    },
+    "combos": {
+      "nav": "Combos",
+      "title": "Combos de productos",
+      "subtitle": "Agrupa productos para venta conjunta",
+      "new": "Nuevo Combo",
+      "edit": "Editar Combo",
+      "search": "Buscar combo...",
+      "empty": "No hay combos que coincidan con la búsqueda.",
+      "stats": {
+        "total": "Total combos",
+        "available": "Disponibles",
+        "noStock": "Sin stock",
+        "inactive": "Inactivos"
+      },
+      "card": {
+        "products": "{{count}} productos",
+        "product_one": "1 producto",
+        "individualPrice": "Precio individual",
+        "comboPrice": "Precio combo",
+        "discount": "-{{pct}}% descuento",
+        "available": "Disponible",
+        "noStock": "Sin stock",
+        "inactive": "Inactivo",
+        "stockOk": "✅ Stock suficiente",
+        "stockWarn": "⚠️ {{count}} unidades",
+        "stockNone": "❌ Sin stock"
+      },
+      "detail": {
+        "sku": "SKU",
+        "name": "Nombre",
+        "products": "Productos del combo",
+        "stock": "Stock disponible",
+        "comboPrice": "Precio combo",
+        "individualTotal": "Total individual",
+        "discount": "Descuento"
+      },
+      "form": {
+        "sectionBasic": "Información del combo",
+        "nameLabel": "Nombre del combo *",
+        "namePlaceholder": "Ej: Kit Electroestimulación Básico",
+        "skuLabel": "SKU *",
+        "skuPlaceholder": "Ej: COMBO-001",
+        "sectionProducts": "Productos del combo",
+        "searchProduct": "Buscar producto",
+        "searchPlaceholder": "Buscar por nombre o SKU...",
+        "noResults": "No se encontraron productos.",
+        "itemProduct": "Producto",
+        "itemSku": "SKU",
+        "itemQuantity": "Cant.",
+        "itemStock": "Stock",
+        "itemAction": "Quitar",
+        "minProducts": "Debe agregar al menos 2 productos.",
+        "sectionPricing": "Precio",
+        "individualTotal": "Precio individual (calculado)",
+        "comboPriceLabel": "Precio del combo *",
+        "discountLabel": "Descuento generado",
+        "save": "Guardar",
+        "cancel": "Cancelar"
+      },
+      "messages": {
+        "created": "Combo creado correctamente",
+        "updated": "Combo actualizado correctamente",
+        "deleted": "Combo desactivado correctamente",
+        "restored": "Combo restaurado correctamente",
+        "error": "Error al guardar el combo",
+        "loadError": "Error al cargar los combos",
+        "deleteConfirmTitle": "¿Desactivar este combo?",
+        "deleteConfirmBody": "Los productos individuales no se ven afectados. El combo se ocultará del catálogo.",
+        "deleteConfirmCancel": "Cancelar",
+        "deleteConfirmAction": "Confirmar Desactivación",
+        "duplicateConfirmTitle": "Duplicar combo",
+        "duplicateConfirmBody": "Se creará una copia de este combo con el nombre \"Copia de {{name}}\"."
+      }
+    },
+    "locations": {
+      "title": "LOCACIÓN",
+      "subtitle": "Gestión de bodegas y vitrinas",
+      "new": "Nueva Ubicación",
+      "edit": "Editar Ubicación",
+      "empty": "No hay ubicaciones registradas en el sistema.",
+      "form": {
+        "nameLabel": "Nombre",
+        "namePlaceholder": "Ej. Vitrina Principal",
+        "typeLabel": "Tipo",
+        "typePlaceholder": "Seleccionar tipo...",
+        "capacityLabel": "Capacidad relativa",
+        "capacityPlaceholder": "Ej. 100",
+        "descriptionLabel": "Descripción (opcional)",
+        "descriptionPlaceholder": "Ingresa una descripción opcional...",
+        "save": "Guardar ubicación",
+        "errors": {
+          "nameRequired": "El nombre es obligatorio",
+          "typeRequired": "El tipo es obligatorio",
+          "capacityRequired": "La capacidad relativa es obligatoria",
+          "capacityMin": "La capacidad debe ser mayor que 0"
+        }
+      },
+      "deactivate": {
+        "title": "Desactivar Ubicación",
+        "confirm": "¿Está seguro que desea desactivar esta ubicación?",
+        "warning": "Una ubicación desactivada no recibirá entradas, transferencias ni participará en ventas.",
+        "submit": "Confirmar Desactivación"
+      },
+      "stats": {
+        "total": "Ubicaciones totales",
+        "warehouses": "Bodegas activas",
+        "showcases": "Vitrinas activas"
+      }
+    }
+  },
+  "users": {
+    "title": "Administración de Usuarios",
+    "subtitle": "Gestiona cuentas de usuario y permisos en el sistema",
+    "createBtn": "Crear usuario",
+    "stats": {
+      "total": "Usuarios Registrados",
+      "active": "Usuarios Activos",
+      "inactive": "Usuarios Inactivos"
+    },
+    "filters": {
+      "searchPlaceholder": "Buscar por nombre, correo o @usuario...",
+      "searchBtn": "Buscar",
+      "roleLabel": "Filtrar por Rol",
+      "roleAll": "Todos los roles",
+      "statusLabel": "Filtrar por Estado",
+      "statusAll": "Todos",
+      "statusActive": "Activos",
+      "statusInactive": "Inactivos",
+      "clearBtn": "Limpiar filtros"
+    },
+    "table": {
+      "user": "Usuario",
+      "contact": "Contacto / Correo",
+      "role": "Rol",
+      "status": "Estado",
+      "action": "Acción"
+    },
+    "status": {
+      "active": "ACTIVO",
+      "inactive": "INACTIVO"
+    },
+    "actions": {
+      "edit": "Editar",
+      "reactivate": "Reactivar"
+    },
+    "loading": "Cargando usuarios del sistema...",
+    "empty": "No se encontraron usuarios que coincidan con los filtros de búsqueda.",
+    "noName": "Sin nombre cargado",
+    "modal": {
+      "createTitle": "Crear nuevo usuario",
+      "editTitle": "Editar usuario",
+      "fullName": "Nombre completo",
+      "fullNamePlaceholder": "Ej: Carlos Artunduaga",
+      "username": "Usuario",
+      "email": "Correo",
+      "phone": "Teléfono",
+      "role": "Rol",
+      "roleSelectPlaceholder": "Seleccionar rol",
+      "password": "Contraseña temporal",
+      "passwordPlaceholder": "Min. 8 caracteres",
+      "cancelBtn": "Cancelar",
+      "saveBtn": "Guardar cambios",
+      "createSubmitBtn": "Crear usuario",
+      "savingBtn": "Guardando..."
+    },
+    "deactivateModal": {
+      "title": "¿Desactivar usuario?",
+      "confirm": "¿Está seguro de que desea desactivar a",
+      "warning": "Este usuario no podrá ingresar al sistema ni realizar operaciones físicas de inventario. Su información histórica se conservará para auditoría.",
+      "cancelBtn": "Cancelar",
+      "confirmBtn": "Confirmar desactivación"
+    },
+    "deactivateBtn": "Desactivar usuario",
+    "roleRestrictions": {
+      "auxiliar_despacho": "Los auxiliares de despacho solo pueden acceder al sistema en el horario: 07:00 - 12:00 y 14:00 - 17:00.",
+      "almacenista": "Acceso total 24/7. El almacenista cuenta con privilegios para gestionar el catálogo de productos, locaciones e inventarios.",
+      "administrador": "Acceso total 24/7. El administrador cuenta con control total sobre los logs de auditoría y la gestión de accesos."
+    },
+    "errors": {
+      "load": "Error al cargar los usuarios.",
+      "save": "Error al guardar el usuario.",
+      "deactivate": "Error al desactivar el usuario.",
+      "reactivate": "Error al reactivar el usuario.",
+      "nameRequired": "El nombre completo es obligatorio.",
+      "usernameRequired": "El nombre de usuario es obligatorio.",
+      "emailRequired": "El correo electrónico es obligatorio.",
+      "roleRequired": "Debe seleccionar un rol para el usuario.",
+      "passwordRequired": "La contraseña temporal es obligatoria y debe tener al menos 8 caracteres."
+    },
+    "success": {
+      "created": "Usuario creado correctamente.",
+      "updated": "Usuario actualizado correctamente.",
+      "deactivated": "Usuario {{username}} desactivado correctamente.",
+      "reactivated": "Usuario {{username}} reactivado correctamente."
+    }
+  },
+  "horarios": {
+    "title": "Gestión de Horarios",
+    "subtitle": "Administra los horarios de acceso de los auxiliares de despacho",
+    "stats": {
+      "total": "Usuarios Activos",
+      "withCustom": "Con horario personalizado",
+      "unrestricted": "Sin restricción"
+    },
+    "filters": {
+      "searchPlaceholder": "Buscar por nombre, usuario o correo…",
+      "allRoles": "Todos los roles"
+    },
+    "table": {
+      "user": "Usuario",
+      "role": "Rol",
+      "schedule": "Horario",
+      "status": "Estado",
+      "action": "Acción"
+    },
+    "schedule": {
+      "unrestricted": "Sin restricción de horario",
+      "default": "Lun–Vie 07:00-12:00 / 14:00-17:00",
+      "custom": "Lun–Vie {{morning}} / {{afternoon}}",
+      "customMorningOnly": "Lun–Vie {{morning}}",
+      "customAfternoonOnly": "Lun–Vie {{afternoon}}"
+    },
+    "modal": {
+      "title": "Configurar horario",
+      "tabs": {
+        "schedule": "Horario personalizado",
+        "permits": "Permisos temporales"
+      },
+      "schedule": {
+        "morningStart": "Inicio mañana",
+        "morningEnd": "Fin mañana",
+        "afternoonStart": "Inicio tarde",
+        "afternoonEnd": "Fin tarde",
+        "activeLabel": "Horario activo",
+        "saveBtn": "Guardar horario",
+        "resetBtn": "Restablecer horario por defecto",
+        "resetConfirm": "¿Restablecer horario por defecto?",
+        "noSchedule": "No tiene horario personalizado. Usa el horario por defecto.",
+        "saving": "Guardando…"
+      },
+      "permits": {
+        "title": "Permisos temporales activos",
+        "noPermits": "No hay permisos temporales activos.",
+        "newBtn": "Nuevo permiso temporal",
+        "startLabel": "Desde",
+        "endLabel": "Hasta",
+        "allow247": "Acceso 24/7 durante el período",
+        "morningStart": "Franja mañana inicio",
+        "morningEnd": "Franja mañana fin",
+        "afternoonStart": "Franja tarde inicio",
+        "afternoonEnd": "Franja tarde fin",
+        "reasonLabel": "Motivo",
+        "reasonPlaceholder": "Ej: Inventario nocturno programado",
+        "grantBtn": "Otorgar permiso",
+        "granting": "Otorgando…",
+        "revokeBtn": "Revocar",
+        "active": "Activo",
+        "expired": "Vencido",
+        "range": "{{start}} → {{end}}"
+      },
+      "closeBtn": "Cerrar"
+    },
+    "status": {
+      "active": "ACTIVO",
+      "inactive": "INACTIVO"
+    },
+    "actions": {
+      "extend": "Extender horario"
+    },
+    "errors": {
+      "load": "Error al cargar los datos de horarios.",
+      "saveSchedule": "Error al guardar el horario.",
+      "grantPermit": "Error al otorgar el permiso temporal.",
+      "revokePermit": "Error al revocar el permiso temporal.",
+      "noAuxiliar": "Solo se pueden configurar horarios para auxiliares de despacho."
+    },
+    "success": {
+      "scheduleSaved": "Horario guardado correctamente.",
+      "scheduleReset": "Horario restablecido al predeterminado.",
+      "permitGranted": "Permiso temporal otorgado correctamente.",
+      "permitRevoked": "Permiso temporal revocado correctamente."
+    }
+  },
+  "billing": {
+    "page": {
+      "title": "Facturación",
+      "subtitle": "Historial de facturas electrónicas",
+      "createInvoice": "Nueva factura",
+      "filterDateFrom": "Desde",
+      "filterDateTo": "Hasta",
+      "filterType": "Tipo",
+      "filterSearch": "Buscar por NIT o cliente...",
+      "filterClear": "Limpiar filtros",
+      "statsInvoiceCount": "Facturas",
+      "statsTotalToday": "Vendido hoy",
+      "statsTotalMonth": "Vendido mes",
+      "noResults": "No se encontraron facturas.",
+      "voidConfirmTitle": "Anular factura",
+      "voidConfirmMessage": "¿Está seguro de anular la factura {number}? Se revertirá el stock de todos los productos.",
+      "voidReason": "Motivo de anulación",
+      "voidReasonPlaceholder": "Ingrese el motivo obligatorio",
+      "voidSuccess": "Factura anulada correctamente.",
+      "voidError": "Error al anular la factura.",
+      "createdSuccess": "Factura creada exitosamente",
+      "detailTitle": "Factura {number}",
+      "actionsPrint": "Imprimir",
+      "actionsView": "Ver",
+      "actionsVoid": "Anular",
+      "actionsClose": "Cerrar",
+      "actionsNewSale": "Nueva venta",
+      "fields": {
+        "number": "N° Factura",
+        "date": "Fecha",
+        "type": "Tipo",
+        "client": "Cliente / NIT",
+        "items": "Items",
+        "total": "Total",
+        "status": "Estado",
+        "createdBy": "Creado por"
+      },
+      "types": {
+        "minorista": "Minorista",
+        "mayorista": "Mayorista"
+      },
+      "status": {
+        "active": "Activa",
+        "voided": "Anulada"
+      }
+    },
+    "config": {
+      "title": "Datos de empresa",
+      "subtitle": "Configuración del emisor en facturas",
+      "companyInfo": "Información de la empresa",
+      "billingInfo": "Facturación",
+      "companyName": "Razón social",
+      "nit": "NIT",
+      "address": "Dirección",
+      "phone": "Teléfono",
+      "email": "Email",
+      "invoiceSeries": "Serie de facturación",
+      "dianResolution": "Resolución DIAN",
+      "dianRangeFrom": "Rango desde",
+      "dianRangeTo": "Rango hasta",
+      "invoiceFooter": "Pie de factura",
+      "save": "Guardar cambios",
+      "saving": "Guardando...",
+      "saveSuccess": "Datos de empresa actualizados",
+      "saveError": "Error al guardar datos de la empresa",
+      "loadError": "Error al cargar datos de la empresa",
+      "loading": "Cargando..."
+    },
+    "receipt": {
+      "title": "FACTURA DE VENTA",
+      "nit": "NIT",
+      "phone": "Tel",
+      "invoiceNumber": "Factura N°",
+      "date": "Fecha",
+      "cashier": "Cajero",
+      "client": "Cliente",
+      "qty": "Cant",
+      "description": "Descripción",
+      "price": "Precio",
+      "total": "Total",
+      "itemTotal": "Total",
+      "subtotal": "Subtotal",
+      "tax": "IVA",
+      "grandTotal": "TOTAL",
+      "footerThanks": "¡Gracias por su compra!",
+      "footerNote": "Factura de venta — no es documento electrónico DIAN",
+      "voided": "** FACTURA ANULADA **",
+      "items": "Items"
     }
   }
 }

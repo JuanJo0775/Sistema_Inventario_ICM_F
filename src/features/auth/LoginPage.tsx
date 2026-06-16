@@ -9,11 +9,15 @@ import AuthLayout from '../../components/layout/AuthLayout'
 import PhysioInput from '../../components/ui/PhysioInput'
 import PhysioButton from '../../components/ui/PhysioButton'
 import useAuthStore from '../../store/useAuthStore'
+import { extractApiError } from '../../hooks/useApiError'
 
 type LoginFormValues = {
   identifier: string
   password: string
 }
+
+const errMsg = (e: unknown): string | undefined =>
+  typeof e === 'string' ? e : undefined
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -47,11 +51,7 @@ function LoginPage() {
       await login(payload)
       navigate('/app', { replace: true })
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : t('auth.login.errors.fallback')
-      setFormError(message)
+      setFormError(extractApiError(error))
     }
   }
 
@@ -70,7 +70,7 @@ function LoginPage() {
           type="text"
           placeholder={t('auth.login.identifierPlaceholder')}
           icon={<Mail className="h-4 w-4" />}
-          error={errors.identifier?.message}
+          error={errMsg(errors.identifier?.message)}
           {...register('identifier')}
         />
         <PhysioInput
@@ -78,7 +78,8 @@ function LoginPage() {
           type="password"
           placeholder={t('auth.login.passwordPlaceholder')}
           icon={<Lock className="h-4 w-4" />}
-          error={errors.password?.message}
+          showPasswordToggle
+          error={errMsg(errors.password?.message)}
           {...register('password')}
         />
         <div className="flex justify-end text-sm">

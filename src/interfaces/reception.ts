@@ -1,56 +1,92 @@
-export type ReceptionStatus = 'pending' | 'partial' | 'ready' | 'received' | 'blocked'
+export type ReceptionStatus =
+  | "pending"
+  | "partial"
+  | "ready"
+  | "received"
+  | "blocked";
 
 export interface ReceptionLocation {
-  id: string
-  code: string
-  name: string
-  capacityLabel: string
+  id: string;
+  code: string;
+  name: string;
+  capacityLabel: string;
 }
 
 export interface ReceptionExpectedOrder {
-  id: string
-  purchaseOrder: string
-  supplier: string
-  invoice: string
-  productId: string
-  productName: string
-  sku: string
-  barcode: string
-  category: string
-  expectedQuantity: number
-  receivedQuantity: number
-  locationId: string
-  dueDate: string
-  status: ReceptionStatus
-  requiresSerial: boolean
-  requiresColdChain: boolean
-  lot?: string
-  expirationDate?: string
+  id: string;
+  purchaseOrder: string;
+  supplier: string;
+  invoice: string;
+  productId: string; // UUID real del producto en el backend
+  productName: string;
+  sku: string;
+  barcode: string;
+  category: string;
+  expectedQuantity: number;
+  receivedQuantity: number;
+  locationId: string;
+  dueDate: string;
+  status: ReceptionStatus;
+  requiresSerial: boolean;
+  requiresColdChain: boolean;
+  lot?: string;
+  expirationDate?: string;
 }
 
 export interface ReceptionMovement {
-  id: string
-  productName: string
-  sku: string
-  quantity: number
-  locationCode: string
-  operator: string
-  confirmedAt: string
-  discrepancyNote?: string
+  id: string;
+  productName: string; // construido en el frontend desde product_sku
+  sku: string;
+  quantity: number;
+  locationCode: string; // construido en el frontend desde destination_location
+  operator: string; // construido en el frontend desde executed_by
+  confirmedAt: string; // construido en el frontend desde created_at
+  discrepancyNote?: string;
 }
 
 export interface ReceptionOverview {
-  locations: ReceptionLocation[]
-  expectedOrders: ReceptionExpectedOrder[]
-  recentMovements: ReceptionMovement[]
+  locations: ReceptionLocation[];
+  expectedOrders: ReceptionExpectedOrder[];
+  recentMovements: ReceptionMovement[];
 }
 
-export interface ReceptionSubmitPayload {
-  orderId: string
-  receivedQuantity: number
-  locationId: string
-  lot?: string
-  expirationDate?: string
-  serialNumbers?: string[]
-  discrepancyNote?: string
+/** Payload para createAndConfirmReception (basado en órdenes de compra) */
+export interface ReceptionCreateItemPayload {
+  purchase_order_item_id: string;
+  quantity_received: number;
+  lot_code?: string;
+  lot_expiration_date?: string | null;
+  serial_number?: string | null;
+  discrepancy_note?: string;
+  allocations?: Array<{
+    location_id: string;
+    quantity_received: number;
+    lot_code?: string;
+    lot_expiration_date?: string | null;
+    serial_number?: string | null;
+  }>;
 }
+
+export interface ReceptionCreatePayload {
+  po_id: string;
+  destination_location_id: string;
+  notes?: string;
+  items: ReceptionCreateItemPayload[];
+}
+
+// Lo que el backend devuelve en MovementSerializer
+export interface ReceptionMovementResponse {
+  id: string;
+  movement_type: string;
+  product: string;
+  product_sku: string;
+  origin_location: string | null;
+  destination_location: string | null;
+  quantity: number;
+  serial_number: string | null;
+  quantity_invoiced: number | null;
+  discrepancy_note: string | null;
+  executed_by: string;
+  created_at: string;
+}
+

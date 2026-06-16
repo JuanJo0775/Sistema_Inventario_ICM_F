@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import AppShell from '../../components/layout/AppShell'
 import { Badge } from '../../components/ui/badge'
+import { BarcodeScannerButton } from '../../components/ui/BarcodeScannerButton'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Select } from '../../components/ui/select'
@@ -18,12 +19,14 @@ import type {
   InventoryProduct,
   InventorySubcategory,
 } from '../../interfaces/inventory'
+import type { BarcodeProductResult } from '../../services/barcodeScanner'
 import {
   fetchCategories,
   fetchProductStock,
   fetchProducts,
   fetchSubcategories,
 } from '../../services/inventory'
+import InventoryCombosSection from './InventoryCombosSection'
 
 type StockBadge = 'ok' | 'warn' | 'err' | 'muted'
 
@@ -38,6 +41,7 @@ type InventoryRow = {
   sku: string
   category: string
   subcategory: string
+  locationDisplay: string
   stock: string
   stockValue: number | null
   reorderPoint: string
@@ -58,6 +62,7 @@ function InventoryPage() {
   const [search, setSearch] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [subcategoryId, setSubcategoryId] = useState('')
+  const [activeTab, setActiveTab] = useState<'products' | 'combos'>('products')
 
   const hasFilters = Boolean(search || categoryId || subcategoryId)
 
@@ -95,10 +100,6 @@ function InventoryPage() {
 
   const loadSubcategories = useCallback(
     async (nextCategoryId?: string) => {
-      if (!nextCategoryId) {
-        setSubcategories([])
-        return
-      }
       try {
         const data = await fetchSubcategories(nextCategoryId)
         setSubcategories(data)
@@ -110,36 +111,36 @@ function InventoryPage() {
   )
 
   const loadProducts = useCallback(async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
     try {
       const productData = await fetchProducts({
         search: search.trim() || undefined,
         category: categoryId || undefined,
         subcategory: subcategoryId || undefined,
-      })
+      });
       const stockResults = await Promise.allSettled(
-        productData.map((product) => fetchProductStock(product.id)),
-      )
+        productData.map((product) => fetchProductStock(String(product.id))),
+      );
       const productsWithStock = productData.map((product, index) => {
-        const stockResult = stockResults[index]
-        if (stockResult.status !== 'fulfilled') {
-          return product
+        const stockResult = stockResults[index];
+        if (stockResult.status !== "fulfilled") {
+          return product;
         }
-        const stock = stockResult.value
+        const stock = stockResult.value;
         return {
           ...product,
           stockTotal: stock.total,
           byLocation: stock.by_location ?? stock.per_location ?? [],
-        }
-      })
-      setProducts(productsWithStock)
+        };
+      });
+      setProducts(productsWithStock);
     } catch {
-      setError(t('inventory.errors.products'))
+      setError(t("inventory.errors.products"));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [categoryId, search, subcategoryId, t])
+  }, [categoryId, search, subcategoryId, t]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -163,26 +164,39 @@ function InventoryPage() {
   const inventoryRows = useMemo(() => {
     const categoryById = new Map(
       categories.map((category) => [String(category.id), category]),
-    )
+    );
     const subcategoryById = new Map(
       subcategories.map((subcategory) => [String(subcategory.id), subcategory]),
-    )
+    );
 
     return products.map((product) => {
-      const sku = product.sku ?? t('inventory.table.empty')
+      const sku = product.sku ?? t("inventory.table.empty");
+
       const categoryRecord = product.category
         ? categoryById.get(String(product.category))
-        : undefined
-      const category = categoryRecord?.name ?? product.category_slug ?? t('inventory.table.empty')
-      const subcategoryRecord = product.subcategory
-        ? subcategoryById.get(String(product.subcategory))
-        : undefined
-      const subcategory = subcategoryRecord?.name ?? t('inventory.table.empty')
+        : undefined;
+      const category =
+        categoryRecord?.name ??
+        product.category_slug ??
+        t("inventory.table.empty");
+
+      const subcategoryRecord = product.brand
+        ? subcategoryById.get(String(product.brand))
+        : product.subcategory
+          ? subcategoryById.get(String(product.subcategory))
+          : undefined;
+      const subcategory = subcategoryRecord?.name ?? t("inventory.table.empty");
+
       const stock =
         product.stockTotal === null || product.stockTotal === undefined
-          ? t('inventory.table.empty')
-          : product.stockTotal.toString()
-      const status = stockMeta(product.stockTotal, product.reorder_point)
+          ? t("inventory.table.empty")
+          : product.stockTotal.toString();
+
+      const status = stockMeta(product.stockTotal, product.reorder_point);
+
+      const locationDisplay = product.byLocation?.length
+        ? product.byLocation.map((l) => l.location_name ?? l.location_code).join(', ')
+        : t("inventory.table.empty");
 
       return {
         id: product.id,
@@ -190,19 +204,20 @@ function InventoryPage() {
         sku,
         category,
         subcategory,
+        locationDisplay,
         stock,
         stockValue: product.stockTotal ?? null,
         reorderPoint:
           product.reorder_point === null || product.reorder_point === undefined
-            ? t('inventory.table.empty')
+            ? t("inventory.table.empty")
             : product.reorder_point.toString(),
         status,
         requiresSerial: Boolean(categoryRecord?.requires_serial_number),
         requiresColdChain: Boolean(product.requires_cold_chain),
         byLocation: product.byLocation ?? [],
-      }
-    })
-  }, [categories, products, stockMeta, subcategories, t])
+      };
+    });
+  }, [categories, products, stockMeta, subcategories, t]);
 
   const selectedRow = useMemo<InventoryRow | undefined>(() => {
     return inventoryRows.find((row) => row.id === selectedProductId) ?? inventoryRows[0]
@@ -235,7 +250,7 @@ function InventoryPage() {
     if (loading) {
       return (
         <TableRow>
-          <TableCell colSpan={7} className="inventory-empty">
+          <TableCell colSpan={9} className="inventory-empty">
             {t('common.loading')}
           </TableCell>
         </TableRow>
@@ -245,7 +260,7 @@ function InventoryPage() {
     if (inventoryRows.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={7} className="inventory-empty">
+          <TableCell colSpan={9} className="inventory-empty">
             {t('common.empty')}
           </TableCell>
         </TableRow>
@@ -275,6 +290,12 @@ function InventoryPage() {
         </TableCell>
         <TableCell>
           <Badge variant="muted">{row.category}</Badge>
+        </TableCell>
+        <TableCell className="text-muted" style={{ fontSize: 12 }}>
+          {row.subcategory}
+        </TableCell>
+        <TableCell style={{ fontSize: 12, maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {row.locationDisplay}
         </TableCell>
         <TableCell className="text-mono">
           <strong>{row.stock}</strong>
@@ -393,18 +414,54 @@ function InventoryPage() {
           <span>{t('inventory.safetyNotice')}</span>
         </div>
 
+        <div
+          className="flex gap-4"
+          style={{
+            borderBottom: '1px solid var(--ink-06)',
+            marginBottom: '1rem',
+            paddingBottom: 0,
+          }}
+        >
+          <button
+            className={`btn btn--sm ${activeTab === 'products' ? 'btn--primary' : 'btn--ghost'}`}
+            style={{ borderRadius: 0, borderBottom: activeTab === 'products' ? '2px solid var(--teal-600)' : '2px solid transparent' }}
+            onClick={() => setActiveTab('products')}
+          >
+            {t('inventory.combosSection.tabs.products')}
+          </button>
+          <button
+            className={`btn btn--sm ${activeTab === 'combos' ? 'btn--primary' : 'btn--ghost'}`}
+            style={{ borderRadius: 0, borderBottom: activeTab === 'combos' ? '2px solid var(--teal-600)' : '2px solid transparent' }}
+            onClick={() => setActiveTab('combos')}
+          >
+            {t('inventory.combosSection.tabs.combos')}
+          </button>
+        </div>
+
+        {activeTab === 'products' && (<>
         <section className="inventory-toolbar" aria-label={t('inventory.filters.ariaLabel')}>
           <div className="inventory-field">
             <label className="inventory-label" htmlFor="inventory-search">
               {t('inventory.filters.searchLabel')}
             </label>
-            <Input
-              id="inventory-search"
-              type="search"
-              placeholder={t('inventory.filters.searchPlaceholder')}
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <Input
+                id="inventory-search"
+                type="search"
+                placeholder={t('inventory.filters.searchPlaceholder')}
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+              <BarcodeScannerButton
+                label="Escanear"
+                onProductFound={(product: BarcodeProductResult) => {
+                  // Rellena el buscador con el SKU para filtrar la tabla
+                  setSearch(product.sku || product.name)
+                  // Selecciona el producto automáticamente para mostrar el detalle
+                  setSelectedProductId(product.id)
+                }}
+              />
+            </div>
           </div>
           <div className="inventory-field">
             <label className="inventory-label" htmlFor="inventory-category">
@@ -463,6 +520,8 @@ function InventoryPage() {
                       <TableHead>{t('inventory.table.sku')}</TableHead>
                       <TableHead>{t('inventory.table.product')}</TableHead>
                       <TableHead>{t('inventory.table.category')}</TableHead>
+                      <TableHead>{t('inventory.table.subcategory')}</TableHead>
+                      <TableHead>Ubicación</TableHead>
                       <TableHead>{t('inventory.table.stock')}</TableHead>
                       <TableHead>{t('inventory.table.reorderPoint')}</TableHead>
                       <TableHead>{t('inventory.table.status')}</TableHead>
@@ -485,6 +544,9 @@ function InventoryPage() {
             {detailContent}
           </aside>
         </div>
+        </>)}
+
+        {activeTab === 'combos' && <InventoryCombosSection />}
       </div>
     </AppShell>
   )

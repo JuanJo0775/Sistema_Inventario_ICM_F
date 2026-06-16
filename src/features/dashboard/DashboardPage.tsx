@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import {
   AlertTriangle,
   Bell,
   CheckCircle2,
   ClipboardList,
   Download,
+  EyeOff,
   PackageCheck,
   RefreshCw,
   SlidersHorizontal,
@@ -13,23 +15,6 @@ import {
   Truck,
   Warehouse,
 } from 'lucide-react'
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
-  RadialBar,
-  RadialBarChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
 import AppShell from '../../components/layout/AppShell'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
@@ -40,6 +25,7 @@ import {
   CardHeader,
   CardTitle,
 } from '../../components/ui/card'
+import PageLoader from '../../components/ui/PageLoader'
 import useAuthStore from '../../store/useAuthStore'
 import type {
   DashboardKpiKey,
@@ -51,6 +37,8 @@ import type {
 import { fetchDashboardOverview } from '../../services/dashboard'
 import type { TFunction } from 'i18next'
 
+const KpiChart = React.lazy(() => import('./DashboardCharts'))
+
 type KpiKey = DashboardKpiKey
 
 const initialKpis: Record<KpiKey, boolean> = {
@@ -61,16 +49,6 @@ const initialKpis: Record<KpiKey, boolean> = {
   descarte: true,
   devoluciones: true,
   cadena_frio: true,
-}
-
-const chartColors: Record<KpiKey, string> = {
-  rotacion: '#1a6b72',
-  danados: '#c97820',
-  utilizacion: '#2a9da6',
-  otif: '#2d8b6f',
-  descarte: '#b33a2a',
-  devoluciones: '#e07b39',
-  cadena_frio: '#3867a6',
 }
 
 const statusVariant: Record<DashboardKpiStatus, 'success' | 'warning' | 'destructive' | 'secondary'> = {
@@ -91,11 +69,22 @@ const kpiIcons: Record<KpiKey, typeof PackageCheck> = {
   cadena_frio: Thermometer,
 }
 
+const kpiIconClass: Record<KpiKey, string> = {
+  rotacion: 'kpi-score-card__icon--rotacion',
+  danados: 'kpi-score-card__icon--danados',
+  utilizacion: 'kpi-score-card__icon--utilizacion',
+  otif: 'kpi-score-card__icon--otif',
+  descarte: 'kpi-score-card__icon--descarte',
+  devoluciones: 'kpi-score-card__icon--devoluciones',
+  cadena_frio: 'kpi-score-card__icon--cadena-frio',
+}
+
 const formatKpiValue = (value: number, unit: string, precision: number, locale = 'es-CO') => {
+  const safePrecision = Math.min(20, Math.max(0, Number.isFinite(Number(precision)) ? Number(precision) : 0))
   const formatted = Number.isFinite(value)
     ? new Intl.NumberFormat(locale, {
-        maximumFractionDigits: precision,
-        minimumFractionDigits: precision,
+        maximumFractionDigits: safePrecision,
+        minimumFractionDigits: safePrecision,
       }).format(value)
     : '0'
   return unit === '%' ? `${formatted}%` : `${formatted} ${unit}`
@@ -106,9 +95,6 @@ const kpiText = (
   kpi: DashboardVisualKpi,
   field: 'title' | 'shortTitle' | 'unit' | 'target' | 'statusLabel' | 'insight' | 'formula',
 ) => t(`dashboard.visualKpis.${kpi.key}.${field}`, { defaultValue: kpi[field] })
-
-const periodText = (t: TFunction, period: string) =>
-  t(`dashboard.periods.${period}`, { defaultValue: period })
 
 const movementClass = (type: DashboardMovementItem['type']) => {
   switch (type) {
@@ -123,167 +109,36 @@ const movementClass = (type: DashboardMovementItem['type']) => {
   }
 }
 
-function KpiChart({ kpi }: { kpi: DashboardVisualKpi }) {
-  const { i18n, t } = useTranslation()
-  const color = chartColors[kpi.key]
-  const shortTitle = kpiText(t, kpi, 'shortTitle')
-  const locale = i18n.language === 'en' ? 'en-US' : 'es-CO'
-
-  if (kpi.chartType === 'radial') {
-    return (
-      <ResponsiveContainer width="100%" height={170}>
-        <RadialBarChart
-          data={[{ name: shortTitle, value: kpi.value, fill: color }]}
-          innerRadius="68%"
-          outerRadius="96%"
-          startAngle={90}
-          endAngle={-270}
-        >
-          <RadialBar background dataKey="value" cornerRadius={10} />
-          <Tooltip
-            formatter={(value) => [
-              formatKpiValue(Number(value), '%', kpi.precision, locale),
-              shortTitle,
-            ]}
-          />
-        </RadialBarChart>
-      </ResponsiveContainer>
-    )
-  }
-
-  if (kpi.chartType === 'bar') {
-    const barData = (kpi.breakdown ?? kpi.history).map((item) => ({
-      label:
-        'name' in item
-          ? t(`dashboard.visualKpis.${kpi.key}.breakdown.${item.name}`, {
-              defaultValue: item.name,
-            })
-          : periodText(t, item.period),
-      value: item.value,
-    }))
-
-    return (
-      <ResponsiveContainer width="100%" height={170}>
-        <BarChart data={barData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(15,30,32,0.08)" />
-          <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
-          <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
-          <Tooltip />
-          <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-            {barData.map((item, index) => (
-              <Cell key={`${item.label}-${index}`} fill={index === 0 ? color : '#8bb7b8'} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    )
-  }
-
-  if (kpi.chartType === 'stacked') {
-    return (
-      <ResponsiveContainer width="100%" height={170}>
-        <BarChart
-          data={kpi.history.map((item) => ({ ...item, period: periodText(t, item.period) }))}
-          margin={{ top: 8, right: 8, left: -18, bottom: 0 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(15,30,32,0.08)" />
-          <XAxis dataKey="period" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
-          <YAxis domain={[80, 100]} tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
-          <ReferenceLine y={95} stroke="#2d8b6f" strokeDasharray="4 4" />
-          <Tooltip />
-          <Bar
-            dataKey="value"
-            name={t('dashboard.chartLabels.onTime')}
-            fill={color}
-            radius={[5, 5, 0, 0]}
-          />
-          <Bar
-            dataKey="secondary"
-            name={t('dashboard.chartLabels.inFull')}
-            fill="#e07b39"
-            radius={[5, 5, 0, 0]}
-          />
-        </BarChart>
-      </ResponsiveContainer>
-    )
-  }
-
-  if (kpi.chartType === 'temperature') {
-    return (
-      <ResponsiveContainer width="100%" height={170}>
-        <LineChart
-          data={kpi.history.map((item) => ({ ...item, period: periodText(t, item.period) }))}
-          margin={{ top: 8, right: 8, left: -18, bottom: 0 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(15,30,32,0.08)" />
-          <XAxis dataKey="period" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
-          <YAxis domain={[0, 10]} tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
-          <ReferenceLine y={2} stroke="#2d8b6f" strokeDasharray="4 4" />
-          <ReferenceLine y={8} stroke="#b33a2a" strokeDasharray="4 4" />
-          <Tooltip
-            formatter={(value) => [
-              `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(Number(value))} °C`,
-              t('dashboard.chartLabels.temperature'),
-            ]}
-          />
-          <Line type="monotone" dataKey="value" stroke={color} strokeWidth={3} dot={{ r: 3 }} />
-        </LineChart>
-      </ResponsiveContainer>
-    )
-  }
-
-  return (
-    <ResponsiveContainer width="100%" height={170}>
-      <AreaChart
-        data={kpi.history.map((item) => ({ ...item, period: periodText(t, item.period) }))}
-        margin={{ top: 8, right: 8, left: -18, bottom: 0 }}
-      >
-        <defs>
-          <linearGradient id={`gradient-${kpi.key}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-            <stop offset="95%" stopColor={color} stopOpacity={0.02} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(15,30,32,0.08)" />
-        <XAxis dataKey="period" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
-        <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
-        {kpi.history[0]?.target ? (
-          <ReferenceLine y={kpi.history[0].target} stroke="#2d8b6f" strokeDasharray="4 4" />
-        ) : null}
-        <Tooltip />
-        <Area
-          type="monotone"
-          dataKey="value"
-          stroke={color}
-          strokeWidth={3}
-          fill={`url(#gradient-${kpi.key})`}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
-  )
-}
-
 function DashboardPage() {
   const user = useAuthStore((state) => state.user)
   const { i18n, t } = useTranslation()
+  const navigate = useNavigate()
   const locale = i18n.language === 'en' ? 'en-US' : 'es-CO'
+  const isAdmin = user?.role === 'administrador'
   const [kpiPanelOpen, setKpiPanelOpen] = useState(false)
   const [kpis, setKpis] = useState(initialKpis)
   const [overview, setOverview] = useState<DashboardOverview | null>(null)
   const [overviewError, setOverviewError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let active = true
+    setLoading(true)
 
     const loadOverview = async () => {
       try {
         const data = await fetchDashboardOverview()
         if (active) {
           setOverview(data)
+          setOverviewError(null)
         }
       } catch {
         if (active) {
           setOverviewError(t('dashboard.errors.load'))
+        }
+      } finally {
+        if (active) {
+          setLoading(false)
         }
       }
     }
@@ -321,6 +176,8 @@ function DashboardPage() {
     setKpis((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
+  const isReadOnly = isAdmin
+
   return (
     <AppShell
       title={t('dashboard.topbar.title')}
@@ -336,11 +193,12 @@ function DashboardPage() {
             type="button"
             onClick={() => setKpiPanelOpen((prev) => !prev)}
             aria-controls="kpi-panel"
+            disabled={isReadOnly}
           >
             <SlidersHorizontal />
             {t('dashboard.topbar.customizeKpis')}
           </Button>
-          <Button variant="ghost" size="sm" type="button">
+          <Button variant="ghost" size="sm" type="button" onClick={() => navigate('/app/alerts')}>
             <Bell />
             {t('dashboard.topbar.alertsButton', { count: alertSummary?.active ?? 0 })}
           </Button>
@@ -348,6 +206,17 @@ function DashboardPage() {
       }
     >
       <div className="page-body dashboard-visual">
+        {isReadOnly ? (
+          <div className="alert-bar alert-bar--info" role="alert">
+            <EyeOff />
+            <span>{t('dashboard.readOnlyMessage')}</span>
+          </div>
+        ) : null}
+
+        {loading ? (
+          <PageLoader />
+        ) : (
+          <>
         <div className="alert-bar alert-bar--warn" role="alert">
           <AlertTriangle />
           <span>
@@ -363,7 +232,7 @@ function DashboardPage() {
             {t('dashboard.alerts.returns', { count: alertSummary?.returns ?? 0 })}
           </span>
           <span className="alert-bar__spacer" />
-          <Button variant="ghost" size="sm" type="button">
+          <Button variant="ghost" size="sm" type="button" onClick={() => navigate('/app/alerts')}>
             {t('dashboard.alerts.viewAll')}
           </Button>
         </div>
@@ -415,7 +284,7 @@ function DashboardPage() {
             return (
               <Card key={kpi.key} className="kpi-score-card rounded-lg">
                 <CardHeader className="kpi-score-card__head">
-                  <div className="kpi-score-card__icon" style={{ color: chartColors[kpi.key] }}>
+                  <div className={`kpi-score-card__icon ${kpiIconClass[kpi.key]}`}>
                     <Icon />
                   </div>
                   <Badge variant={statusVariant[kpi.status]}>{kpiText(t, kpi, 'statusLabel')}</Badge>
@@ -499,6 +368,7 @@ function DashboardPage() {
                 variant="outline"
                 size="icon-sm"
                 type="button"
+                disabled={isReadOnly}
                 aria-label={t('dashboard.visualSummary.downloadReport')}
               >
                 <Download />
@@ -525,6 +395,8 @@ function DashboardPage() {
             </Card>
           ))}
         </section>
+      </>
+      )}
       </div>
     </AppShell>
   )
