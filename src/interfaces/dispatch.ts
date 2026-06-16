@@ -58,6 +58,7 @@ export interface CartItem {
   locationId: string
   lotCode: string
   lotId?: string
+  scannedCode?: string
   damageReason: string
   note: string
 }

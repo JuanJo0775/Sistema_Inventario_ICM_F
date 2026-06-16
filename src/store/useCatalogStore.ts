@@ -17,6 +17,8 @@ import {
   deactivateBrand as deactivateBrandService,
   restoreBrand as restoreBrandService
 } from '../services/catalog'
+import { fetchProductStock } from '../services/inventory'
+import { useMocks } from '../mocks/config'
 import type {
   CatalogProduct as Product,
   CatalogCategory as Category,
@@ -89,7 +91,6 @@ const mapProductPayload = (productData: ProductFormPayload): CatalogProductCreat
   ) as CatalogProductCreateInput | CatalogProductUpdateInput
 }
 
-// Helper reutilizable: carga productos del catálogo y mezcla stockTotal desde /inventory/
 async function fetchProductsWithStock(
   page = 1,
   search?: string,
@@ -97,48 +98,40 @@ async function fetchProductsWithStock(
   pageSize = 25,
 ): Promise<{ products: Product[]; count: number }> {
 
-  const [productsResp, inventoryResp] = await Promise.allSettled([
-    api.get<any>('/catalog/products/', {
-      params: {
-        include_inactive: 'true',
-        page,
-        page_size: pageSize,
-        search: search || undefined,
-        category: category || undefined,
-      },
-    }),
-    api.get<Array<{ product_id: string; total: number }>>('/inventory/'),
-  ])
-
-  let catalogProducts: Product[] = []
-  let count = 0
-  if (productsResp.status === 'fulfilled') {
-    const data = productsResp.value.data
-    if (Array.isArray(data)) {
-      catalogProducts = data
-      count = data.length
-    } else {
-      catalogProducts = data.results ?? []
-      count = data.count ?? catalogProducts.length
-    }
+  if (useMocks) {
+    const { fetchCatalogProducts } = await import('../services/catalog')
+    const products = await fetchCatalogProducts({ include_inactive: true, page, page_size: pageSize, search, category })
+    return { products: products as Product[], count: products.length }
   }
 
-  let stockMap: Record<string, number> = {}
-  if (inventoryResp.status === 'fulfilled') {
-    const invData = inventoryResp.value.data
-    const rows = Array.isArray(invData)
-      ? invData
-      : (invData as any)?.results ?? []
-    rows.forEach((row: { product_id: string; total: number }) => {
-      stockMap[row.product_id] = row.total
-    })
-  }
+  const productsResp = await api.get<any>('/catalog/products/', {
+    params: {
+      include_inactive: 'true',
+      page,
+      page_size: pageSize,
+      search: search || undefined,
+      category: category || undefined,
+    },
+  })
+
+  const data = productsResp.data
+  const catalogProducts: Product[] = Array.isArray(data) ? data : (data.results ?? [])
+  const count = Array.isArray(data) ? data.length : (data.count ?? catalogProducts.length)
+
+  const stockResults = await Promise.allSettled(
+    catalogProducts.map(p => fetchProductStock(String(p.id)))
+  )
 
   return {
-    products: catalogProducts.map((p: any) => ({
-      ...p,
-      stockTotal: stockMap[p.id] ?? p.stockTotal ?? 0,
-    })),
+    products: catalogProducts.map((p, i) => {
+      const stock =
+        stockResults[i].status === 'fulfilled' ? stockResults[i].value : undefined
+      return {
+        ...p,
+        stockTotal: stock?.total ?? p.stockTotal ?? 0,
+        byLocation: stock?.by_location ?? stock?.per_location ?? undefined,
+      }
+    }),
     count,
   }
 }

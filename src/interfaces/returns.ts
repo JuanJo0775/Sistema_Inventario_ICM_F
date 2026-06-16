@@ -17,6 +17,8 @@ export interface ReturnProduct {
   canReturn: boolean
   blockReason?: string
   requiresSerial: boolean
+  stockTotal?: number
+  byLocation?: Array<{ location_code: string; location_name?: string; quantity: number }>
 }
 
 export interface ReturnEntry {

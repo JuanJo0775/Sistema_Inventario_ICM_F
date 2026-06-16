@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 import { api } from './api'
-import { fetchCategories, fetchProducts } from './inventory'
+import { fetchCategories, fetchProducts, fetchProductStock } from './inventory'
 import { useMocks } from '../mocks/config'
 import type {
   ReturnEntry,
@@ -40,6 +40,8 @@ type BackendReturnMovement = {
 export const mapProductsForReturns = (
   products: InventoryProduct[],
   categories: InventoryCategory[],
+  stockMap?: Record<string, number>,
+  stockLocationsMap?: Record<string, Array<{ location_code: string; location_name?: string; quantity: number }>>,
 ): ReturnProduct[] => {
   const categoryById = new Map(categories.map((category) => [String(category.id), category]))
 
@@ -47,10 +49,11 @@ export const mapProductsForReturns = (
     const category = categoryById.get(String(product.category))
     const canReturn = category?.is_returnable ?? false
     const requiresSerial = category?.requires_serial_number ?? false
+    const pid = String(product.id)
 
     return {
       id: `ret-${product.id}`,
-      productId: String(product.id),
+      productId: pid,
       productName: product.name,
       sku: product.sku ?? '-',
       barcode: product.barcode ?? '',
@@ -58,6 +61,8 @@ export const mapProductsForReturns = (
       canReturn,
       blockReason: canReturn ? undefined : BR05_BLOCK_REASON,
       requiresSerial,
+      stockTotal: stockMap?.[pid] ?? product.stockTotal ?? undefined,
+      byLocation: stockLocationsMap?.[pid] ?? undefined,
     }
   })
 }
@@ -132,7 +137,21 @@ export const fetchReturnsOverview = async (): Promise<ReturnsOverview> => {
     }))
 
     const locationById = new Map(locations.map((location) => [location.id, location]))
-    const products = mapProductsForReturns(rawProducts, categories)
+
+    const stockResults = await Promise.allSettled(
+      rawProducts.map(p => fetchProductStock(String(p.id)))
+    )
+    const stockMap: Record<string, number> = {}
+    const stockLocationsMap: Record<string, Array<{ location_code: string; location_name?: string; quantity: number }>> = {}
+    stockResults.forEach((r, i) => {
+      if (r.status === 'fulfilled') {
+        const pid = String(rawProducts[i].id)
+        stockMap[pid] = r.value.total
+        stockLocationsMap[pid] = r.value.by_location ?? r.value.per_location ?? []
+      }
+    })
+
+    const products = mapProductsForReturns(rawProducts, categories, stockMap, stockLocationsMap)
 
     const history: ReturnEntry[] = returnsRes.data.results.map((movement) =>
       mapMovementToReturnEntry(

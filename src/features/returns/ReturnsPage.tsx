@@ -461,6 +461,11 @@ function ReturnsPage() {
                                 >
                                   <strong>{product.productName}</strong>
                                   <span className="sku" style={{ marginLeft: 8 }}>{product.sku}</span>
+                                  {product.stockTotal !== undefined && (
+                                    <span className={`pill ${product.stockTotal > 0 ? 'pill--ok' : 'pill--err'}`} style={{ marginLeft: 8, fontSize: 10 }}>
+                                      {product.stockTotal > 0 ? `${product.stockTotal} uds` : 'Sin stock'}
+                                    </span>
+                                  )}
                                 </button>
                               ))
                             )}

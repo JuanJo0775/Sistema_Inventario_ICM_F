@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { extractApiError } from '../../hooks/useApiError'
@@ -10,6 +11,7 @@ import {
   ClipboardCheck,
   FileDown,
   Plus,
+  Printer,
   Search,
   Trash2,
   X,
@@ -18,6 +20,7 @@ import {
 import AppShell from '../../components/layout/AppShell'
 import { Button } from '../../components/ui/button'
 import { BarcodeScannerButton } from '../../components/ui/BarcodeScannerButton'
+import { ModalPortal } from '../../components/ui/ModalPortal'
 
 import type {
   CartItem,
@@ -36,6 +39,8 @@ import {
 } from '../../services/dispatch'
 import { fetchCombos } from '../../services/combos'
 import useCatalogStore from '../../store/useCatalogStore'
+import { ThermalReceipt, buildReceiptData, type ThermalReceiptData } from './ThermalReceipt'
+import useAuthStore from '../../store/useAuthStore'
 
 type DispatchForm = Readonly<{
   customerName: string
@@ -159,6 +164,7 @@ function DispatchPage() {
   const { t } = useTranslation()
 
   const { products, fetchProducts } = useCatalogStore()
+  const authUser = useAuthStore((s) => s.user)
 
   const [overview, setOverview] = useState<{
     locations: DispatchLocation[]
@@ -170,6 +176,7 @@ function DispatchPage() {
   const [error, setError] = useState<string | null>(null)
   const [recentMovements, setRecentMovements] = useState<DispatchMovement[]>([])
   const [submissionResult, setSubmissionResult] = useState<CartSubmissionResult | null>(null)
+  const [thermalReceiptData, setThermalReceiptData] = useState<ThermalReceiptData | null>(null)
 
   const [productSearch, setProductSearch] = useState('')
   const [combos, setCombos] = useState<Combo[]>([])
@@ -177,6 +184,7 @@ function DispatchPage() {
   const [pendingQty, setPendingQty] = useState('1')
   const [pendingPrice, setPendingPrice] = useState('')
   const [pendingLocation, setPendingLocation] = useState('')
+  const [lastScannedBarcode, setLastScannedBarcode] = useState<string | null>(null)
 
   const [cartItems, setCartItems] = useState<CartItem[]>([])
 
@@ -200,6 +208,16 @@ function DispatchPage() {
   }, [])
 
   const locations = overview?.locations ?? []
+
+  const productLocations = useMemo(() => {
+    if (!pendingProduct?.byLocation || pendingProduct.byLocation.length === 0) return locations
+    const codes = new Set(pendingProduct.byLocation.map(l => l.location_code))
+    const qtyByCode = new Map(pendingProduct.byLocation.map(l => [l.location_code, l.quantity]))
+    return locations.filter(l => codes.has(l.code)).map(l => ({
+      ...l,
+      stockQty: qtyByCode.get(l.code) ?? 0,
+    }))
+  }, [pendingProduct, locations])
 
   const availableProducts = useMemo(() => {
     let list = products.filter((p) => p.is_active)
@@ -249,7 +267,7 @@ function DispatchPage() {
     if (pendingProduct && !pendingPrice) {
       setPendingPrice(priceAutoFill)
     }
-  }, [priceAutoFill, pendingProduct, pendingPrice])
+  }, [pendingProduct])
 
   const cartSummary = useMemo(() => {
     const subtotal = cartItems.reduce((s, i) => s + i.subtotal, 0)
@@ -275,13 +293,34 @@ function DispatchPage() {
     return true
   }, [customerDataRequired, form.customerName, form.customerDoc, cartItems])
 
-  function handleSelectProduct(product: CatalogProduct) {
+  const customerErrors = useMemo(() => {
+    if (!customerDataRequired) return []
+    const errors: string[] = []
+    if (!form.customerName.trim()) errors.push('Razón social / Nombre')
+    if (!form.customerDoc.trim()) errors.push('NIT / Documento')
+    return errors
+  }, [customerDataRequired, form.customerName, form.customerDoc])
+
+  const confirmBlockReason = useMemo(() => {
+    if (customerErrors.length > 0) return `Completa los campos obligatorios del cliente: ${customerErrors.join(' y ')}`
+    if (cartItems.length === 0) return 'Agrega al menos un producto al carrito'
+    return null
+  }, [customerErrors, cartItems.length])
+
+  useEffect(() => {
+    if (pendingProduct && !pendingLocation && productLocations.length > 0) {
+      setPendingLocation(productLocations[0].id)
+    }
+  }, [pendingProduct, pendingLocation, productLocations])
+
+  const handleSelectProduct = useCallback((product: CatalogProduct, fromScan = false) => {
     setPendingProduct(product)
     setPendingQty('1')
     setPendingPrice('')
     setPendingLocation('')
     setProductSearch('')
-  }
+    if (!fromScan) setLastScannedBarcode(null)
+  }, [])
 
   function handleSelectCombo(combo: Combo) {
     let added = 0
@@ -307,7 +346,8 @@ function DispatchPage() {
     setProductSearch('')
   }
 
-  function handleProductScanned(result: BarcodeProductResult) {
+  const handleProductScanned = useCallback((result: BarcodeProductResult) => {
+    setLastScannedBarcode(result.barcode ?? result.sku ?? null)
     const match = availableProducts.find(
       (p) =>
         p.id === String(result.id) ||
@@ -315,7 +355,7 @@ function DispatchPage() {
         (result.barcode && p.barcode && p.barcode === result.barcode),
     )
     if (match) {
-      handleSelectProduct(match)
+      handleSelectProduct(match, true)
     } else {
       const fallback: CatalogProduct = {
         id: String(result.id),
@@ -341,9 +381,9 @@ function DispatchPage() {
         sale_price_wholesale: 0,
         tax_rate_pct: 19,
       }
-      handleSelectProduct(fallback)
+      handleSelectProduct(fallback, true)
     }
-  }
+  }, [availableProducts, handleSelectProduct])
 
   function handleAddToCart() {
     if (!pendingProduct) return
@@ -358,6 +398,9 @@ function DispatchPage() {
     }
     const price = pendingPrice ? Number(pendingPrice) : 0
     const item = createCartItem(pendingProduct, qty, price, pendingLocation)
+    if (lastScannedBarcode) {
+      item.scannedCode = lastScannedBarcode
+    }
     if (dispatchMode === 'damage') {
       item.damageReason = form.damageReason
     }
@@ -367,6 +410,7 @@ function DispatchPage() {
     setPendingQty('1')
     setPendingPrice('')
     setPendingLocation('')
+    setLastScannedBarcode(null)
     toast.success(`${pendingProduct.name} agregado al carrito`)
   }
 
@@ -378,6 +422,7 @@ function DispatchPage() {
     setCartItems([])
     setSubmissionResult(null)
     setError(null)
+    setThermalReceiptData(null)
   }
 
   const handleConfirm = async () => {
@@ -393,7 +438,7 @@ function DispatchPage() {
             customer_phone: form.customerPhone.trim() || '0000000000',
             customer_address: form.customerAddress.trim() || 'Sin dirección',
             customer_doc: form.customerDoc.trim() || undefined,
-            privacy_notice_acknowledged: false,
+            privacy_notice_acknowledged: true,
           }
         : null
 
@@ -403,16 +448,47 @@ function DispatchPage() {
         quantity: item.quantity,
         unitPrice: item.unitPrice || null,
         movementType: SALE_TYPES[dispatchMode],
-        scannedCode: null,
-        orderSku: item.sku,
+        scannedCode: item.scannedCode ?? null,
+        orderSku: item.scannedCode ? item.sku : null,
         serialNumber: null,
         note: item.note || item.damageReason || '',
       }))
 
       const result = await submitCart(items, customerData)
 
+      const cName = customerData?.customer_name ?? ''
+      const cDoc = customerData?.customer_doc ?? ''
+
+      const operatorName = authUser
+        ? [authUser.first_name, authUser.last_name].filter(Boolean).join(' ') || authUser.username
+        : '---'
+
+      const receipt = buildReceiptData({
+        invoiceNumber: result.invoiceNumber,
+        customerName: cName,
+        customerDoc: cDoc,
+        items: cartItems.map((ci) => ({
+          productName: ci.productName,
+          sku: ci.sku,
+          quantity: ci.quantity,
+          unitPrice: ci.unitPrice,
+          taxRate: ci.taxRate,
+          discount: ci.discount,
+          subtotal: ci.subtotal,
+          taxAmount: ci.taxAmount,
+          total: ci.total,
+        })),
+        subtotal: cartSummary.subtotal,
+        tax: cartSummary.tax,
+        discount: 0,
+        total: cartSummary.total,
+        mode: dispatchMode === 'retail' ? 'retail' : 'wholesale',
+        operator: operatorName,
+      })
+
       setRecentMovements((current) => [...result.movements, ...current])
       setSubmissionResult(result)
+      setThermalReceiptData(receipt)
       setCartItems([])
       setForm(toForm())
       toast.success(`${result.movements.length} salida(s) registrada(s) exitosamente`)
@@ -430,17 +506,6 @@ function DispatchPage() {
       await downloadInvoicePdf(mov.id, mov.invoiceNumber ?? 'ICM-PDF')
     } catch (err) {
       setError(extractApiError(err))
-    }
-  }
-
-  const handleDownloadAllPdf = async () => {
-    if (!submissionResult) return
-    for (const mov of submissionResult.movements) {
-      try {
-        await downloadInvoicePdf(mov.id, mov.invoiceNumber ?? 'ICM-PDF')
-      } catch {
-        toast.error(`Error descargando factura ${mov.invoiceNumber}`)
-      }
     }
   }
 
@@ -482,28 +547,70 @@ function DispatchPage() {
           </div>
         ) : null}
 
-        {/* Success banner */}
-        {submissionResult && (
-          <div className="alert-bar alert-bar--ok" role="alert" style={{ marginBottom: 18 }}>
-            <CheckCircle2 />
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span>
-                {submissionResult.movements.length} salida(s) registrada(s)
-                {submissionResult.invoiceNumber && ` — Factura ${submissionResult.invoiceNumber}`}
-              </span>
-              <Button size="sm" variant="outline" onClick={handleDownloadPdf}>
-                <FileDown /> Descargar factura
-              </Button>
-              {submissionResult.movements.length > 1 && (
-                <Button size="sm" variant="outline" onClick={handleDownloadAllPdf}>
-                  <FileDown /> Descargar todas
+        {/* Invoice preview modal */}
+        {submissionResult && thermalReceiptData && (
+          <ModalPortal onClose={handleClearCart}>
+            <div
+              style={{
+                background: 'var(--white)',
+                borderRadius: 18,
+                width: '100%',
+                maxWidth: 600,
+                boxShadow: '0 24px 64px rgba(15,30,32,.2)',
+                maxHeight: '90vh',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {/* Header */}
+              <div style={{ padding: '18px 24px 12px', borderBottom: '1px solid var(--ink-06)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <p style={{ fontSize: 11, color: 'var(--ink-40)', fontFamily: 'var(--ff-mono)', letterSpacing: '0.5px', margin: 0 }}>
+                      ICM · RNF-006
+                    </p>
+                    <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 400, margin: '4px 0' }}>
+                      Factura de venta
+                    </h2>
+                    {submissionResult.invoiceNumber && (
+                      <p style={{ fontSize: 13, color: 'var(--teal-700)', fontFamily: 'var(--ff-mono)', margin: '2px 0 0' }}>
+                        #{submissionResult.invoiceNumber}
+                      </p>
+                    )}
+                  </div>
+                  <CheckCircle2 size={32} style={{ color: 'var(--ok)', flexShrink: 0 }} />
+                </div>
+              </div>
+
+              {/* Body — thermal receipt preview */}
+              <div style={{ padding: '16px 24px', overflowY: 'auto', flex: 1, display: 'flex', justifyContent: 'center', background: '#f5f5f5' }}>
+                <div style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.12)', maxWidth: '100%' }}>
+                  <ThermalReceipt data={thermalReceiptData} />
+                </div>
+              </div>
+
+              {/* Footer — actions */}
+              <div style={{ padding: '14px 24px 20px', borderTop: '1px solid var(--ink-06)', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <Button variant="outline" size="sm" onClick={handleClearCart}>
+                  Salir
                 </Button>
-              )}
-              <Button size="sm" onClick={handleClearCart}>
-                <X /> Nueva salida
-              </Button>
+                <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
+                  <FileDown /> Descargar factura
+                </Button>
+                <Button size="sm" onClick={() => window.print()}>
+                  <Printer /> Imprimir factura
+                </Button>
+              </div>
             </div>
-          </div>
+          </ModalPortal>
+        )}
+
+        {/* Print portal — hidden during screen, visible on @media print */}
+        {thermalReceiptData && createPortal(
+          <div id="thermal-receipt-root">
+            <ThermalReceipt data={thermalReceiptData} />
+          </div>,
+          document.body,
         )}
 
         <div className="dispatch-layout">
@@ -645,8 +752,8 @@ function DispatchPage() {
                       onChange={(e) => setPendingLocation(e.target.value)}
                     >
                       <option value="">Seleccionar</option>
-                      {locations.map((loc) => (
-                        <option key={loc.id} value={loc.id}>{loc.code} — {loc.name}</option>
+                      {productLocations.map((loc: any) => (
+                        <option key={loc.id} value={loc.id}>{loc.code} — {loc.name}{loc.stockQty !== undefined ? ` (${loc.stockQty} uds)` : ''}</option>
                       ))}
                     </select>
                   </div>
@@ -763,15 +870,22 @@ function DispatchPage() {
                   >
                     Cancelar
                   </button>
-                  <button
-                    type="button"
-                    className="btn btn--amber btn--lg"
-                    onClick={handleConfirm}
-                    disabled={!canConfirm || saving}
-                  >
-                    <ClipboardCheck />
-                    {saving ? 'Registrando...' : 'Confirmar y generar factura(s)'}
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <button
+                      type="button"
+                      className="btn btn--amber btn--lg"
+                      onClick={handleConfirm}
+                      disabled={!canConfirm || saving}
+                    >
+                      <ClipboardCheck />
+                      {saving ? 'Registrando...' : 'Confirmar y generar factura(s)'}
+                    </button>
+                    {!canConfirm && confirmBlockReason && !saving && (
+                      <p style={{ fontSize: 11, color: 'var(--err)', textAlign: 'right', lineHeight: 1.3, maxWidth: 220, marginLeft: 'auto' }}>
+                        {confirmBlockReason}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </>
             )}
@@ -799,12 +913,32 @@ function DispatchPage() {
                   <legend>Datos del cliente — Ley 1581</legend>
                   <div className="f-group dispatch-customer-field">
                     <label className="f-label" htmlFor="cli-name">Razón social / Nombre {customerDataRequired && <span style={{ color: 'var(--err)' }}>*</span>}</label>
-                    <input id="cli-name" className="f-input" value={form.customerName} onChange={(e) => setForm((f) => ({ ...f, customerName: e.target.value }))} placeholder={customerDataRequired ? '' : 'Opcional'} />
+                    <input
+                      id="cli-name"
+                      className={`f-input${customerDataRequired && !form.customerName.trim() ? ' input--err' : ''}`}
+                      value={form.customerName}
+                      onChange={(e) => setForm((f) => ({ ...f, customerName: e.target.value }))}
+                      placeholder={customerDataRequired ? 'Obligatorio' : 'Opcional'}
+                      required={customerDataRequired}
+                    />
+                    {customerDataRequired && !form.customerName.trim() && (
+                      <p className="field-err">Campo obligatorio para venta al por mayor</p>
+                    )}
                   </div>
                   {customerDataRequired && (
                     <div className="f-group dispatch-customer-field">
                       <label className="f-label" htmlFor="cli-doc">NIT / Documento *</label>
-                      <input id="cli-doc" className="f-input" value={form.customerDoc} onChange={(e) => setForm((f) => ({ ...f, customerDoc: e.target.value }))} placeholder="NIT 900.123.456-7" />
+                      <input
+                        id="cli-doc"
+                        className={`f-input${!form.customerDoc.trim() ? ' input--err' : ''}`}
+                        value={form.customerDoc}
+                        onChange={(e) => setForm((f) => ({ ...f, customerDoc: e.target.value }))}
+                        placeholder="NIT 900.123.456-7"
+                        required
+                      />
+                      {!form.customerDoc.trim() && (
+                        <p className="field-err">Campo obligatorio para venta al por mayor</p>
+                      )}
                     </div>
                   )}
                   {!customerDataRequired && (

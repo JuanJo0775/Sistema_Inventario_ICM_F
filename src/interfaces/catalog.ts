@@ -48,6 +48,7 @@ export interface CatalogProduct {
   created_at?: string
   updated_at?: string
   stockTotal?: number // Computed or fetched from stock API
+  byLocation?: Array<{ location_code: string; location_name?: string; quantity: number }>
   // Pricing fields — null por defecto si no se configuraron
   unit_cost?: number | null
   sale_price_retail?: number | null
