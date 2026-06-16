@@ -26,6 +26,7 @@ import type {
 } from '../../interfaces/dispatch'
 import type { CatalogProduct } from '../../interfaces/catalog'
 import type { BarcodeProductResult } from '../../services/barcodeScanner'
+import type { Combo } from '../../interfaces/combos'
 
 import {
   downloadInvoicePdf,
@@ -33,6 +34,7 @@ import {
   submitCart,
   type CartSubmissionResult,
 } from '../../services/dispatch'
+import { fetchCombos } from '../../services/combos'
 import useCatalogStore from '../../store/useCatalogStore'
 
 type DispatchForm = Readonly<{
@@ -170,6 +172,7 @@ function DispatchPage() {
   const [submissionResult, setSubmissionResult] = useState<CartSubmissionResult | null>(null)
 
   const [productSearch, setProductSearch] = useState('')
+  const [combos, setCombos] = useState<Combo[]>([])
   const [pendingProduct, setPendingProduct] = useState<CatalogProduct | null>(null)
   const [pendingQty, setPendingQty] = useState('1')
   const [pendingPrice, setPendingPrice] = useState('')
@@ -193,6 +196,7 @@ function DispatchPage() {
   useEffect(() => {
     loadOverview()
     fetchProducts({ page_size: 9999 })
+    fetchCombos(false).then(setCombos).catch(() => {})
   }, [])
 
   const locations = overview?.locations ?? []
@@ -215,6 +219,19 @@ function DispatchPage() {
         (p.barcode && p.barcode.toLowerCase().includes(q)),
     )
   }, [availableProducts, productSearch])
+
+  const searchResults = useMemo(() => {
+    const q = productSearch.trim().toLowerCase()
+    let productResults = filteredProducts
+    const comboResults = combos.filter(
+      (c) =>
+        !c.deleted_at &&
+        (!q ||
+          c.name.toLowerCase().includes(q) ||
+          c.sku.toLowerCase().includes(q)),
+    )
+    return { products: productResults, combos: comboResults }
+  }, [filteredProducts, combos, productSearch])
 
   const priceAutoFill = useMemo(() => {
     if (!pendingProduct) return ''
@@ -263,6 +280,30 @@ function DispatchPage() {
     setPendingQty('1')
     setPendingPrice('')
     setPendingLocation('')
+    setProductSearch('')
+  }
+
+  function handleSelectCombo(combo: Combo) {
+    let added = 0
+    for (const component of combo.components) {
+      const product = products.find((p) => p.id === component.product)
+      if (!product) continue
+      const locationId = pendingLocation || locations[0]?.id || ''
+      if (!locationId) {
+        toast.error('Selecciona una ubicación antes de agregar un combo')
+        return
+      }
+      const price =
+        dispatchMode === 'wholesale' && product.sale_price_wholesale != null
+          ? product.sale_price_wholesale
+          : product.sale_price_retail ?? 0
+      const item = createCartItem(product, component.quantity, price, locationId)
+      setCartItems((prev) => [...prev, item])
+      added++
+    }
+    if (added > 0) {
+      toast.success(`Combo "${combo.name}" agregado (${added} productos)`)
+    }
     setProductSearch('')
   }
 
@@ -485,14 +526,14 @@ function DispatchPage() {
                 />
               </div>
 
-              {/* Product dropdown */}
-              {!pendingProduct && filteredProducts.length > 0 && (
-                <ul style={{ margin: '4px 0 0', padding: 0, listStyle: 'none', border: '1px solid var(--ink-12)', borderRadius: 8, maxHeight: 200, overflowY: 'auto', background: 'var(--white)' }}>
-                  {filteredProducts.map((p) => (
+              {/* Product / Combo dropdown */}
+              {!pendingProduct && (searchResults.products.length > 0 || searchResults.combos.length > 0) && (
+                <ul style={{ margin: '4px 0 0', padding: 0, listStyle: 'none', border: '1px solid var(--ink-12)', borderRadius: 8, maxHeight: 240, overflowY: 'auto', background: 'var(--white)' }}>
+                  {searchResults.products.map((p) => (
                     <li
                       key={p.id}
                       onClick={() => handleSelectProduct(p)}
-                      style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13, borderBottom: '1px solid var(--ink-06)', display: 'flex', justifyContent: 'space-between' }}
+                      style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13, borderBottom: '1px solid var(--ink-06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                       onMouseEnter={(e) => e.currentTarget.style.background = 'var(--teal-50)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
@@ -500,9 +541,24 @@ function DispatchPage() {
                       <span className="sku">{p.sku}</span>
                     </li>
                   ))}
+                  {searchResults.combos.map((c) => (
+                    <li
+                      key={`combo-${c.id}`}
+                      onClick={() => handleSelectCombo(c)}
+                      style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13, borderBottom: '1px solid var(--ink-06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--amber-bg)' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--amber-lt)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'var(--amber-bg)'}
+                    >
+                      <span>
+                        <span className="pill pill--amber" style={{ fontSize: 10, marginRight: 6 }}>COMBO</span>
+                        <span style={{ fontWeight: 500 }}>{c.name}</span>
+                      </span>
+                      <span className="sku">{c.sku}</span>
+                    </li>
+                  ))}
                 </ul>
               )}
-              {productSearch && filteredProducts.length === 0 && !pendingProduct && (
+              {productSearch && searchResults.products.length === 0 && searchResults.combos.length === 0 && !pendingProduct && (
                 <p style={{ fontSize: 12, color: 'var(--ink-40)', marginTop: 4 }}>Sin coincidencias</p>
               )}
             </div>

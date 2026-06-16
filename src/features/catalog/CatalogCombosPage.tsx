@@ -104,7 +104,19 @@ function CatalogCombosPage() {
 
   const handleDuplicate = async (combo: Combo) => {
     const newName = `Copia de ${combo.name}`
-    const newSku = `${combo.sku}-COPY`
+
+    const parts = combo.sku.split('-')
+    const prefix = (parts[0] || 'COPY').slice(0, 4).toUpperCase()
+    const existingNums = combos
+      .filter((c) => c.sku.startsWith(`${prefix}-`))
+      .map((c) => {
+        const num = parseInt(c.sku.split('-')[1], 10)
+        return isNaN(num) ? 0 : num
+      })
+    const nextNum = Math.max(0, ...existingNums) + 1
+    const originalWidth = parts[1] ? parts[1].length : 3
+    const newSku = `${prefix}-${String(nextNum).padStart(originalWidth, '0')}`
+
     try {
       await createCombo({
         name: newName,
@@ -413,7 +425,7 @@ function ComboCard({
             Duplicar
           </button>
           <button
-            className={`btn btn--sm ${combo.deleted_at ? '' : 'btn--danger'}`}
+            className={`btn btn--sm ${combo.deleted_at ? 'btn--success' : 'btn--danger'}`}
             onClick={onToggleStatus}
           >
             {combo.deleted_at ? 'Restaurar' : 'Desactivar'}
