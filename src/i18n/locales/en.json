@@ -114,16 +114,16 @@
       "searchLabel": "Search",
       "searchPlaceholder": "Search by name, SKU, or barcode...",
       "categoryLabel": "Category",
-      "subcategoryLabel": "Subcategory",
+      "subcategoryLabel": "Brand",
       "categoryAll": "All categories",
-      "subcategoryAll": "All subcategories"
+      "subcategoryAll": "All brands"
     },
     "table": {
       "ariaLabel": "Inventory list",
       "sku": "SKU",
       "product": "Product",
       "category": "Category",
-      "subcategory": "Subcategory",
+      "subcategory": "Brand",
       "stock": "Stock",
       "reorderPoint": "Reorder point",
       "status": "Status",
@@ -148,8 +148,24 @@
     },
     "errors": {
       "categories": "Could not load categories",
-      "subcategories": "Could not load subcategories",
-      "products": "Could not load inventory"
+      "subcategories": "Could not load brands",
+      "products": "Could not load inventory",
+      "combos": "Could not load combos"
+    },
+    "combosSection": {
+      "tabs": {
+        "products": "Products",
+        "combos": "Combos"
+      },
+      "sku": "SKU",
+      "name": "Name",
+      "stock": "Combo stock",
+      "productsCount": "Products",
+      "status": "Status",
+      "empty": "No combos available.",
+      "emptyStock": "Out of stock",
+      "muted": "Inactive",
+      "active": "Active"
     }
   },
   "dashboard": {
@@ -844,7 +860,8 @@
       "title": "CATALOG",
       "products": "Products",
       "categories": "Categories",
-      "brands": "Brands"
+      "brands": "Brands",
+      "combos": "Combos"
     },
     "products": {
       "title": "Product Catalog",
@@ -948,6 +965,80 @@
         "created": "Brand created",
         "updated": "Brand updated",
         "error": "Error saving brand"
+      }
+    },
+    "combos": {
+      "nav": "Combos",
+      "title": "Product Combos",
+      "subtitle": "Group products for bundled sale",
+      "new": "New Combo",
+      "edit": "Edit Combo",
+      "search": "Search combo...",
+      "empty": "No combos match your search.",
+      "stats": {
+        "total": "Total combos",
+        "available": "Available",
+        "noStock": "Out of stock",
+        "inactive": "Inactive"
+      },
+      "card": {
+        "products": "{{count}} products",
+        "product_one": "1 product",
+        "individualPrice": "Individual price",
+        "comboPrice": "Combo price",
+        "discount": "-{{pct}}% discount",
+        "available": "Available",
+        "noStock": "Out of stock",
+        "inactive": "Inactive",
+        "stockOk": "✅ Sufficient stock",
+        "stockWarn": "⚠️ {{count}} units",
+        "stockNone": "❌ Out of stock"
+      },
+      "detail": {
+        "sku": "SKU",
+        "name": "Name",
+        "products": "Combo products",
+        "stock": "Available stock",
+        "comboPrice": "Combo price",
+        "individualTotal": "Individual total",
+        "discount": "Discount"
+      },
+      "form": {
+        "sectionBasic": "Combo info",
+        "nameLabel": "Combo name *",
+        "namePlaceholder": "E.g. Basic TENS Kit",
+        "skuLabel": "SKU *",
+        "skuPlaceholder": "E.g. COMBO-001",
+        "sectionProducts": "Combo products",
+        "searchProduct": "Search product",
+        "searchPlaceholder": "Search by name or SKU...",
+        "noResults": "No products found.",
+        "itemProduct": "Product",
+        "itemSku": "SKU",
+        "itemQuantity": "Qty",
+        "itemStock": "Stock",
+        "itemAction": "Remove",
+        "minProducts": "You must add at least 2 products.",
+        "sectionPricing": "Pricing",
+        "individualTotal": "Individual total (calculated)",
+        "comboPriceLabel": "Combo price *",
+        "discountLabel": "Generated discount",
+        "save": "Save",
+        "cancel": "Cancel"
+      },
+      "messages": {
+        "created": "Combo created successfully",
+        "updated": "Combo updated successfully",
+        "deleted": "Combo deactivated successfully",
+        "restored": "Combo restored successfully",
+        "error": "Error saving combo",
+        "loadError": "Error loading combos",
+        "deleteConfirmTitle": "Deactivate this combo?",
+        "deleteConfirmBody": "Individual products are not affected. The combo will be hidden from the catalog.",
+        "deleteConfirmCancel": "Cancel",
+        "deleteConfirmAction": "Confirm Deactivation",
+        "duplicateConfirmTitle": "Duplicate combo",
+        "duplicateConfirmBody": "A copy will be created with the name \"Copy of {{name}}\"."
       }
     },
     "locations": {

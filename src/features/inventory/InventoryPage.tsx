@@ -26,6 +26,7 @@ import {
   fetchProducts,
   fetchSubcategories,
 } from '../../services/inventory'
+import InventoryCombosSection from './InventoryCombosSection'
 
 type StockBadge = 'ok' | 'warn' | 'err' | 'muted'
 
@@ -61,6 +62,7 @@ function InventoryPage() {
   const [search, setSearch] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [subcategoryId, setSubcategoryId] = useState('')
+  const [activeTab, setActiveTab] = useState<'products' | 'combos'>('products')
 
   const hasFilters = Boolean(search || categoryId || subcategoryId)
 
@@ -98,10 +100,6 @@ function InventoryPage() {
 
   const loadSubcategories = useCallback(
     async (nextCategoryId?: string) => {
-      if (!nextCategoryId) {
-        setSubcategories([])
-        return
-      }
       try {
         const data = await fetchSubcategories(nextCategoryId)
         setSubcategories(data)
@@ -182,9 +180,11 @@ function InventoryPage() {
         product.category_slug ??
         t("inventory.table.empty");
 
-      const subcategoryRecord = product.subcategory
-        ? subcategoryById.get(String(product.subcategory))
-        : undefined;
+      const subcategoryRecord = product.brand
+        ? subcategoryById.get(String(product.brand))
+        : product.subcategory
+          ? subcategoryById.get(String(product.subcategory))
+          : undefined;
       const subcategory = subcategoryRecord?.name ?? t("inventory.table.empty");
 
       const stock =
@@ -414,6 +414,31 @@ function InventoryPage() {
           <span>{t('inventory.safetyNotice')}</span>
         </div>
 
+        <div
+          className="flex gap-4"
+          style={{
+            borderBottom: '1px solid var(--ink-06)',
+            marginBottom: '1rem',
+            paddingBottom: 0,
+          }}
+        >
+          <button
+            className={`btn btn--sm ${activeTab === 'products' ? 'btn--primary' : 'btn--ghost'}`}
+            style={{ borderRadius: 0, borderBottom: activeTab === 'products' ? '2px solid var(--teal-600)' : '2px solid transparent' }}
+            onClick={() => setActiveTab('products')}
+          >
+            {t('inventory.combosSection.tabs.products')}
+          </button>
+          <button
+            className={`btn btn--sm ${activeTab === 'combos' ? 'btn--primary' : 'btn--ghost'}`}
+            style={{ borderRadius: 0, borderBottom: activeTab === 'combos' ? '2px solid var(--teal-600)' : '2px solid transparent' }}
+            onClick={() => setActiveTab('combos')}
+          >
+            {t('inventory.combosSection.tabs.combos')}
+          </button>
+        </div>
+
+        {activeTab === 'products' && (<>
         <section className="inventory-toolbar" aria-label={t('inventory.filters.ariaLabel')}>
           <div className="inventory-field">
             <label className="inventory-label" htmlFor="inventory-search">
@@ -519,6 +544,9 @@ function InventoryPage() {
             {detailContent}
           </aside>
         </div>
+        </>)}
+
+        {activeTab === 'combos' && <InventoryCombosSection />}
       </div>
     </AppShell>
   )

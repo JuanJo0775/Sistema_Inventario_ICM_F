@@ -114,16 +114,16 @@
       "searchLabel": "Busqueda",
       "searchPlaceholder": "Buscar por nombre, SKU o barcode...",
       "categoryLabel": "Categoria",
-      "subcategoryLabel": "Subcategoria",
+      "subcategoryLabel": "Marca (Subcategoria)",
       "categoryAll": "Todas las categorias",
-      "subcategoryAll": "Todas las subcategorias"
+      "subcategoryAll": "Todas las marcas"
     },
     "table": {
       "ariaLabel": "Listado de inventario",
       "sku": "SKU",
       "product": "Producto",
       "category": "Categoria",
-      "subcategory": "Subcategoria",
+      "subcategory": "Marca",
       "stock": "Stock",
       "reorderPoint": "Punto reorden",
       "status": "Estado",
@@ -148,8 +148,24 @@
     },
     "errors": {
       "categories": "No se pudieron cargar las categorias",
-      "subcategories": "No se pudieron cargar las subcategorias",
-      "products": "No se pudo cargar el inventario"
+      "subcategories": "No se pudieron cargar las marcas",
+      "products": "No se pudo cargar el inventario",
+      "combos": "No se pudieron cargar los combos"
+    },
+    "combosSection": {
+      "tabs": {
+        "products": "Productos",
+        "combos": "Combos"
+      },
+      "sku": "SKU",
+      "name": "Nombre",
+      "stock": "Stock combo",
+      "productsCount": "Productos",
+      "status": "Estado",
+      "empty": "No hay combos disponibles.",
+      "emptyStock": "Sin stock",
+      "muted": "Inactivo",
+      "active": "Activo"
     }
   },
   "dashboard": {
@@ -844,7 +860,8 @@
       "title": "CATÁLOGO",
       "products": "Productos",
       "categories": "Categorías",
-      "brands": "Marcas"
+      "brands": "Marcas",
+      "combos": "Combos"
     },
     "products": {
       "title": "Catálogo de Productos",
@@ -944,6 +961,80 @@
         "created": "Marca creada",
         "updated": "Marca actualizada",
         "error": "Error al guardar la marca"
+      }
+    },
+    "combos": {
+      "nav": "Combos",
+      "title": "Combos de productos",
+      "subtitle": "Agrupa productos para venta conjunta",
+      "new": "Nuevo Combo",
+      "edit": "Editar Combo",
+      "search": "Buscar combo...",
+      "empty": "No hay combos que coincidan con la búsqueda.",
+      "stats": {
+        "total": "Total combos",
+        "available": "Disponibles",
+        "noStock": "Sin stock",
+        "inactive": "Inactivos"
+      },
+      "card": {
+        "products": "{{count}} productos",
+        "product_one": "1 producto",
+        "individualPrice": "Precio individual",
+        "comboPrice": "Precio combo",
+        "discount": "-{{pct}}% descuento",
+        "available": "Disponible",
+        "noStock": "Sin stock",
+        "inactive": "Inactivo",
+        "stockOk": "✅ Stock suficiente",
+        "stockWarn": "⚠️ {{count}} unidades",
+        "stockNone": "❌ Sin stock"
+      },
+      "detail": {
+        "sku": "SKU",
+        "name": "Nombre",
+        "products": "Productos del combo",
+        "stock": "Stock disponible",
+        "comboPrice": "Precio combo",
+        "individualTotal": "Total individual",
+        "discount": "Descuento"
+      },
+      "form": {
+        "sectionBasic": "Información del combo",
+        "nameLabel": "Nombre del combo *",
+        "namePlaceholder": "Ej: Kit Electroestimulación Básico",
+        "skuLabel": "SKU *",
+        "skuPlaceholder": "Ej: COMBO-001",
+        "sectionProducts": "Productos del combo",
+        "searchProduct": "Buscar producto",
+        "searchPlaceholder": "Buscar por nombre o SKU...",
+        "noResults": "No se encontraron productos.",
+        "itemProduct": "Producto",
+        "itemSku": "SKU",
+        "itemQuantity": "Cant.",
+        "itemStock": "Stock",
+        "itemAction": "Quitar",
+        "minProducts": "Debe agregar al menos 2 productos.",
+        "sectionPricing": "Precio",
+        "individualTotal": "Precio individual (calculado)",
+        "comboPriceLabel": "Precio del combo *",
+        "discountLabel": "Descuento generado",
+        "save": "Guardar",
+        "cancel": "Cancelar"
+      },
+      "messages": {
+        "created": "Combo creado correctamente",
+        "updated": "Combo actualizado correctamente",
+        "deleted": "Combo desactivado correctamente",
+        "restored": "Combo restaurado correctamente",
+        "error": "Error al guardar el combo",
+        "loadError": "Error al cargar los combos",
+        "deleteConfirmTitle": "¿Desactivar este combo?",
+        "deleteConfirmBody": "Los productos individuales no se ven afectados. El combo se ocultará del catálogo.",
+        "deleteConfirmCancel": "Cancelar",
+        "deleteConfirmAction": "Confirmar Desactivación",
+        "duplicateConfirmTitle": "Duplicar combo",
+        "duplicateConfirmBody": "Se creará una copia de este combo con el nombre \"Copia de {{name}}\"."
       }
     },
     "locations": {

@@ -50,7 +50,7 @@ export const fetchSubcategories = async (
   const response = await api.get<ListResponse<InventorySubcategory>>(
     "/catalog/brands/",
     {
-      params: categoryId ? { category: categoryId } : undefined,
+      params: categoryId ? { include_inactive: 'false' } : undefined,
     },
   );
   return normalizeList(response.data);
@@ -100,7 +100,7 @@ export const fetchProducts = async (
         // El backend usa 'q' como parámetro de búsqueda
         q: params.search || undefined,
         category: params.category || undefined,
-        subcategory: params.subcategory || undefined,
+        brand: params.subcategory || undefined,
         // El backend usa PageNumberPagination: page_size y page (no limit/offset)
         page_size: params.limit,
         page: params.page,

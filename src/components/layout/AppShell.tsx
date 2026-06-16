@@ -227,6 +227,16 @@ function SidebarCatalogSection({ t, locationPathname, isCatalog, catalogOpen, se
             </svg>
             {t('catalog.nav.brands')}
           </Link>
+          <Link
+            className={`nav__sublink${locationPathname.startsWith('/app/catalog/combos') ? ' active' : ''}`}
+            to="/app/catalog/combos"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="2" y="6" width="20" height="12" rx="2" />
+              <path d="M12 2v4M12 18v4M8 12h8" />
+            </svg>
+            {t('catalog.nav.combos')}
+          </Link>
         </div>
       ) : null}
     </div>
