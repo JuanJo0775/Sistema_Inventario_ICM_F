@@ -57,6 +57,7 @@ export interface CartItem {
   total: number
   locationId: string
   lotCode: string
+  lotId?: string
   damageReason: string
   note: string
 }

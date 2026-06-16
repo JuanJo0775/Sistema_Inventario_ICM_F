@@ -35,6 +35,7 @@ export const CatalogCategoriesPage: React.FC = () => {
   const [formDescription, setFormDescription] = useState('');
   const [formIsActive, setFormIsActive] = useState(true);
   const [formRequiresSerial, setFormRequiresSerial] = useState(false);
+  const [formIsReturnable, setFormIsReturnable] = useState(false);
 
   // Feedback states
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -72,6 +73,7 @@ export const CatalogCategoriesPage: React.FC = () => {
     setFormDescription('');
     setFormIsActive(true);
     setFormRequiresSerial(false);
+    setFormIsReturnable(false);
     setValidationError(null);
     setIsModalOpen(true);
   };
@@ -82,6 +84,7 @@ export const CatalogCategoriesPage: React.FC = () => {
     setFormDescription(category.description || '');
     setFormIsActive(category.is_active);
     setFormRequiresSerial(!!category.requires_serial_number);
+    setFormIsReturnable(!!category.is_returnable);
     setValidationError(null);
     setIsModalOpen(true);
   };
@@ -116,7 +119,8 @@ export const CatalogCategoriesPage: React.FC = () => {
           name: nameTrimmed,
           description: formDescription.trim(),
           is_active: formIsActive,
-          requires_serial_number: formRequiresSerial
+          requires_serial_number: formRequiresSerial,
+          is_returnable: formIsReturnable,
         });
         setSuccessMsg('Categoría actualizada correctamente.');
         toast.success('Categoría actualizada correctamente');
@@ -126,7 +130,7 @@ export const CatalogCategoriesPage: React.FC = () => {
           name: nameTrimmed,
           description: formDescription.trim(),
           requires_serial_number: formRequiresSerial,
-          is_returnable: false
+          is_returnable: formIsReturnable,
         });
         setSuccessMsg('Categoría creada correctamente.');
         toast.success('Categoría creada correctamente');
@@ -524,6 +528,28 @@ export const CatalogCategoriesPage: React.FC = () => {
                                   Los movimientos de esta categoría exigirán un número de serie válido.
                                 </div>
                               )}
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="f-row f-row-1" style={{ marginTop: 16 }}>
+                      <div className="f-group">
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <span className="f-label" style={{ margin: 0 }}>Devoluciones</span>
+                          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer' }}>
+                            <Switch
+                              id="cat-is-returnable"
+                              checked={formIsReturnable}
+                              onCheckedChange={setFormIsReturnable}
+                            />
+                            <div>
+                              <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--ink)' }}>
+                                Permitir devoluciones
+                              </span>
+                              <p style={{ fontSize: '0.775rem', color: 'var(--ink-40)', margin: '0.25rem 0 0 0', lineHeight: 1.4 }}>
+                                Los productos de esta categoría podrán ser devueltos por el cliente.
+                              </p>
                             </div>
                           </label>
                         </div>

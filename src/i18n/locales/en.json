@@ -220,7 +220,9 @@
       "suppliers": "Suppliers",
       "purchaseOrders": "Purchase Orders",
       "logout": "Sign out",
-      "transfers": "Transfers"
+      "transfers": "Transfers",
+      "invoices": "Invoices",
+      "company": "Company"
     },
     "sidebar": {
       "brandName": "Import Corporal Medical",
@@ -1248,6 +1250,96 @@
       "scheduleReset": "Schedule reset to default.",
       "permitGranted": "Temporary permit granted successfully.",
       "permitRevoked": "Temporary permit revoked successfully."
+    }
+  },
+  "billing": {
+    "page": {
+      "title": "Invoices",
+      "subtitle": "Invoice history",
+      "createInvoice": "New invoice",
+      "filterDateFrom": "From",
+      "filterDateTo": "To",
+      "filterType": "Type",
+      "filterSearch": "Search by NIT or client...",
+      "filterClear": "Clear filters",
+      "statsInvoiceCount": "Invoices",
+      "statsTotalToday": "Today's total",
+      "statsTotalMonth": "Month's total",
+      "noResults": "No invoices found.",
+      "voidConfirmTitle": "Void invoice",
+      "voidConfirmMessage": "Are you sure you want to void invoice {number}? Stock for all products will be reversed.",
+      "voidReason": "Reason for voiding",
+      "voidReasonPlaceholder": "Enter mandatory reason",
+      "voidSuccess": "Invoice voided successfully.",
+      "voidError": "Error voiding invoice.",
+      "createdSuccess": "Invoice created successfully",
+      "detailTitle": "Invoice {number}",
+      "actionsPrint": "Print",
+      "actionsView": "View",
+      "actionsVoid": "Void",
+      "actionsClose": "Close",
+      "actionsNewSale": "New sale",
+      "fields": {
+        "number": "Invoice #",
+        "date": "Date",
+        "type": "Type",
+        "client": "Client / NIT",
+        "items": "Items",
+        "total": "Total",
+        "status": "Status",
+        "createdBy": "Created by"
+      },
+      "types": {
+        "minorista": "Retail",
+        "mayorista": "Wholesale"
+      },
+      "status": {
+        "active": "Active",
+        "voided": "Voided"
+      }
+    },
+    "config": {
+      "title": "Company data",
+      "subtitle": "Issuer configuration on invoices",
+      "companyInfo": "Company information",
+      "billingInfo": "Billing",
+      "companyName": "Company name",
+      "nit": "NIT",
+      "address": "Address",
+      "phone": "Phone",
+      "email": "Email",
+      "invoiceSeries": "Invoice series",
+      "dianResolution": "DIAN Resolution",
+      "dianRangeFrom": "Range from",
+      "dianRangeTo": "Range to",
+      "invoiceFooter": "Invoice footer",
+      "save": "Save changes",
+      "saving": "Saving...",
+      "saveSuccess": "Company data updated",
+      "saveError": "Error saving company data",
+      "loadError": "Error loading company data",
+      "loading": "Loading..."
+    },
+    "receipt": {
+      "title": "SALE INVOICE",
+      "nit": "NIT",
+      "phone": "Phone",
+      "invoiceNumber": "Invoice #",
+      "date": "Date",
+      "cashier": "Cashier",
+      "client": "Client",
+      "qty": "Qty",
+      "description": "Description",
+      "price": "Price",
+      "total": "Total",
+      "itemTotal": "Total",
+      "subtotal": "Subtotal",
+      "tax": "VAT",
+      "grandTotal": "TOTAL",
+      "footerThanks": "Thank you for your purchase!",
+      "footerNote": "Sales invoice — not a DIAN electronic document",
+      "voided": "** VOIDED INVOICE **",
+      "items": "Items"
     }
   }
 }

@@ -316,6 +316,32 @@ function DispatchPage() {
     )
     if (match) {
       handleSelectProduct(match)
+    } else {
+      const fallback: CatalogProduct = {
+        id: String(result.id),
+        name: result.name,
+        sku: result.sku,
+        category: String(result.category ?? ''),
+        category_slug: result.category_name?.toLowerCase().replace(/\s+/g, '-') ?? '',
+        subcategory: null,
+        barcode: result.barcode,
+        brand: '',
+        expiration_date: null,
+        requires_expiration: false,
+        requires_lot: false,
+        requires_serial_number: result.requires_serial_number ?? false,
+        special_conditions: false,
+        requires_cold_chain: result.requires_cold_chain ?? false,
+        is_active: true,
+        weight_grams: null,
+        notes: '',
+        reorder_point: 0,
+        stockTotal: result.stockTotal ?? 0,
+        sale_price_retail: 0,
+        sale_price_wholesale: 0,
+        tax_rate_pct: 19,
+      }
+      handleSelectProduct(fallback)
     }
   }
 

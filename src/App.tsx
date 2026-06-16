@@ -31,6 +31,8 @@ const PurchaseOrdersPage = React.lazy(() => import('./features/purchasing/Purcha
 const AuditPage = React.lazy(() => import('./features/admin/AuditPage'))
 const UsersPage = React.lazy(() => import('./features/admin/UsersPage'))
 const HorariosPage = React.lazy(() => import('./features/admin/HorariosPage'))
+const InvoicesPage = React.lazy(() => import('./features/billing/InvoicesPage'))
+const CompanyConfigPage = React.lazy(() => import('./features/billing/CompanyConfigPage'))
 
 function App() {
   return (
@@ -79,6 +81,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['almacenista', 'administrador', 'auxiliar_despacho']}>
               <DispatchPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/invoices"
+          element={
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador', 'auxiliar_despacho']}>
+              <InvoicesPage />
             </ProtectedRoute>
           }
         />
@@ -236,6 +246,14 @@ function App() {
           element={
             <ProtectedRoute>
               <HorariosPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/admin/company"
+          element={
+            <ProtectedRoute allowedRoles={['administrador']}>
+              <CompanyConfigPage />
             </ProtectedRoute>
           }
         />

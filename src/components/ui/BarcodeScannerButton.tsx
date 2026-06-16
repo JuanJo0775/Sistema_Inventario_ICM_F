@@ -17,15 +17,8 @@ interface BarcodeScannerButtonProps {
 const statusLabel: Record<ScanStatus, string> = {
   idle: 'Listo para escanear…',
   scanning: 'Buscando producto…',
-  success: '¡Producto encontrado!',
+  success: 'Producto encontrado',
   error: 'No encontrado',
-}
-
-const statusIcon: Record<ScanStatus, string> = {
-  idle: '📷',
-  scanning: '⏳',
-  success: '✅',
-  error: '❌',
 }
 
 export function BarcodeScannerButton({
@@ -167,7 +160,6 @@ export function BarcodeScannerButton({
                 </svg>
               </div>
               <p className="barcode-scan-area__status">
-                <span className="barcode-scan-area__icon">{statusIcon[status]}</span>
                 {statusLabel[status]}
               </p>
               {lastCode && status !== 'idle' && (

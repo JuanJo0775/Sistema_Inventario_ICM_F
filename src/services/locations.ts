@@ -3,8 +3,8 @@ import type { LocationItem, StorageType } from '../interfaces/locations'
 
 export const fetchLocations = async (includeInactive = false): Promise<LocationItem[]> => {
   const params = includeInactive ? { include_inactive: 'true' } : undefined
-  const response = await api.get<LocationItem[]>('/inventory/locations/', { params })
-  return response.data
+  const response = await api.get<LocationItem[] | { results: LocationItem[] }>('/inventory/locations/', { params })
+  return Array.isArray(response.data) ? response.data : response.data.results
 }
 
 export const createLocation = async (data: {
