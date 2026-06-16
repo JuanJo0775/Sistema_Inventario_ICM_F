@@ -4,6 +4,7 @@ import ProtectedRoute from './router/ProtectedRoute'
 import PageLoader from './components/ui/PageLoader'
 import { Toaster } from 'sonner'
 
+const LandingPage = React.lazy(() => import('./features/landing/LandingPage'))
 const LoginPage = React.lazy(() => import('./features/auth/LoginPage'))
 const RegisterPage = React.lazy(() => import('./features/auth/RegisterPage'))
 const ForgotPasswordPage = React.lazy(() => import('./features/auth/ForgotPasswordPage'))
@@ -39,7 +40,8 @@ function App() {
     <BrowserRouter>
       <Suspense fallback={<PageLoader />}>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/welcome" element={<Navigate to="/" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />

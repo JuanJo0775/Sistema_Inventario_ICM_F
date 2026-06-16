@@ -1341,5 +1341,76 @@
       "voided": "** VOIDED INVOICE **",
       "items": "Items"
     }
+  },
+  "landing": {
+    "nav": {
+      "categories": "Categories",
+      "benefits": "Benefits",
+      "quality": "Quality",
+      "contact": "Contact",
+      "login": "Sign in"
+    },
+    "hero": {
+      "eyebrow": "Medical and physiotherapy supplies",
+      "title": "Reliable clinical equipment, with end-to-end traceability",
+      "subtitle": "Import Corporal Medical distributes electrotherapy, manual therapy and rehabilitation equipment with precise inventory control, cross-validation on every dispatch, and regulatory compliance on every delivery.",
+      "ctaPrimary": "Sign in",
+      "ctaTertiary": "View categories",
+      "stat1Value": "100%",
+      "stat1Label": "Movement traceability",
+      "stat2Value": "24/7",
+      "stat2Label": "Real-time stock by location",
+      "stat3Value": "DIAN",
+      "stat3Label": "Electronic invoicing"
+    },
+    "categories": {
+      "eyebrow": "Catalog",
+      "title": "Main categories",
+      "subtitle": "Equipment and supplies organized by clinical family, ready for your operation.",
+      "items": [
+        { "name": "Electrotherapy", "description": "Stimulation and ultrasound equipment with serial number control for electrical safety." },
+        { "name": "Manual Therapy", "description": "Manual instruments and devices for physical therapy and rehabilitation." },
+        { "name": "Physiotherapy Tables", "description": "Clinical beds and tables for practices and rehabilitation centers." },
+        { "name": "Rehabilitation", "description": "Support accessories and equipment for functional recovery processes." },
+        { "name": "Consumables", "description": "Frequently used supplies with expiration tracking and timely replenishment." },
+        { "name": "Electronics", "description": "Electronic medical devices with serial traceability and cold chain when applicable." }
+      ]
+    },
+    "benefits": {
+      "eyebrow": "Why choose us",
+      "title": "Reasons to trust our inventory",
+      "subtitle": "Every operation is backed by clear business rules and auditable processes.",
+      "items": [
+        { "title": "Full traceability", "description": "Every entry, dispatch and transfer is recorded immutably and is auditable." },
+        { "title": "Stock by location", "description": "Real-time visibility of available inventory at every warehouse and location." },
+        { "title": "Cross-validation on dispatch", "description": "Every outbound shipment is verified against the scanned code before confirming delivery." },
+        { "title": "Safety and cold chain", "description": "Expiration, cold chain and electrical safety alerts on sensitive products." }
+      ]
+    },
+    "quality": {
+      "eyebrow": "Quality and service",
+      "title": "Professional care, auditable processes",
+      "description": "Behind every dispatch there is a documented process: receiving with discrepancy validation, always-justified adjustments and invoicing with sequential numbering. That's how we guarantee trust on every delivery.",
+      "checks": [
+        "Complete history of entries, dispatches and transfers",
+        "Discrepancy notes and adjustments are always justified",
+        "Electronic invoicing with sequential numbering",
+        "Operational alerts for expiration and minimum stock"
+      ]
+    },
+    "cta": {
+      "title": "Ready to manage your clinical inventory?",
+      "subtitle": "Access the platform with your account. Access is managed by an administrator.",
+      "primary": "Sign in"
+    },
+    "footer": {
+      "description": "Distribution of medical and physiotherapy equipment with end-to-end inventory traceability.",
+      "companyHeading": "Navigation",
+      "contactHeading": "Contact",
+      "contactPhone": "+57 (1) 000 0000",
+      "contactEmail": "contact@importcorporalmedical.com",
+      "contactAddress": "Bogotá, Colombia",
+      "rights": "All rights reserved."
+    }
   }
 }
