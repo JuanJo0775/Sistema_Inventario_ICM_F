@@ -2,7 +2,7 @@ import { api } from './api'
 import { mockAdjustmentsOverview } from '../mocks/adjustments'
 import type { AdjustmentsOverview, AdjustmentSubmitPayload } from '../interfaces/adjustments'
 
-const BASE = '/api/v1/movements/adjustments/'
+const BASE = '/movements/adjustments/'
 
 export async function fetchAdjustmentsOverview(useMocks = false): Promise<AdjustmentsOverview> {
   if (useMocks) {
