@@ -39,6 +39,7 @@ const CatalogProductFormPage: React.FC = () => {
     requires_expiration: false,
     requires_serial: false,
     requires_lots: false,
+    special_conditions: false,
   });
 
   const [pricing, setPricing] = useState({
@@ -83,6 +84,7 @@ const CatalogProductFormPage: React.FC = () => {
           requires_expiration: (productToEdit as any).requires_expiration || false,
           requires_serial: (productToEdit as any).requires_serial || false,
           requires_lots: (productToEdit as any).requires_lots || false,
+          special_conditions: (productToEdit as any).special_conditions || false,
         });
         const p = productToEdit as any;
         setPricing({
@@ -133,6 +135,7 @@ const CatalogProductFormPage: React.FC = () => {
         requires_expiration: formData.requires_expiration,
         requires_serial: formData.requires_serial,
         requires_lots: formData.requires_lots,
+        special_conditions: formData.special_conditions,
         // Map for mock compatibility
         category: formData.category_id,
         subcategory: formData.subcategory_id || null,
@@ -370,6 +373,20 @@ const CatalogProductFormPage: React.FC = () => {
                 />
                 <div>
                   <label className="form-label" htmlFor="requires_serial" style={{ margin: 0, cursor: 'pointer', display: 'block' }}>{t('catalog.products.form.requiresSerial', 'Control Serial')}</label>
+                </div>
+              </div>
+
+              <div className="form-field" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <input
+                  type="checkbox"
+                  id="special_conditions"
+                  name="special_conditions"
+                  checked={formData.special_conditions}
+                  onChange={handleChange}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
+                />
+                <div>
+                  <label className="form-label" htmlFor="special_conditions" style={{ margin: 0, cursor: 'pointer', display: 'block' }}>Condiciones especiales</label>
                 </div>
               </div>
 

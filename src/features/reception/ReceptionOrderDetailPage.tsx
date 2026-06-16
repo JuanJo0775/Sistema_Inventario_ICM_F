@@ -716,7 +716,7 @@ export default function ReceptionOrderDetailPage() {
               {hasDiscrepancy && (
                 <div
                   className="notice notice--warn"
-                  style={{ display: 'grid', gap: 8 }}
+                  style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr' }}
                 >
                   <div
                     style={{

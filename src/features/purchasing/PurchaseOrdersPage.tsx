@@ -15,6 +15,7 @@ import AppShell from '../../components/layout/AppShell'
 import usePurchaseOrderStore from '../../store/usePurchaseOrderStore'
 import useSupplierStore from '../../store/useSupplierStore'
 import useCatalogStore from '../../store/useCatalogStore'
+import { fetchCatalogProducts } from '../../services/catalog'
 import type { PurchaseOrder } from '../../interfaces/purchaseOrders'
 
 // ============================================================================
@@ -285,6 +286,13 @@ export const PurchaseOrdersPage: React.FC = () => {
   const [addCost, setAddCost] = useState(0)
 
   const [confirmEmitId, setConfirmEmitId] = useState<string | null>(null)
+
+  const refreshProducts = async () => {
+    try {
+      const fresh = await fetchCatalogProducts({ page_size: 9999, include_inactive: false })
+      useCatalogStore.setState({ products: fresh as any })
+    } catch { /* silently fail, store has stale data */ }
+  }
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null)
   const [cancelReason, setCancelReason] = useState('')
   const [validationError, setValidationError] = useState<string | null>(null)
@@ -336,6 +344,7 @@ export const PurchaseOrdersPage: React.FC = () => {
     setAddQty('1')
     setAddCost(0)
     setValidationError(null)
+    refreshProducts()
     setIsFormOpen(true)
   }
 
@@ -355,6 +364,7 @@ export const PurchaseOrdersPage: React.FC = () => {
     setAddQty('1')
     setAddCost(0)
     setValidationError(null)
+    refreshProducts()
     setIsFormOpen(true)
   }
 

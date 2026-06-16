@@ -2721,6 +2721,27 @@ body {
   background: rgba(179, 58, 42, 0.14);
 }
 
+.btn--amber {
+  background: var(--amber);
+  color: #fff;
+}
+
+.btn--amber:hover {
+  background: var(--amber-dk);
+  transform: translateY(-1px);
+}
+
+.btn--lg {
+  padding: 11px 22px;
+  font-size: 13.5px;
+  border-radius: 10px;
+}
+
+.btn--full {
+  width: 100%;
+  justify-content: flex-start;
+}
+
 .pill--warn {
   background: rgba(201, 120, 32, 0.12);
   color: var(--warn);
@@ -4438,5 +4459,104 @@ input.f-input[type="date"] {
 
 .f-note--err {
   color: var(--err);
+}
+
+/* ── Dispatch module layout ──────────────────────────────── */
+
+.dispatch-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+.dispatch-cross-grid {
+  display: grid;
+  grid-template-columns: 1fr 32px 1fr;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.dispatch-cross-grid__label {
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--ink-40);
+  margin-bottom: 6px;
+}
+
+.dispatch-cross-grid__product {
+  padding: 12px;
+  background: var(--teal-50);
+  border-radius: var(--r-md);
+  border: 1px solid var(--teal-100);
+}
+
+.dispatch-cross-grid__arrow {
+  text-align: center;
+  color: var(--ink-40);
+}
+
+.dispatch-cross-grid__input {
+  padding: 12px;
+  background: var(--white);
+  border: 1px solid var(--ink-20);
+  border-radius: var(--r-md);
+  font-size: 13px;
+  color: var(--ink);
+  font-family: var(--ff-body);
+  outline: none;
+  transition: border-color 0.12s;
+  width: 100%;
+}
+
+.dispatch-cross-grid__input:focus {
+  border-color: var(--teal-600);
+  box-shadow: 0 0 0 3px rgba(42, 157, 166, 0.1);
+}
+
+.dispatch-cross-grid__input::placeholder {
+  color: var(--ink-20);
+}
+
+.dispatch-items-weight {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  margin-bottom: 16px;
+}
+
+.dispatch-items-weight__label {
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--ink-40);
+}
+
+.dispatch-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.dispatch-customer-field + .dispatch-customer-field {
+  margin-top: 12px;
+}
+
+@media (max-width: 1100px) {
+  .dispatch-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .dispatch-cross-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .dispatch-cross-grid__arrow {
+    transform: rotate(90deg);
+  }
 }
 

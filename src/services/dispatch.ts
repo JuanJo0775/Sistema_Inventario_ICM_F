@@ -2,21 +2,34 @@ import { api } from "./api";
 import { useMocks } from "../mocks/config";
 import {
   mockDispatchLocations,
-  mockDispatchItems,
   mockDispatchMovements,
 } from "../mocks/dispatch";
-import { fetchCatalogProducts, fetchCategories } from "./catalog";
 import type {
-  DispatchItem,
   DispatchLocation,
   DispatchMovement,
   DispatchMovementResponse,
   DispatchSubmitPayload,
 } from "../interfaces/dispatch";
 
+export interface CartSubmitItem {
+  productId: string
+  locationId: string
+  quantity: number
+  unitPrice: number | null
+  movementType: string
+  scannedCode?: string | null
+  orderSku?: string | null
+  serialNumber?: string | null
+  note?: string
+}
+
+export interface CartSubmissionResult {
+  movements: DispatchMovement[]
+  invoiceNumber: string | null
+}
+
 export interface DispatchOverview {
   locations: DispatchLocation[];
-  expectedOrders: DispatchItem[];
   recentMovements: DispatchMovement[];
 }
 
@@ -42,13 +55,12 @@ export const fetchDispatchOverview = async (): Promise<DispatchOverview> => {
   if (useMocks) {
     return {
       locations: mockDispatchLocations,
-      expectedOrders: mockDispatchItems,
       recentMovements: mockDispatchMovements,
     };
   }
 
   try {
-    const [locationsRes, movementsRes, catalogProducts, categories] =
+    const [locationsRes, movementsRes] =
       await Promise.all([
         api.get<
           | Array<{ id: string; code: string; name: string }>
@@ -60,8 +72,6 @@ export const fetchDispatchOverview = async (): Promise<DispatchOverview> => {
           "/movements/dispatches/",
           { params: { page_size: 10, ordering: "-created_at" } },
         ),
-        fetchCatalogProducts({ page_size: 9999, include_inactive: false }),
-        fetchCategories(),
       ]);
 
     const locData = Array.isArray(locationsRes.data)
@@ -87,31 +97,8 @@ export const fetchDispatchOverview = async (): Promise<DispatchOverview> => {
       },
     );
 
-    // Mapa de categorías para saber requiresSerial
-    const categoryMap = new Map(
-      categories.map((cat) => [cat.id, cat.requires_serial_number ?? false]),
-    );
-
-    // Ordenes de despacho desde productos reales del catálogo
-    const expectedOrders: DispatchItem[] = catalogProducts.map((prod) => ({
-      id: `dsp-${prod.id}`,
-      invoiceNumber: `DSP-${prod.sku}`,
-      customerName: "",
-      productId: prod.id,
-      productName: prod.name,
-      sku: prod.sku,
-      barcode: prod.barcode ?? "",
-      category: prod.category_slug ?? "",
-      expectedQuantity: 1,
-      dispatchedQuantity: 0,
-      status: "pending" as const,
-      requiresSerial: categoryMap.get(prod.category) ?? false,
-      requiresColdChain: prod.requires_cold_chain,
-    }));
-
     return {
       locations,
-      expectedOrders,
       recentMovements,
     };
   } catch (err) {
@@ -127,14 +114,11 @@ export const submitDispatch = async (
     const location = mockDispatchLocations.find(
       (l) => l.id === payload.locationId,
     );
-    const order = mockDispatchItems.find(
-      (o) => o.productId === payload.productId,
-    );
 
     return {
       id: `mov-out-${Date.now()}`,
-      productName: order?.productName ?? "Producto",
-      sku: order?.sku ?? "SKU",
+      productName: "Producto",
+      sku: "SKU",
       quantity: payload.quantity,
       locationCode: location?.code ?? "-",
       operator: "Auxiliar Despacho",
@@ -142,7 +126,7 @@ export const submitDispatch = async (
         hour: "2-digit",
         minute: "2-digit",
       }).format(new Date()),
-      invoiceNumber: order?.invoiceNumber ?? "ICM-MOCK",
+      invoiceNumber: "ICM-MOCK",
       customerName: payload.customerData?.customer_name,
       note: payload.note,
     };
@@ -176,6 +160,70 @@ export const submitDispatch = async (
   const locationCode = mov.origin_location ?? "-";
 
   return mapMovementResponse(mov, locationCode);
+};
+
+export const submitCart = async (
+  items: CartSubmitItem[],
+  customerData: DispatchSubmitPayload["customerData"],
+): Promise<CartSubmissionResult> => {
+  if (useMocks) {
+    const location = mockDispatchLocations.find(
+      (l) => items.length > 0 && l.id === items[0].locationId,
+    );
+    const invoiceNum = `ICM-${String(Math.floor(Math.random() * 9000 + 1000))}`;
+    const movements: DispatchMovement[] = items.map((item, i) => ({
+      id: `mov-out-${Date.now()}-${i}`,
+      productName: item.orderSku ?? "Producto",
+      sku: item.orderSku ?? "SKU",
+      quantity: item.quantity,
+      locationCode: location?.code ?? "-",
+      operator: "Auxiliar Despacho",
+      confirmedAt: new Intl.DateTimeFormat("es-CO", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date()),
+      invoiceNumber: invoiceNum,
+      customerName: customerData?.customer_name,
+      note: item.note ?? undefined,
+    }));
+    return { movements, invoiceNumber: invoiceNum };
+  }
+
+  let invoiceNumber: string | null = null;
+  const movements: DispatchMovement[] = [];
+
+  for (const item of items) {
+    const requestBody = {
+      product_id: item.productId,
+      location_id: item.locationId,
+      quantity: item.quantity,
+      movement_type: item.movementType,
+      unit_price: item.unitPrice ?? null,
+      scanned_code: item.scannedCode || null,
+      order_sku: item.orderSku || null,
+      serial_number: item.serialNumber || null,
+      customer_data: customerData ?? null,
+      note: item.note || '',
+      cold_chain_acknowledged: false,
+      electrical_safety_acknowledged: false,
+      privacy_notice_acknowledged: false,
+    };
+
+    const response = await api.post<DispatchMovementResponse>(
+      "/movements/dispatches/",
+      requestBody,
+    );
+
+    const mov = response.data;
+    const locationCode = mov.origin_location ?? "-";
+
+    movements.push(mapMovementResponse(mov, locationCode));
+    if (!invoiceNumber) {
+      invoiceNumber = mov.invoice_number;
+    }
+  }
+
+  return { movements, invoiceNumber };
 };
 
 export const downloadInvoicePdf = async (

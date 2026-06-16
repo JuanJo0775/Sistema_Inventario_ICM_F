@@ -43,6 +43,24 @@ export interface DispatchMovement {
   note?: string;
 }
 
+export interface CartItem {
+  tempId: string
+  productId: string
+  productName: string
+  sku: string
+  quantity: number
+  unitPrice: number
+  taxRate: number
+  discount: number
+  subtotal: number
+  taxAmount: number
+  total: number
+  locationId: string
+  lotCode: string
+  damageReason: string
+  note: string
+}
+
 // Datos del cliente que exige el backend para SALIDA_VENTA_MAYOR
 export interface DispatchCustomerData {
   customer_name: string;

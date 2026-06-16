@@ -100,6 +100,9 @@ export let mockCatalogProducts: CatalogProduct[] = [
     brand: 'Ultrasonido',
     expiration_date: null,
     requires_expiration: false,
+    requires_lot: false,
+    requires_serial_number: false,
+    special_conditions: false,
     weight_grams: 2300,
     requires_cold_chain: false,
     is_active: true,
@@ -126,6 +129,9 @@ export let mockCatalogProducts: CatalogProduct[] = [
     brand: 'TENS',
     expiration_date: null,
     requires_expiration: false,
+    requires_lot: false,
+    requires_serial_number: false,
+    special_conditions: false,
     weight_grams: 350,
     requires_cold_chain: false,
     is_active: true,
@@ -152,6 +158,9 @@ export let mockCatalogProducts: CatalogProduct[] = [
     brand: 'Agujas',
     expiration_date: '2028-12-31',
     requires_expiration: true,
+    requires_lot: true,
+    requires_serial_number: false,
+    special_conditions: false,
     weight_grams: 80,
     requires_cold_chain: false,
     is_active: true,
@@ -178,6 +187,9 @@ export let mockCatalogProducts: CatalogProduct[] = [
     brand: 'Gel Conductor',
     expiration_date: '2027-06-30',
     requires_expiration: true,
+    requires_lot: true,
+    requires_serial_number: false,
+    special_conditions: false,
     weight_grams: 1000,
     requires_cold_chain: false,
     is_active: true,
@@ -204,6 +216,9 @@ export let mockCatalogProducts: CatalogProduct[] = [
     brand: 'Pelotas de Ejercicio',
     expiration_date: null,
     requires_expiration: false,
+    requires_lot: false,
+    requires_serial_number: false,
+    special_conditions: false,
     weight_grams: 1200,
     requires_cold_chain: false,
     is_active: true,
@@ -415,6 +430,9 @@ export const mockCreateProduct = (data: Partial<CatalogProduct> & { category_id?
     brand: brandObj?.name || data.brand || 'Can',
     expiration_date: data.expiration_date || null,
     requires_expiration: !!data.requires_expiration,
+    requires_lot: data.requires_lot !== undefined ? !!data.requires_lot : !!data.requires_expiration,
+    requires_serial_number: !!data.requires_serial_number,
+    special_conditions: !!data.special_conditions,
     weight_grams: data.weight_grams ? Number(data.weight_grams) : null,
     requires_cold_chain: !!data.requires_cold_chain,
     is_active: data.is_active !== undefined ? !!data.is_active : true,
@@ -468,6 +486,9 @@ export const mockUpdateProduct = (id: string, data: Partial<CatalogProduct> & { 
   if (data.brand) mockCatalogProducts[idx].brand = data.brand
   if (data.expiration_date !== undefined) mockCatalogProducts[idx].expiration_date = data.expiration_date
   if (data.requires_expiration !== undefined) mockCatalogProducts[idx].requires_expiration = !!data.requires_expiration
+  if (data.requires_lot !== undefined) mockCatalogProducts[idx].requires_lot = !!data.requires_lot
+  if (data.requires_serial_number !== undefined) mockCatalogProducts[idx].requires_serial_number = !!data.requires_serial_number
+  if (data.special_conditions !== undefined) mockCatalogProducts[idx].special_conditions = !!data.special_conditions
   if (data.weight_grams !== undefined) mockCatalogProducts[idx].weight_grams = data.weight_grams ? Number(data.weight_grams) : null
   if (data.requires_cold_chain !== undefined) mockCatalogProducts[idx].requires_cold_chain = !!data.requires_cold_chain
   if (data.notes !== undefined) mockCatalogProducts[idx].notes = data.notes

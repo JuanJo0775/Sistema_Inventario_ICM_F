@@ -37,9 +37,12 @@ export interface CatalogProduct {
   brand: string // CharField from backend
   expiration_date: string | null
   requires_expiration: boolean
-  weight_grams: number | null
+  requires_lot: boolean
+  requires_serial_number: boolean
+  special_conditions: boolean
   requires_cold_chain: boolean
   is_active: boolean
+  weight_grams: number | null
   notes: string
   reorder_point: number
   created_at?: string
@@ -62,6 +65,9 @@ export interface CatalogProductCreateInput {
   brand?: string
   requires_cold_chain?: boolean
   requires_expiration?: boolean
+  requires_lot?: boolean
+  requires_serial_number?: boolean
+  special_conditions?: boolean
   expiration_date?: string | null
   weight_grams?: number | null
   notes?: string
@@ -78,6 +84,9 @@ export interface CatalogProductUpdateInput {
   brand?: string
   requires_cold_chain?: boolean
   requires_expiration?: boolean
+  requires_lot?: boolean
+  requires_serial_number?: boolean
+  special_conditions?: boolean
   expiration_date?: string | null
   weight_grams?: number | null
   notes?: string

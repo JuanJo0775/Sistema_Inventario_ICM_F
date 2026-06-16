@@ -296,10 +296,61 @@ function ProductForm({
             </div>
           </fieldset>
 
-          {/* condiciones especiales */}
+          {/* configuración */}
           <fieldset>
-            <legend>Condiciones especiales</legend>
+            <legend>Configuración</legend>
             <div className="flex gap-6" style={{ flexWrap: "wrap" }}>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                <Switch
+                  checked={!!form.requires_lot}
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, requires_lot: checked })
+                  }
+                />
+                Maneja lotes
+              </label>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                <Switch
+                  checked={!!form.requires_serial_number}
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, requires_serial_number: checked })
+                  }
+                />
+                Requiere número de serie
+              </label>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                <Switch
+                  checked={!!form.requires_expiration}
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, requires_expiration: checked })
+                  }
+                />
+                Fecha de vencimiento
+              </label>
               <label
                 style={{
                   display: "flex",
@@ -327,12 +378,12 @@ function ProductForm({
                 }}
               >
                 <Switch
-                  checked={!!form.requires_expiration}
+                  checked={!!form.special_conditions}
                   onCheckedChange={(checked) =>
-                    setForm({ ...form, requires_expiration: checked })
+                    setForm({ ...form, special_conditions: checked })
                   }
                 />
-                Maneja vencimiento / lotes
+                Condiciones especiales
               </label>
               <label
                 style={{
