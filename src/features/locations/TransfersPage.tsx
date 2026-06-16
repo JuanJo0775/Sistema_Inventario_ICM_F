@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { ModalPortal } from '../../components/ui/ModalPortal'
 import {
   AlertTriangle,
+  Search,
   X,
   ArrowLeftRight,
   Calendar,
@@ -75,7 +76,6 @@ const TransfersPage: React.FC = () => {
   const [transferJustification, setTransferJustification] = useState('')
 
   const [formError, setFormError] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
 
   const locationsLookup = useMemo(() => {
     return locations.reduce<Record<string, LocationItem>>((acc, loc) => {
@@ -338,7 +338,6 @@ const TransfersPage: React.FC = () => {
       (j) => j.value === transferJustification,
     )?.label ?? transferJustification
 
-    setSaving(true)
     try {
       await submitTransfer({
         product_id: selectedProduct.id,
@@ -358,8 +357,6 @@ const TransfersPage: React.FC = () => {
       loadTransfers()
     } catch (err: any) {
       setFormError(extractErrorMsg(err))
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -1030,260 +1027,7 @@ const TransfersPage: React.FC = () => {
                   </>
                 )}
 
-                <form onSubmit={handleSaveTransfer} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-                  {/* 1. PRODUCT SELECTION */}
-                  <fieldset>
-                    <legend>Producto</legend>
-                    {!selectedProduct ? (
-                      <div className="f-group f-group--full">
-                        <label className="f-label">Buscar producto <span style={{ color: 'var(--err)' }}>*</span></label>
-                        <div style={{ position: 'relative', marginBottom: '0.5rem' }}>
-                          <svg
-                            style={{
-                              position: 'absolute',
-                              left: 11,
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              width: 14,
-                              height: 14,
-                              stroke: 'var(--teal-600)',
-                              strokeWidth: 1.8,
-                            }}
-                            viewBox="0 0 24 24"
-                            fill="none"
-                          >
-                            <circle cx="11" cy="11" r="8" />
-                            <path d="M21 21l-4.35-4.35" />
-                          </svg>
-                          <input
-                            className="f-input"
-                            style={{ paddingLeft: 34 }}
-                            placeholder="Escribe para buscar producto..."
-                            value={productSearchTerm}
-                            onChange={(e) => setProductSearchTerm(e.target.value)}
-                          />
-                        </div>
-                        <div
-                          style={{
-                            maxHeight: 150,
-                            overflowY: 'auto',
-                            border: '1px solid var(--ink-06)',
-                            borderRadius: 8,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            background: 'var(--white)',
-                          }}
-                        >
-                          {filteredProductOptions.length === 0 ? (
-                            <div style={{ padding: '0.75rem', color: 'var(--ink-40)', fontSize: '0.85rem', textAlign: 'center' }}>
-                              No se encontraron productos.
-                            </div>
-                          ) : (
-                            filteredProductOptions.map((prod) => (
-                              <button
-                                key={prod.id}
-                                type="button"
-                                onClick={() => handleSelectProduct(prod)}
-                                style={{
-                                  width: '100%', padding: '0.5rem 0.75rem', textAlign: 'left', background: 'none', border: 'none',
-                                  borderBottom: '1px solid var(--ink-06)', cursor: 'pointer', fontSize: '0.85rem',
-                                  display: 'flex', justifyContent: 'space-between',
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--ink-06)'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-                              >
-                                <span style={{ fontWeight: 500, color: 'var(--ink)' }}>{prod.name}</span>
-                                <span style={{ color: 'var(--ink-40)', fontSize: '0.75rem', fontFamily: 'var(--ff-mono)' }}>{prod.sku}</span>
-                              </button>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--ink-06)', border: '1px solid var(--ink-06)', borderRadius: 8, padding: '0.5rem 0.75rem' }}>
-                        <div>
-                          <span style={{ display: 'block', fontWeight: 600, color: 'var(--ink)', fontSize: '0.875rem' }}>{selectedProduct.name}</span>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--ink-40)' }}>SKU: {selectedProduct.sku}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => { setSelectedProduct(null); setOriginStockLocations([]); setSelectedOriginId(''); setAvailableLots([]); setSelectedLotId(''); }}
-                          style={{ background: 'var(--ink-06)', border: 'none', cursor: 'pointer', color: 'var(--ink-40)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: '9999px' }}
-                        >
-                          <X style={{ width: 14, height: 14 }} />
-                        </button>
-                      </div>
-                    )}
-                  </fieldset>
-
-                  {selectedProduct && (
-                    <>
-                      {/* 2. ORIGIN LOCATION */}
-                      <fieldset>
-                        <legend>Origen</legend>
-                        <div className="f-group f-group--full">
-                          <label className="f-label" htmlFor="origin-select">
-                            Ubicación de Origen <span style={{ color: 'var(--err)' }}>*</span>
-                          </label>
-                          <select
-                            id="origin-select"
-                            className="f-input"
-                            value={selectedOriginId}
-                            onChange={(e) => handleOriginChange(e.target.value)}
-                            required
-                          >
-                            <option value="">— Selecciona bodega de origen —</option>
-                            {originStockLocations.map((item) => (
-                              <option key={item.id} value={item.id}>
-                                {item.name} ({item.code}) — Disponible: {item.quantity} uds
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </fieldset>
-
-                      {/* 3. LOT SELECT */}
-                      {selectedProduct.requires_expiration && selectedOriginId && (
-                        <fieldset>
-                          <legend>Lote</legend>
-                          <div className="f-group f-group--full">
-                            <label className="f-label" htmlFor="lot-select">
-                              Lote de Producto <span style={{ color: 'var(--err)' }}>*</span>
-                            </label>
-                            <select
-                              id="lot-select"
-                              className="f-input"
-                              value={selectedLotId}
-                              onChange={(e) => setSelectedLotId(e.target.value)}
-                              required
-                            >
-                              <option value="">— Selecciona el lote con vencimiento —</option>
-                              {availableLots.map((lot) => (
-                                <option key={lot.id} value={lot.id}>
-                                  Lote: {lot.code} (Vence: {lot.expiration_date}) — Disponible: {lot.available} uds
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </fieldset>
-                      )}
-
-                      {/* 4. DESTINATION LOCATION */}
-                      {selectedOriginId && (
-                        <fieldset>
-                          <legend>Destino</legend>
-                          <div className="f-group f-group--full">
-                            <label className="f-label" htmlFor="dest-select">
-                              Ubicación de Destino <span style={{ color: 'var(--err)' }}>*</span>
-                            </label>
-                            <select
-                              id="dest-select"
-                              className="f-input"
-                              value={selectedDestinationId}
-                              onChange={(e) => setSelectedDestinationId(e.target.value)}
-                              required
-                            >
-                              <option value="">— Selecciona bodega de destino —</option>
-                              {locations
-                                .filter((loc) => loc.id !== selectedOriginId && loc.is_active && loc.operational_status === 'active')
-                                .map((loc) => (
-                                  <option key={loc.id} value={loc.id}>
-                                    {loc.name} ({loc.code})
-                                  </option>
-                                ))}
-                            </select>
-                          </div>
-                        </fieldset>
-                      )}
-
-                      {/* 5. TRANSFER QUANTITY */}
-                      {selectedOriginId && selectedDestinationId && (
-                        <fieldset>
-                          <legend>Cantidad</legend>
-                          <div className="f-group f-group--full">
-                            <label className="f-label" htmlFor="qty-input">
-                              Cantidad a Transferir <span style={{ color: 'var(--err)' }}>*</span>
-                              <span style={{ marginLeft: '0.5rem', color: 'var(--ink-40)', fontWeight: 'normal', fontSize: '0.75rem' }}>(Máximo disponible: {maxAllowedQuantity} uds)</span>
-                            </label>
-                            <input
-                              id="qty-input"
-                              className="f-input"
-                              type="text"
-                              inputMode="numeric"
-                              pattern="[0-9]*"
-                              value={transferQuantity}
-                              onChange={(e) => {
-                                const raw = e.target.value.replace(/[^0-9]/g, '')
-                                setTransferQuantity(raw)
-                              }}
-                              placeholder="Ej. 5"
-                            />
-                          </div>
-                        </fieldset>
-                      )}
-
-                      {/* 6. ACKNOWLEDGEMENTS */}
-                      {selectedOriginId && selectedDestinationId && (
-                        <fieldset>
-                          <legend>Confirmaciones</legend>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            {selectedProduct.requires_cold_chain && (
-                              <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', cursor: 'pointer', fontSize: '0.825rem', color: 'var(--ink)' }}>
-                                <input
-                                  type="checkbox"
-                                  checked={coldChainAck}
-                                  onChange={(e) => setColdChainAck(e.target.checked)}
-                                  style={{ marginTop: 3 }}
-                                  required
-                                />
-                                <span>
-                                  ⚠️ <strong>Alerta de Cadena de Frío:</strong> Confirmo que conozco los requerimientos de refrigeración de este producto y aseguro las condiciones de temperatura durante su traslado.
-                                </span>
-                              </label>
-                            )}
-
-                            {typeof selectedProduct.category === 'object' && selectedProduct.category !== null && (selectedProduct.category as any).requires_serial_number && (
-                              <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', cursor: 'pointer', fontSize: '0.825rem', color: 'var(--ink)' }}>
-                                <input
-                                  type="checkbox"
-                                  checked={electricalSafetyAck}
-                                  onChange={(e) => setElectricalSafetyAck(e.target.checked)}
-                                  style={{ marginTop: 3 }}
-                                  required
-                                />
-                                <span>
-                                  ⚡ <strong>Seguridad Eléctrica:</strong> Confirmo la revisión técnica de seguridad eléctrica en equipos y la firma de actas de calibración operacional correspondientes.
-                                </span>
-                              </label>
-                            )}
-                          </div>
-                        </fieldset>
-                      )}
-                    </>
-                  )}
-
-                  {/* Actions */}
-                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                    <button
-                      type="button"
-                      className="btn btn--outline"
-                      onClick={() => setIsCreateOpen(false)}
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="submit"
-                      className="btn btn--primary"
-                      disabled={saving || !selectedProduct || !selectedOriginId || !selectedDestinationId}
-                      style={{ opacity: saving ? 0.7 : 1 }}
-                    >
-                      {saving ? 'Transfiriendo…' : 'Confirmar Transferencia'}
-                    </button>
-                  </div>
-
                 </form>
-              </div>
             </div>
           </ModalPortal>
         )}
@@ -1294,3 +1038,4 @@ const TransfersPage: React.FC = () => {
 }
 
 export default TransfersPage
+
