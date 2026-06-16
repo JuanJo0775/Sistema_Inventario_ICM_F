@@ -41,11 +41,11 @@ function LandingPage() {
     <div className="landing-page">
       <header className="landing-nav">
         <div className="landing-nav__inner">
-          <Link to="/" className="flex items-center gap-2" style={{ textDecoration: 'none' }}>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--color-primary)] text-white">
+            <Link to="/" className="flex items-center gap-2 shrink-0" style={{ textDecoration: 'none' }}>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--color-primary)] text-white shrink-0">
               <span className="font-mono text-xs font-semibold">ICM</span>
             </div>
-            <div>
+            <div className="hidden sm:block">
               <p className="text-xs font-semibold leading-tight text-[color:var(--color-primary-dark)]">
                 {t('auth.brand.name')}
               </p>
