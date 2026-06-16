@@ -63,7 +63,7 @@ type ProductFormPayload = Partial<Product> &
 
 const mapProductPayload = (productData: ProductFormPayload): CatalogProductCreateInput | CatalogProductUpdateInput => {
   const categoryId = productData.category_id ?? productData.category
-  const subcategoryId = productData.subcategory_id ?? productData.subcategory ?? null
+  const subcategoryId = productData.subcategory_id ?? productData.brand ?? productData.subcategory ?? null
   const brand = productData.brand?.trim()
 
   const payload: CatalogProductCreateInput | CatalogProductUpdateInput = {

@@ -2776,6 +2776,26 @@ body {
   transform: translateY(-1px);
 }
 
+.btn--warning {
+  background: rgba(212, 137, 26, 0.12);
+  color: var(--color-warning);
+  border: 1px solid rgba(212, 137, 26, 0.2);
+}
+
+.btn--warning:hover {
+  background: rgba(212, 137, 26, 0.2);
+}
+
+.btn--success {
+  background: rgba(45, 139, 111, 0.12);
+  color: var(--color-success);
+  border: 1px solid rgba(45, 139, 111, 0.2);
+}
+
+.btn--success:hover {
+  background: rgba(45, 139, 111, 0.2);
+}
+
 .btn--lg {
   padding: 11px 22px;
   font-size: 13.5px;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ModalPortal } from '../../components/ui/ModalPortal'
 import {
@@ -287,6 +288,28 @@ export const PurchaseOrdersPage: React.FC = () => {
 
   const [confirmEmitId, setConfirmEmitId] = useState<string | null>(null)
 
+  const location = useLocation()
+  const prefillProduct = location.state?.prefillProduct as { id: string; sku: string } | undefined
+
+  useEffect(() => {
+    if (prefillProduct) {
+      const found = products.find((p) => p.id === prefillProduct.id)
+      if (found) {
+        handleOpenCreateWithProduct(found.id, found.sku)
+      } else {
+        fetchCatalogProducts({ page_size: 9999, include_inactive: false }).then((fresh) => {
+          const list = Array.isArray(fresh) ? fresh : (fresh as any)?.results ?? []
+          const match = list.find((p: any) => p.id === prefillProduct.id)
+          if (match) {
+            useCatalogStore.setState({ products: list as any })
+            handleOpenCreateWithProduct(match.id, match.sku)
+          }
+        })
+      }
+      window.history.replaceState({}, document.title)
+    }
+  }, [])
+
   const refreshProducts = async () => {
     try {
       const fresh = await fetchCatalogProducts({ page_size: 9999, include_inactive: false })
@@ -341,6 +364,19 @@ export const PurchaseOrdersPage: React.FC = () => {
     setFormNotes('')
     setFormItems([])
     setAddProductId('')
+    setAddQty('1')
+    setAddCost(0)
+    setValidationError(null)
+    refreshProducts()
+    setIsFormOpen(true)
+  }
+
+  const handleOpenCreateWithProduct = (productId: string, productSku: string) => {
+    setEditingOrder(null)
+    setFormSupplierId('')
+    setFormNotes(`Orden generada desde alerta de stock bajo — SKU: ${productSku}`)
+    setFormItems([])
+    setAddProductId(productId)
     setAddQty('1')
     setAddCost(0)
     setValidationError(null)

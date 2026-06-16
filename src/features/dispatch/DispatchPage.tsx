@@ -1,19 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { extractApiError } from '../../hooks/useApiError'
-import { useDebounce } from '../../hooks/useDebounce'
 
 import {
   AlertTriangle,
   CheckCircle2,
   CheckIcon,
   ClipboardCheck,
+  FileDown,
   Plus,
-  RefreshCw,
   Search,
   Trash2,
-  UserCheck,
   X,
 } from 'lucide-react'
 
@@ -28,21 +26,16 @@ import type {
 } from '../../interfaces/dispatch'
 import type { CatalogProduct } from '../../interfaces/catalog'
 import type { BarcodeProductResult } from '../../services/barcodeScanner'
-import type { BillingInvoice, BillingInvoiceCreatePayload } from '../../interfaces/billing'
-import type { InventoryStockByProduct } from '../../interfaces/inventory'
+import type { Combo } from '../../interfaces/combos'
 
 import {
+  downloadInvoicePdf,
   fetchDispatchOverview,
   submitCart,
   type CartSubmissionResult,
 } from '../../services/dispatch'
-import { fetchProductStock } from '../../services/inventory'
-import { createInvoice } from '../../services/billing'
-import InvoiceResultModal from '../billing/InvoiceResultModal'
+import { fetchCombos } from '../../services/combos'
 import useCatalogStore from '../../store/useCatalogStore'
-
-const CUSTOMER_STORAGE_KEY = 'icm_last_customer'
-const MIN_DAMAGE_REASON_LENGTH = 10
 
 type DispatchForm = Readonly<{
   customerName: string
@@ -52,7 +45,6 @@ type DispatchForm = Readonly<{
   customerAddress: string
   note: string
   damageReason: string
-  expiryLotCode: string
 }>
 
 type DispatchMode = 'wholesale' | 'retail' | 'damage' | 'expiry'
@@ -69,16 +61,6 @@ type DispatchTypeSelectorProps = Readonly<{
   onChange: (value: DispatchMode) => void
 }>
 
-type FieldErrors = Record<string, string>
-
-type LastCustomer = {
-  name: string
-  doc: string
-  email: string
-  phone: string
-  address: string
-}
-
 const SALE_TYPES: Record<DispatchMode, string> = {
   wholesale: 'SALIDA_VENTA_MAYOR',
   retail: 'SALIDA_VENTA_MENOR',
@@ -88,73 +70,6 @@ const SALE_TYPES: Record<DispatchMode, string> = {
 
 const STEP_LABELS = ['Tipo', 'Cliente', 'Productos', 'Confirmar'] as const
 const TAX_RATE_DEFAULT = 19
-
-const dispatchModes: DispatchModeOption[] = [
-  { value: 'wholesale', title: 'Venta Mayor', description: 'Requiere datos cliente' },
-  { value: 'retail', title: 'Venta Menor', description: 'Cliente opcional' },
-  { value: 'damage', title: 'Daño', description: 'Baja con nota' },
-  { value: 'expiry', title: 'Vencimiento', description: 'Baja por caducidad' },
-]
-
-/* ─── Helpers ─── */
-
-function loadLastCustomer(): LastCustomer | null {
-  try {
-    const raw = localStorage.getItem(CUSTOMER_STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as LastCustomer) : null
-  } catch {
-    return null
-  }
-}
-
-function saveLastCustomer(data: LastCustomer): void {
-  try {
-    localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify(data))
-  } catch { /* quota exceeded — ignore */ }
-}
-
-function toForm(): DispatchForm {
-  return {
-    customerName: '',
-    customerDoc: '',
-    customerEmail: '',
-    customerPhone: '',
-    customerAddress: '',
-    note: '',
-    damageReason: '',
-    expiryLotCode: '',
-  }
-}
-
-function createCartItem(
-  product: CatalogProduct,
-  qty: number,
-  price: number,
-  locationId: string,
-): CartItem {
-  const taxRate = product.tax_rate_pct ?? TAX_RATE_DEFAULT
-  const subtotal = qty * price
-  const taxAmount = Math.round(subtotal * (taxRate / 100) * 100) / 100
-  return {
-    tempId: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
-    productId: product.id,
-    productName: product.name,
-    sku: product.sku,
-    quantity: qty,
-    unitPrice: price,
-    taxRate,
-    discount: 0,
-    subtotal,
-    taxAmount,
-    total: subtotal + taxAmount,
-    locationId,
-    lotCode: '',
-    damageReason: '',
-    note: '',
-  }
-}
-
-/* ─── DispatchTypeSelector ─── */
 
 function DispatchTypeSelector({ options, value, onChange }: DispatchTypeSelectorProps) {
   return (
@@ -193,14 +108,57 @@ function DispatchTypeSelector({ options, value, onChange }: DispatchTypeSelector
   )
 }
 
-/* ─── Main component ─── */
+function toForm(): DispatchForm {
+  return {
+    customerName: '',
+    customerDoc: '',
+    customerEmail: '',
+    customerPhone: '',
+    customerAddress: '',
+    note: '',
+    damageReason: '',
+  }
+}
+
+function createCartItem(
+  product: CatalogProduct,
+  qty: number,
+  price: number,
+  locationId: string,
+): CartItem {
+  const taxRate = product.tax_rate_pct ?? TAX_RATE_DEFAULT
+  const subtotal = qty * price
+  const taxAmount = Math.round(subtotal * (taxRate / 100) * 100) / 100
+  return {
+    tempId: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
+    productId: product.id,
+    productName: product.name,
+    sku: product.sku,
+    quantity: qty,
+    unitPrice: price,
+    taxRate,
+    discount: 0,
+    subtotal,
+    taxAmount,
+    total: subtotal + taxAmount,
+    locationId,
+    lotCode: '',
+    damageReason: '',
+    note: '',
+  }
+}
+
+const dispatchModes: DispatchModeOption[] = [
+  { value: 'wholesale', title: 'Venta Mayor', description: 'Requiere datos cliente' },
+  { value: 'retail', title: 'Venta Menor', description: 'Cliente opcional' },
+  { value: 'damage', title: 'Daño', description: 'Baja con nota' },
+  { value: 'expiry', title: 'Vencimiento', description: 'Baja por caducidad' },
+]
 
 function DispatchPage() {
   const { t } = useTranslation()
 
   const { products, fetchProducts } = useCatalogStore()
-  const formRef = useRef<HTMLDivElement>(null)
-  const errorRef = useRef<HTMLDivElement>(null)
 
   const [overview, setOverview] = useState<{
     locations: DispatchLocation[]
@@ -212,61 +170,15 @@ function DispatchPage() {
   const [error, setError] = useState<string | null>(null)
   const [recentMovements, setRecentMovements] = useState<DispatchMovement[]>([])
   const [submissionResult, setSubmissionResult] = useState<CartSubmissionResult | null>(null)
-  const [invoiceResult, setInvoiceResult] = useState<BillingInvoice | null>(null)
 
   const [productSearch, setProductSearch] = useState('')
-  const debouncedSearch = useDebounce(productSearch, 300)
+  const [combos, setCombos] = useState<Combo[]>([])
   const [pendingProduct, setPendingProduct] = useState<CatalogProduct | null>(null)
   const [pendingQty, setPendingQty] = useState('1')
   const [pendingPrice, setPendingPrice] = useState('')
   const [pendingLocation, setPendingLocation] = useState('')
-  const [pendingLotCode, setPendingLotCode] = useState('')
 
   const [cartItems, setCartItems] = useState<CartItem[]>([])
-  const [coldChainAck, setColdChainAck] = useState(false)
-  const [electricalSafetyAck, setElectricalSafetyAck] = useState(false)
-
-  /* ─── BUG-D1 / D2: Stock state ─── */
-  const [productStock, setProductStock] = useState<InventoryStockByProduct | null>(null)
-  const [stockLoading, setStockLoading] = useState(false)
-
-  /* ─── BUG-D4: Validation errors & customer suggestion ─── */
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
-  const [suggestCustomer, setSuggestCustomer] = useState<LastCustomer | null>(null)
-
-  /* ─── Reset stock when selected product changes ─── */
-  useEffect(() => {
-    if (!pendingProduct) {
-      setProductStock(null)
-      setPendingLocation('')
-      return
-    }
-    let cancelled = false
-    setStockLoading(true)
-    setProductStock(null)
-    setPendingLocation('')
-    fetchProductStock(pendingProduct.id)
-      .then((stock) => {
-        if (!cancelled) {
-          setProductStock(stock)
-          setStockLoading(false)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setStockLoading(false)
-      })
-    return () => { cancelled = true }
-  }, [pendingProduct])
-
-  /* ─── Load last customer suggestion on wholesale ─── */
-  useEffect(() => {
-    if (dispatchMode === 'wholesale') {
-      const last = loadLastCustomer()
-      setSuggestCustomer(last)
-    } else {
-      setSuggestCustomer(null)
-    }
-  }, [dispatchMode])
 
   const customerDataRequired = dispatchMode === 'wholesale'
 
@@ -284,29 +196,10 @@ function DispatchPage() {
   useEffect(() => {
     loadOverview()
     fetchProducts({ page_size: 9999 })
+    fetchCombos(false).then(setCombos).catch(() => {})
   }, [])
 
-  useEffect(() => {
-    if (debouncedSearch) {
-      fetchProducts({ page_size: 9999, search: debouncedSearch })
-    }
-  }, [debouncedSearch])
-
   const locations = overview?.locations ?? []
-
-  /* ─── Build stock map: location_id → quantity ─── */
-  const stockByLocation = useMemo(() => {
-    const map = new Map<string, number>()
-    if (!productStock) return map
-    const entries = productStock.by_location ?? productStock.per_location ?? []
-    for (const entry of entries) {
-      const locId = entry.location_id ?? entry.location_code
-      if (locId) map.set(locId, entry.quantity)
-    }
-    return map
-  }, [productStock])
-
-  const stockAvailableForSelectedLocation = pendingLocation ? (stockByLocation.get(pendingLocation) ?? 0) : 0
 
   const availableProducts = useMemo(() => {
     let list = products.filter((p) => p.is_active)
@@ -315,18 +208,6 @@ function DispatchPage() {
     }
     return list
   }, [products, dispatchMode])
-
-  const requiresColdChainAck = useMemo(() =>
-    cartItems.some((item) => {
-      const p = availableProducts.find((ap) => ap.id === item.productId)
-      return !!(p?.requires_cold_chain)
-    }), [cartItems, availableProducts])
-
-  const requiresElectricalSafetyAck = useMemo(() =>
-    cartItems.some((item) => {
-      const p = availableProducts.find((ap) => ap.id === item.productId)
-      return !!(p?.requires_serial_number || p?.category_slug === 'electroterapia')
-    }), [cartItems, availableProducts])
 
   const filteredProducts = useMemo(() => {
     const q = productSearch.trim().toLowerCase()
@@ -338,6 +219,19 @@ function DispatchPage() {
         (p.barcode && p.barcode.toLowerCase().includes(q)),
     )
   }, [availableProducts, productSearch])
+
+  const searchResults = useMemo(() => {
+    const q = productSearch.trim().toLowerCase()
+    let productResults = filteredProducts
+    const comboResults = combos.filter(
+      (c) =>
+        !c.deleted_at &&
+        (!q ||
+          c.name.toLowerCase().includes(q) ||
+          c.sku.toLowerCase().includes(q)),
+    )
+    return { products: productResults, combos: comboResults }
+  }, [filteredProducts, combos, productSearch])
 
   const priceAutoFill = useMemo(() => {
     if (!pendingProduct) return ''
@@ -365,35 +259,21 @@ function DispatchPage() {
     return { subtotal, tax, total, qty }
   }, [cartItems])
 
-  const isSale = dispatchMode === 'wholesale' || dispatchMode === 'retail'
-
-  const pendingQtyNum = Number(pendingQty)
-  const qtyExceedsStock = pendingLocation && pendingProduct && Number.isFinite(pendingQtyNum) && pendingQtyNum > stockAvailableForSelectedLocation
-
-  /* ─── BUG-D3/D4: Comprehensive canConfirm ─── */
-  const canConfirm = useMemo(() => {
-    if (cartItems.length === 0) return false
-    if (customerDataRequired && (!form.customerName.trim() || !form.customerDoc.trim())) return false
-    for (const item of cartItems) {
-      if (!item.locationId) return false
-      if (item.quantity <= 0) return false
-    }
-    if (dispatchMode === 'damage') {
-      if (!form.damageReason.trim() || form.damageReason.trim().length < MIN_DAMAGE_REASON_LENGTH) return false
-    }
-    if (dispatchMode === 'expiry') {
-      if (!form.expiryLotCode.trim()) return false
-    }
-    if (requiresColdChainAck && !coldChainAck) return false
-    if (requiresElectricalSafetyAck && !electricalSafetyAck) return false
-    return true
-  }, [cartItems, customerDataRequired, form, dispatchMode, requiresColdChainAck, requiresElectricalSafetyAck, coldChainAck, electricalSafetyAck])
-
   const currentStep = useMemo(() => {
     if (customerDataRequired && (!form.customerName.trim() || !form.customerDoc.trim())) return 1
     if (cartItems.length === 0) return 2
     return 3
   }, [customerDataRequired, form.customerName, form.customerDoc, cartItems.length])
+
+  const canConfirm = useMemo(() => {
+    if (customerDataRequired && (!form.customerName.trim() || !form.customerDoc.trim())) return false
+    if (cartItems.length === 0) return false
+    for (const item of cartItems) {
+      if (!item.locationId) return false
+      if (item.quantity <= 0) return false
+    }
+    return true
+  }, [customerDataRequired, form.customerName, form.customerDoc, cartItems])
 
   function handleSelectProduct(product: CatalogProduct) {
     setPendingProduct(product)
@@ -401,7 +281,30 @@ function DispatchPage() {
     setPendingPrice('')
     setPendingLocation('')
     setProductSearch('')
-    setFieldErrors({})
+  }
+
+  function handleSelectCombo(combo: Combo) {
+    let added = 0
+    for (const component of combo.components) {
+      const product = products.find((p) => p.id === component.product)
+      if (!product) continue
+      const locationId = pendingLocation || locations[0]?.id || ''
+      if (!locationId) {
+        toast.error('Selecciona una ubicación antes de agregar un combo')
+        return
+      }
+      const price =
+        dispatchMode === 'wholesale' && product.sale_price_wholesale != null
+          ? product.sale_price_wholesale
+          : product.sale_price_retail ?? 0
+      const item = createCartItem(product, component.quantity, price, locationId)
+      setCartItems((prev) => [...prev, item])
+      added++
+    }
+    if (added > 0) {
+      toast.success(`Combo "${combo.name}" agregado (${added} productos)`)
+    }
+    setProductSearch('')
   }
 
   function handleProductScanned(result: BarcodeProductResult) {
@@ -434,6 +337,9 @@ function DispatchPage() {
         notes: '',
         reorder_point: 0,
         stockTotal: result.stockTotal ?? 0,
+        sale_price_retail: 0,
+        sale_price_wholesale: 0,
+        tax_rate_pct: 19,
       }
       handleSelectProduct(fallback)
     }
@@ -450,20 +356,10 @@ function DispatchPage() {
       toast.error('Selecciona una ubicación de origen')
       return
     }
-    /* ─── BUG-D1: Validate stock at add-to-cart time ─── */
-    if (qtyExceedsStock) {
-      toast.error(`Stock insuficiente en esta ubicación. Disponible: ${stockAvailableForSelectedLocation} unidades`)
-      return
-    }
     const price = pendingPrice ? Number(pendingPrice) : 0
     const item = createCartItem(pendingProduct, qty, price, pendingLocation)
     if (dispatchMode === 'damage') {
       item.damageReason = form.damageReason
-    }
-    if (dispatchMode === 'expiry') {
-      item.lotCode = form.expiryLotCode
-    } else if (pendingProduct.requires_expiration && pendingLotCode) {
-      item.lotCode = pendingLotCode
     }
     item.note = form.note
     setCartItems((prev) => [...prev, item])
@@ -471,8 +367,6 @@ function DispatchPage() {
     setPendingQty('1')
     setPendingPrice('')
     setPendingLocation('')
-    setPendingLotCode('')
-    setFieldErrors({})
     toast.success(`${pendingProduct.name} agregado al carrito`)
   }
 
@@ -484,194 +378,44 @@ function DispatchPage() {
     setCartItems([])
     setSubmissionResult(null)
     setError(null)
-    setFieldErrors({})
-    setColdChainAck(false)
-    setElectricalSafetyAck(false)
   }
-
-  function applyLastCustomer(c: LastCustomer) {
-    setForm((f) => ({
-      ...f,
-      customerName: c.name,
-      customerDoc: c.doc,
-      customerEmail: c.email,
-      customerPhone: c.phone,
-      customerAddress: c.address,
-    }))
-    setSuggestCustomer(null)
-    setFieldErrors((prev) => {
-      const next = { ...prev }
-      delete next.customerName
-      delete next.customerDoc
-      return next
-    })
-  }
-
-  /* ─── BUG-D4: Full form validation ─── */
-  function validateForm(): FieldErrors {
-    const errs: FieldErrors = {}
-
-    if (customerDataRequired) {
-      if (!form.customerName.trim()) errs.customerName = 'El nombre o razón social es obligatorio'
-      if (!form.customerDoc.trim()) errs.customerDoc = 'El NIT o documento es obligatorio'
-    }
-
-    if (cartItems.length === 0) {
-      errs._cart = 'Agrega al menos un producto al carrito'
-    }
-
-    for (const item of cartItems) {
-      if (!item.locationId) errs._location = 'Todos los items deben tener ubicación'
-      if (item.quantity <= 0) errs._qty = 'Todos los items deben tener cantidad > 0'
-    }
-
-    if (dispatchMode === 'damage') {
-      const dr = form.damageReason.trim()
-      if (!dr) errs.damageReason = 'Describe el motivo del daño'
-      else if (dr.length < MIN_DAMAGE_REASON_LENGTH) errs.damageReason = `Mínimo ${MIN_DAMAGE_REASON_LENGTH} caracteres`
-    }
-
-    if (dispatchMode === 'expiry') {
-      if (!form.expiryLotCode.trim()) errs.expiryLotCode = 'Ingresa el lote o fecha de vencimiento'
-    }
-
-    if (requiresColdChainAck && !coldChainAck) {
-      errs.coldChainAck = 'Debes confirmar la alerta de cadena de frío'
-    }
-    if (requiresElectricalSafetyAck && !electricalSafetyAck) {
-      errs.electricalSafetyAck = 'Debes confirmar la revisión de seguridad eléctrica'
-    }
-
-    return errs
-  }
-
-  function scrollToFirstError(errs: FieldErrors) {
-    const firstKey = Object.keys(errs)[0]
-    if (!firstKey) return
-    const el = document.getElementById(`field-${firstKey}`)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      el.focus?.()
-    } else if (errorRef.current) {
-      errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }
-  }
-
-  /* ─── BUG-D3 warning for expiry mode with non-expiry product ─── */
-  const expiryWarning = useMemo(() => {
-    if (dispatchMode !== 'expiry' || !pendingProduct) return null
-    if (!pendingProduct.requires_expiration) {
-      return 'Este producto no maneja fecha de vencimiento. Usa "Por daño" para registrar esta salida.'
-    }
-    return null
-  }, [dispatchMode, pendingProduct])
 
   const handleConfirm = async () => {
-    /* ─── BUG-D4: Validate form first ─── */
-    const errs = validateForm()
-    if (Object.keys(errs).length > 0) {
-      setFieldErrors(errs)
-      toast.error('Completa los campos obligatorios antes de continuar')
-      scrollToFirstError(errs)
-      return
-    }
-
+    if (!canConfirm) return
     setSaving(true)
     setError(null)
     setSubmissionResult(null)
-    setInvoiceResult(null)
-    setFieldErrors({})
-
     try {
-      if (isSale) {
-        /* ─── Billing API path ─── */
-        const invoiceType = dispatchMode === 'wholesale' ? 'wholesale' : 'retail'
-        const locationId = cartItems[0]?.locationId
-        if (!locationId) {
-          toast.error('Selecciona una ubicación de origen')
-          setSaving(false)
-          return
-        }
+      const customerData = customerDataRequired
+        ? {
+            customer_name: form.customerName.trim(),
+            customer_email: form.customerEmail.trim() || `${form.customerDoc.trim()}@cliente.com`,
+            customer_phone: form.customerPhone.trim() || '0000000000',
+            customer_address: form.customerAddress.trim() || 'Sin dirección',
+            customer_doc: form.customerDoc.trim() || undefined,
+            privacy_notice_acknowledged: false,
+          }
+        : null
 
-        const payload: BillingInvoiceCreatePayload = {
-          invoice_type: invoiceType,
-          location_id: locationId,
-          customer: {
-            name: form.customerName.trim() || 'Cliente general',
-            id_number: form.customerDoc.trim() || undefined,
-            email: form.customerEmail.trim() || undefined,
-            phone: form.customerPhone.trim() || undefined,
-            address: form.customerAddress.trim() || undefined,
-          },
-          items: cartItems.map((item) => ({
-            product_id: item.productId,
-            quantity: item.quantity,
-            discount_pct: item.discount > 0 ? item.discount : undefined,
-            lot_code: item.lotCode || undefined,
-          })),
-          note: form.note || undefined,
-          privacy_notice_acknowledged: dispatchMode === 'wholesale',
-          cold_chain_acknowledged: coldChainAck,
-          electrical_safety_acknowledged: electricalSafetyAck,
-        }
+      const items = cartItems.map((item) => ({
+        productId: item.productId,
+        locationId: item.locationId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice || null,
+        movementType: SALE_TYPES[dispatchMode],
+        scannedCode: null,
+        orderSku: item.sku,
+        serialNumber: null,
+        note: item.note || item.damageReason || '',
+      }))
 
-        const invoice = await createInvoice(payload)
-        setInvoiceResult(invoice)
+      const result = await submitCart(items, customerData)
 
-        /* ─── BUG-D4: Save customer for reuse ─── */
-        if (dispatchMode === 'wholesale') {
-          saveLastCustomer({
-            name: form.customerName.trim(),
-            doc: form.customerDoc.trim(),
-            email: form.customerEmail.trim(),
-            phone: form.customerPhone.trim(),
-            address: form.customerAddress.trim(),
-          })
-        }
-
-        const newMovements: DispatchMovement[] = (invoice.movements_detail ?? []).map((m) => ({
-          id: m.id,
-          productName: m.product_name,
-          sku: m.product_sku,
-          quantity: m.quantity,
-          locationCode: m.origin_location ?? '',
-          operator: invoice.issued_by_username,
-          confirmedAt: m.created_at,
-          invoiceNumber: invoice.number,
-          customerName: invoice.customer_name,
-        }))
-        setRecentMovements((current) => [...newMovements, ...current])
-        setCartItems([])
-        setForm(toForm())
-        setColdChainAck(false)
-        setElectricalSafetyAck(false)
-        toast.success(`Factura ${invoice.number} creada exitosamente`)
-      } else {
-        /* ─── Legacy path for damage/expiry ─── */
-        const items = cartItems.map((item) => ({
-          productId: item.productId,
-          locationId: item.locationId,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice || null,
-          movementType: SALE_TYPES[dispatchMode],
-          serialNumber: null,
-          lotId: item.lotId || null,
-          note: item.note || item.damageReason || form.expiryLotCode || '',
-        }))
-
-        const result = await submitCart(items, null, {
-          coldChainAck,
-          electricalSafetyAck,
-        })
-
-        setRecentMovements((current) => [...result.movements, ...current])
-        setSubmissionResult(result)
-        setCartItems([])
-        setForm(toForm())
-        setColdChainAck(false)
-        setElectricalSafetyAck(false)
-        toast.success(`${result.movements.length} salida(s) registrada(s) exitosamente`)
-      }
+      setRecentMovements((current) => [...result.movements, ...current])
+      setSubmissionResult(result)
+      setCartItems([])
+      setForm(toForm())
+      toast.success(`${result.movements.length} salida(s) registrada(s) exitosamente`)
     } catch (err) {
       setError(extractApiError(err))
     } finally {
@@ -679,27 +423,28 @@ function DispatchPage() {
     }
   }
 
-  /* ─── Stock message for selected product ─── */
-  const stockMessage = useMemo(() => {
-    if (!pendingProduct || stockLoading) return null
-    if (stockByLocation.size === 0) {
-      return { text: 'Sin stock disponible en ninguna ubicación', variant: 'err' as const }
+  const handleDownloadPdf = async () => {
+    if (!submissionResult?.movements[0]) return
+    const mov = submissionResult.movements[0]
+    try {
+      await downloadInvoicePdf(mov.id, mov.invoiceNumber ?? 'ICM-PDF')
+    } catch (err) {
+      setError(extractApiError(err))
     }
-    if (pendingLocation) {
-      const q = stockByLocation.get(pendingLocation) ?? 0
-      if (q === 0) return { text: 'Sin stock en esta ubicación', variant: 'err' as const }
-      return { text: `Stock disponible: ${q} unidades`, variant: 'ok' as const }
+  }
+
+  const handleDownloadAllPdf = async () => {
+    if (!submissionResult) return
+    for (const mov of submissionResult.movements) {
+      try {
+        await downloadInvoicePdf(mov.id, mov.invoiceNumber ?? 'ICM-PDF')
+      } catch {
+        toast.error(`Error descargando factura ${mov.invoiceNumber}`)
+      }
     }
-    return null
-  }, [pendingProduct, stockLoading, stockByLocation, pendingLocation])
+  }
 
-  /* ─── Filter locations with stock for BUG-D2 ─── */
-  const locationsWithStock = useMemo(() => {
-    if (!pendingProduct || stockByLocation.size === 0) return []
-    return locations.filter((loc) => (stockByLocation.get(loc.id) ?? 0) > 0)
-  }, [pendingProduct, stockByLocation, locations])
-
-  const hasNoStockAnywhere = !!(pendingProduct && !stockLoading && stockByLocation.size > 0 && locationsWithStock.length === 0)
+  const isSale = dispatchMode === 'wholesale' || dispatchMode === 'retail'
 
   return (
     <AppShell
@@ -711,7 +456,7 @@ function DispatchPage() {
         </Button>
       }
     >
-      <div className="page-body reception-page" ref={formRef}>
+      <div className="page-body reception-page">
 
         {/* Step tracker */}
         <nav className="step-track" aria-label="Progreso del despacho">
@@ -731,57 +476,31 @@ function DispatchPage() {
         </nav>
 
         {error ? (
-          <div className="alert-bar alert-bar--warn" role="alert" style={{ marginBottom: 18 }} ref={errorRef}>
+          <div className="alert-bar alert-bar--warn" role="alert" style={{ marginBottom: 18 }}>
             <AlertTriangle />
             <span>{error}</span>
           </div>
         ) : null}
 
-        {/* BUG-D4: Global validation error banner */}
-        {Object.keys(fieldErrors).length > 0 && !error && (
-          <div className="alert-bar alert-bar--warn" role="alert" style={{ marginBottom: 18 }}>
-            <AlertTriangle />
-            <span>Completa los campos obligatorios antes de continuar</span>
-          </div>
-        )}
-
-        {/* Success banner (non-sale: damage/expiry) */}
+        {/* Success banner */}
         {submissionResult && (
           <div className="alert-bar alert-bar--ok" role="alert" style={{ marginBottom: 18 }}>
             <CheckCircle2 />
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
               <span>
                 {submissionResult.movements.length} salida(s) registrada(s)
+                {submissionResult.invoiceNumber && ` — Factura ${submissionResult.invoiceNumber}`}
               </span>
+              <Button size="sm" variant="outline" onClick={handleDownloadPdf}>
+                <FileDown /> Descargar factura
+              </Button>
+              {submissionResult.movements.length > 1 && (
+                <Button size="sm" variant="outline" onClick={handleDownloadAllPdf}>
+                  <FileDown /> Descargar todas
+                </Button>
+              )}
               <Button size="sm" onClick={handleClearCart}>
                 <X /> Nueva salida
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Invoice result modal (sale: wholesale/retail) */}
-        {invoiceResult && (
-          <InvoiceResultModal
-            invoice={invoiceResult}
-            onClose={() => { setInvoiceResult(null); setError(null) }}
-            onNewSale={() => { setInvoiceResult(null); setCartItems([]); setForm(toForm()); setError(null) }}
-          />
-        )}
-
-        {/* ─── BUG-D4: Customer suggestion banner ─── */}
-        {suggestCustomer && dispatchMode === 'wholesale' && cartItems.length === 0 && (
-          <div className="alert-bar alert-bar--info" role="alert" style={{ marginBottom: 18 }}>
-            <UserCheck />
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span>
-                ¿Usar el cliente anterior? <strong>{suggestCustomer.name}</strong> — {suggestCustomer.doc}
-              </span>
-              <Button size="sm" variant="outline" onClick={() => applyLastCustomer(suggestCustomer)}>
-                Sí, usar
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setSuggestCustomer(null)}>
-                No, nuevo cliente
               </Button>
             </div>
           </div>
@@ -800,12 +519,12 @@ function DispatchPage() {
             <DispatchTypeSelector
               options={dispatchModes}
               value={dispatchMode}
-              onChange={(m) => { setDispatchMode(m); setPendingProduct(null); setForm(toForm()); setFieldErrors({}) }}
+              onChange={(m) => { setDispatchMode(m); setPendingProduct(null); setForm(toForm()) }}
             />
 
             <div className="c-divider" style={{ marginTop: 0 }} />
 
-            {/* ─── Product search ─── */}
+            {/* ─── Product search (always visible) ─── */}
             <div className="s-head">
               <span className="s-head__label">Buscar producto</span>
               <div className="s-head__rule" />
@@ -833,14 +552,14 @@ function DispatchPage() {
                 />
               </div>
 
-              {/* Product dropdown */}
-              {!pendingProduct && filteredProducts.length > 0 && (
-                <ul style={{ margin: '4px 0 0', padding: 0, listStyle: 'none', border: '1px solid var(--ink-12)', borderRadius: 8, maxHeight: 200, overflowY: 'auto', background: 'var(--white)' }}>
-                  {filteredProducts.map((p) => (
+              {/* Product / Combo dropdown */}
+              {!pendingProduct && (searchResults.products.length > 0 || searchResults.combos.length > 0) && (
+                <ul style={{ margin: '4px 0 0', padding: 0, listStyle: 'none', border: '1px solid var(--ink-12)', borderRadius: 8, maxHeight: 240, overflowY: 'auto', background: 'var(--white)' }}>
+                  {searchResults.products.map((p) => (
                     <li
                       key={p.id}
                       onClick={() => handleSelectProduct(p)}
-                      style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13, borderBottom: '1px solid var(--ink-06)', display: 'flex', justifyContent: 'space-between' }}
+                      style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13, borderBottom: '1px solid var(--ink-06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                       onMouseEnter={(e) => e.currentTarget.style.background = 'var(--teal-50)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
@@ -848,24 +567,29 @@ function DispatchPage() {
                       <span className="sku">{p.sku}</span>
                     </li>
                   ))}
+                  {searchResults.combos.map((c) => (
+                    <li
+                      key={`combo-${c.id}`}
+                      onClick={() => handleSelectCombo(c)}
+                      style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13, borderBottom: '1px solid var(--ink-06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--amber-bg)' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--amber-lt)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'var(--amber-bg)'}
+                    >
+                      <span>
+                        <span className="pill pill--amber" style={{ fontSize: 10, marginRight: 6 }}>COMBO</span>
+                        <span style={{ fontWeight: 500 }}>{c.name}</span>
+                      </span>
+                      <span className="sku">{c.sku}</span>
+                    </li>
+                  ))}
                 </ul>
               )}
-              {productSearch && filteredProducts.length === 0 && !pendingProduct && (
+              {productSearch && searchResults.products.length === 0 && searchResults.combos.length === 0 && !pendingProduct && (
                 <p style={{ fontSize: 12, color: 'var(--ink-40)', marginTop: 4 }}>Sin coincidencias</p>
               )}
             </div>
 
-            {/* ─── BUG-D3: Expiry warning ─── */}
-            {expiryWarning && (
-              <div className="notice notice--warn" style={{ marginBottom: 10 }}>
-                <AlertTriangle />
-                <div>
-                  <p className="notice__body">{expiryWarning}</p>
-                </div>
-              </div>
-            )}
-
-            {/* ─── Pending product config ─── */}
+            {/* ─── Pending product config (selected product, about to add to cart) ─── */}
             {pendingProduct && (
               <div style={{ background: 'var(--teal-50)', borderRadius: 'var(--r-md)', padding: 14, marginBottom: 16, border: '1px solid var(--teal-200)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
@@ -883,53 +607,17 @@ function DispatchPage() {
                   </button>
                 </div>
 
-                {stockLoading && (
-                  <div style={{ fontSize: 12, color: 'var(--ink-40)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <RefreshCw size={12} className="spin" /> Consultando stock...
-                  </div>
-                )}
-
-                {/* ─── BUG-D1/D2: Stock message ─── */}
-                {stockMessage && (
-                  <p style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    marginBottom: 8,
-                    color: stockMessage.variant === 'ok' ? 'var(--success)' : 'var(--danger)',
-                  }}>
-                    {stockMessage.text}
-                  </p>
-                )}
-
-                {/* ─── BUG-D2: No stock anywhere ─── */}
-                {hasNoStockAnywhere && (
-                  <div className="notice notice--err" style={{ marginBottom: 10 }}>
-                    <AlertTriangle />
-                    <div>
-                      <p className="notice__title">Sin stock disponible</p>
-                      <p className="notice__body">Este producto no tiene stock en ninguna ubicación.</p>
-                    </div>
-                  </div>
-                )}
-
                 <div className="f-row f-row-2" style={{ marginBottom: 10 }}>
                   <div className="f-group">
                     <label className="f-label" htmlFor="cart-qty">Cantidad</label>
                     <input
                       id="cart-qty"
-                      className={`f-input${qtyExceedsStock ? ' input--err' : ''}`}
+                      className="f-input"
                       type="number"
                       min="1"
                       value={pendingQty}
                       onChange={(e) => setPendingQty(e.target.value)}
-                      style={qtyExceedsStock ? { borderColor: 'var(--danger)' } : undefined}
                     />
-                    {/* ─── BUG-D1: Inline qty error ─── */}
-                    {qtyExceedsStock && (
-                      <p className="field-err" style={{ fontSize: 11, color: 'var(--danger)', marginTop: 2 }}>
-                        Stock insuficiente. Solo hay {stockAvailableForSelectedLocation} unidades disponibles.
-                      </p>
-                    )}
                   </div>
 
                   {isSale && (
@@ -948,7 +636,6 @@ function DispatchPage() {
                     </div>
                   )}
 
-                  {/* ─── BUG-D2: Location selector ─── */}
                   <div className="f-group">
                     <label className="f-label" htmlFor="cart-loc">Ubicación</label>
                     <select
@@ -956,57 +643,21 @@ function DispatchPage() {
                       className="f-input"
                       value={pendingLocation}
                       onChange={(e) => setPendingLocation(e.target.value)}
-                      disabled={!pendingProduct || stockLoading}
-                      style={!pendingProduct || stockLoading ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
                     >
-                      <option value="">
-                        {stockLoading ? 'Cargando...' : !pendingProduct ? 'Selecciona un producto primero' : 'Seleccionar ubicación'}
-                      </option>
-                      {/* ─── BUG-D2: Only show locations with stock ─── */}
-                      {locationsWithStock.map((loc) => {
-                        const q = stockByLocation.get(loc.id) ?? 0
-                        return (
-                          <option key={loc.id} value={loc.id}>
-                            {loc.code} — {loc.name} ({q} unidades)
-                          </option>
-                        )
-                      })}
-                      {/* Show locations without stock as disabled */}
-                      {locations.filter((loc) => (stockByLocation.get(loc.id) ?? 0) === 0).map((loc) => (
-                        <option key={`no-stock-${loc.id}`} value="" disabled style={{ color: '#999' }}>
-                          {loc.code} — {loc.name} (sin stock)
-                        </option>
+                      <option value="">Seleccionar</option>
+                      {locations.map((loc) => (
+                        <option key={loc.id} value={loc.id}>{loc.code} — {loc.name}</option>
                       ))}
                     </select>
                   </div>
                 </div>
 
-                {isSale && pendingProduct.requires_expiration && (
-                  <div className="f-group" style={{ marginBottom: 10 }}>
-                    <label className="f-label" htmlFor="cart-lot">Código de lote (obligatorio)</label>
-                    <input
-                      id="cart-lot"
-                      className="f-input"
-                      type="text"
-                      value={pendingLotCode}
-                      onChange={(e) => setPendingLotCode(e.target.value)}
-                      placeholder="Ej: LOTE-001"
-                    />
-                    {!pendingLotCode && (
-                      <p className="field-err" style={{ fontSize: 11, color: 'var(--danger)', marginTop: 2 }}>
-                        Este producto requiere especificar un lote
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* ─── BUG-D1: Existing total stock check (backup for when no per-location data) ─── */}
-                {!stockLoading && stockByLocation.size === 0 && pendingProduct.stockTotal != null && Number(pendingQty) > pendingProduct.stockTotal && (
+                {pendingProduct.stockTotal != null && Number(pendingQty) > pendingProduct.stockTotal && (
                   <div className="notice notice--err" style={{ marginBottom: 10 }}>
                     <AlertTriangle />
                     <div>
                       <p className="notice__title">Stock insuficiente</p>
-                      <p className="notice__body">Solo hay {pendingProduct.stockTotal} unidades disponibles en total.</p>
+                      <p className="notice__body">Solo hay {pendingProduct.stockTotal} unidades disponibles.</p>
                     </div>
                   </div>
                 )}
@@ -1016,12 +667,9 @@ function DispatchPage() {
                   className="btn btn--primary"
                   onClick={handleAddToCart}
                   disabled={
-                    !Number.isFinite(pendingQtyNum) || pendingQtyNum <= 0 ||
+                    !Number.isFinite(Number(pendingQty)) || Number(pendingQty) <= 0 ||
                     !pendingLocation ||
-                    qtyExceedsStock ||
-                    stockLoading ||
-                    hasNoStockAnywhere ||
-                    (isSale && pendingProduct.requires_expiration && !pendingLotCode)
+                    (pendingProduct.stockTotal != null && Number(pendingQty) > pendingProduct.stockTotal)
                   }
                 >
                   <Plus /> Agregar al carrito
@@ -1040,7 +688,7 @@ function DispatchPage() {
                     type="button"
                     className="btn btn--ghost s-head__action"
                     style={{ fontSize: 11, color: 'var(--err)' }}
-                    onClick={() => { if (window.confirm('¿Vaciar carrito?')) { setCartItems([]); setFieldErrors({}) } }}
+                    onClick={() => { if (window.confirm('¿Vaciar carrito?')) setCartItems([]) }}
                   >
                     <Trash2 size={12} /> Vaciar
                   </button>
@@ -1065,7 +713,6 @@ function DispatchPage() {
                           <td className="text-mono" style={{ width: 30 }}>{i + 1}</td>
                           <td>
                             <span className="sku">{item.productName}</span>
-                            {item.lotCode && <span className="sku" style={{ fontSize: 10, display: 'block' }}>Lote: {item.lotCode}</span>}
                           </td>
                           <td className="text-mono">{item.sku}</td>
                           <td className="text-mono" style={{ fontWeight: 600 }}>{item.quantity}</td>
@@ -1111,17 +758,16 @@ function DispatchPage() {
                   <button
                     type="button"
                     className="btn btn--outline"
-                    onClick={() => { setCartItems([]); setError(null); setFieldErrors({}) }}
+                    onClick={() => { setCartItems([]); setError(null) }}
                     disabled={saving}
                   >
                     Cancelar
                   </button>
                   <button
                     type="button"
-                    className={`btn btn--amber btn--lg${!canConfirm ? ' btn--disabled' : ''}`}
+                    className="btn btn--amber btn--lg"
                     onClick={handleConfirm}
                     disabled={!canConfirm || saving}
-                    title={!canConfirm ? 'Completa todos los campos obligatorios para continuar' : undefined}
                   >
                     <ClipboardCheck />
                     {saving ? 'Registrando...' : 'Confirmar y generar factura(s)'}
@@ -1130,7 +776,7 @@ function DispatchPage() {
               </>
             )}
 
-            {/* Empty state */}
+            {/* Empty state when no product selected and no cart items */}
             {!pendingProduct && cartItems.length === 0 && (
               <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--ink-40)', fontSize: 13 }}>
                 Busca y agrega productos al carrito para continuar
@@ -1139,69 +785,26 @@ function DispatchPage() {
 
           </div>
 
-          {/* ─── Right panel: Customer / damage / expiry / notes ─── */}
+          {/* ─── Right panel: Customer / damage / notes ─── */}
           <aside>
             <div className="s-head">
               <span className="s-head__label">
-                {isSale ? 'Cliente receptor' : dispatchMode === 'damage' ? 'Información del daño' : 'Información del vencimiento'}
+                {isSale ? 'Cliente receptor' : 'Información adicional'}
               </span>
               <div className="s-head__rule" />
             </div>
             <div className="form-surface">
               {isSale && (
                 <fieldset>
-                  <legend>
-                    Datos del cliente
-                    {customerDataRequired && (
-                      <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--err)', marginLeft: 6 }}>
-                        (obligatorios para facturación)
-                      </span>
-                    )}
-                  </legend>
-
-                  {customerDataRequired && (
-                    <div className="notice notice--warn" style={{ marginBottom: 12, padding: '8px 10px', fontSize: 12 }}>
-                      <AlertTriangle size={14} />
-                      <div>
-                        <p className="notice__body">
-                          Los datos del cliente son obligatorios para emitir la factura electrónica.
-                          Completa nombre o razón social y NIT para continuar.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ─── BUG-D4: Campo con id para scroll + error inline ─── */}
-                  <div className="f-group dispatch-customer-field" id="field-customerName">
-                    <label className="f-label" htmlFor="cli-name">
-                      Razón social / Nombre {customerDataRequired && <span style={{ color: 'var(--err)' }}>*</span>}
-                    </label>
-                    <input
-                      id="cli-name"
-                      className={`f-input${fieldErrors.customerName ? ' input--err' : ''}`}
-                      value={form.customerName}
-                      onChange={(e) => { setForm((f) => ({ ...f, customerName: e.target.value })); setFieldErrors((prev) => { const n = { ...prev }; delete n.customerName; return n }) }}
-                      placeholder={customerDataRequired ? '' : 'Opcional'}
-                      style={fieldErrors.customerName ? { borderColor: 'var(--danger)' } : undefined}
-                    />
-                    {fieldErrors.customerName && (
-                      <p className="field-err" style={{ fontSize: 11, color: 'var(--danger)', marginTop: 2 }}>{fieldErrors.customerName}</p>
-                    )}
+                  <legend>Datos del cliente — Ley 1581</legend>
+                  <div className="f-group dispatch-customer-field">
+                    <label className="f-label" htmlFor="cli-name">Razón social / Nombre {customerDataRequired && <span style={{ color: 'var(--err)' }}>*</span>}</label>
+                    <input id="cli-name" className="f-input" value={form.customerName} onChange={(e) => setForm((f) => ({ ...f, customerName: e.target.value }))} placeholder={customerDataRequired ? '' : 'Opcional'} />
                   </div>
                   {customerDataRequired && (
-                    <div className="f-group dispatch-customer-field" id="field-customerDoc">
+                    <div className="f-group dispatch-customer-field">
                       <label className="f-label" htmlFor="cli-doc">NIT / Documento *</label>
-                      <input
-                        id="cli-doc"
-                        className={`f-input${fieldErrors.customerDoc ? ' input--err' : ''}`}
-                        value={form.customerDoc}
-                        onChange={(e) => { setForm((f) => ({ ...f, customerDoc: e.target.value })); setFieldErrors((prev) => { const n = { ...prev }; delete n.customerDoc; return n }) }}
-                        placeholder="NIT 900.123.456-7"
-                        style={fieldErrors.customerDoc ? { borderColor: 'var(--danger)' } : undefined}
-                      />
-                      {fieldErrors.customerDoc && (
-                        <p className="field-err" style={{ fontSize: 11, color: 'var(--danger)', marginTop: 2 }}>{fieldErrors.customerDoc}</p>
-                      )}
+                      <input id="cli-doc" className="f-input" value={form.customerDoc} onChange={(e) => setForm((f) => ({ ...f, customerDoc: e.target.value }))} placeholder="NIT 900.123.456-7" />
                     </div>
                   )}
                   {!customerDataRequired && (
@@ -1225,49 +828,17 @@ function DispatchPage() {
                 </fieldset>
               )}
 
-              {/* ─── BUG-D3: Damage reason ─── */}
-              {dispatchMode === 'damage' && (
-                <div className="f-group" id="field-damageReason" style={{ marginTop: 0 }}>
-                  <label className="f-label">
-                    Descripción del daño <span style={{ color: 'var(--err)' }}>*</span>
-                    <span style={{ fontSize: 10, color: 'var(--ink-40)', fontWeight: 400, marginLeft: 4 }}>
-                      (mínimo {MIN_DAMAGE_REASON_LENGTH} caracteres)
-                    </span>
-                  </label>
+              {/* Damage reason - always shown for damage mode */}
+              {!isSale && (
+                <div className="f-group" style={{ marginTop: isSale ? 14 : 0 }}>
+                  <label className="f-label">Descripción del daño <span style={{ color: 'var(--err)' }}>*</span></label>
                   <textarea
-                    className={`f-input${fieldErrors.damageReason ? ' input--err' : ''}`}
-                    style={{ minHeight: 60, resize: 'vertical', ...(fieldErrors.damageReason ? { borderColor: 'var(--danger)' } : {}) }}
+                    className="f-input"
+                    style={{ minHeight: 60, resize: 'vertical' }}
                     value={form.damageReason}
                     placeholder="Describe el motivo del daño..."
-                    onChange={(e) => { setForm((f) => ({ ...f, damageReason: e.target.value })); setFieldErrors((prev) => { const n = { ...prev }; delete n.damageReason; return n }) }}
+                    onChange={(e) => setForm((f) => ({ ...f, damageReason: e.target.value }))}
                   />
-                  {fieldErrors.damageReason && (
-                    <p className="field-err" style={{ fontSize: 11, color: 'var(--danger)', marginTop: 2 }}>{fieldErrors.damageReason}</p>
-                  )}
-                  {form.damageReason.trim().length > 0 && form.damageReason.trim().length < MIN_DAMAGE_REASON_LENGTH && (
-                    <p style={{ fontSize: 10, color: 'var(--warning)', marginTop: 2 }}>
-                      {form.damageReason.trim().length}/{MIN_DAMAGE_REASON_LENGTH} caracteres
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* ─── BUG-D3: Expiry lot/date ─── */}
-              {dispatchMode === 'expiry' && (
-                <div className="f-group" id="field-expiryLotCode" style={{ marginTop: 0 }}>
-                  <label className="f-label">
-                    Lote o fecha de vencimiento <span style={{ color: 'var(--err)' }}>*</span>
-                  </label>
-                  <input
-                    className={`f-input${fieldErrors.expiryLotCode ? ' input--err' : ''}`}
-                    value={form.expiryLotCode}
-                    placeholder="Ej: LOTE-2026A o 2026-12-31"
-                    onChange={(e) => { setForm((f) => ({ ...f, expiryLotCode: e.target.value })); setFieldErrors((prev) => { const n = { ...prev }; delete n.expiryLotCode; return n }) }}
-                    style={fieldErrors.expiryLotCode ? { borderColor: 'var(--danger)' } : undefined}
-                  />
-                  {fieldErrors.expiryLotCode && (
-                    <p className="field-err" style={{ fontSize: 11, color: 'var(--danger)', marginTop: 2 }}>{fieldErrors.expiryLotCode}</p>
-                  )}
                 </div>
               )}
 
@@ -1286,35 +857,10 @@ function DispatchPage() {
               <div className="notice notice--info" style={{ marginTop: 14 }}>
                 <AlertTriangle />
                 <div>
-                  <p className="notice__title">Privacidad</p>
-                  <p className="notice__body">Los datos del cliente se tratan bajo la política de privacidad de ICM.</p>
+                  <p className="notice__title">Privacidad — Ley 1581</p>
+                  <p className="notice__body">Datos tratados bajo la política de privacidad de ICM. RNF-006.</p>
                 </div>
               </div>
-
-              {requiresColdChainAck && (
-                <label className={`dispatch-ack-label${fieldErrors.coldChainAck ? ' dispatch-ack-label--err' : ''}`}>
-                  <input
-                    type="checkbox"
-                    checked={coldChainAck}
-                    onChange={(e) => setColdChainAck(e.target.checked)}
-                  />
-                  <span>
-                    <strong>Alerta de Cadena de Frío:</strong> Confirmo que conozco los requerimientos de refrigeración de este producto y aseguro las condiciones de temperatura durante su despacho.
-                  </span>
-                </label>
-              )}
-              {requiresElectricalSafetyAck && (
-                <label className={`dispatch-ack-label${fieldErrors.electricalSafetyAck ? ' dispatch-ack-label--err' : ''}`}>
-                  <input
-                    type="checkbox"
-                    checked={electricalSafetyAck}
-                    onChange={(e) => setElectricalSafetyAck(e.target.checked)}
-                  />
-                  <span>
-                    <strong>Seguridad Eléctrica:</strong> Confirmo la revisión técnica de seguridad eléctrica en equipos y la firma de actas de calibración operacional correspondientes.
-                  </span>
-                </label>
-              )}
             </div>
           </aside>
         </div>

@@ -346,7 +346,7 @@ export const mockDeactivateBrand = (id: string) => {
   if (brandIndex === -1) throw new Error('Marca no encontrada.')
   
   // Check active products
-  const hasActiveProducts = mockCatalogProducts.some(p => p.subcategory === id && p.is_active)
+  const hasActiveProducts = mockCatalogProducts.some(p => (p.brand === id || p.subcategory === id) && p.is_active)
   if (hasActiveProducts) {
     throw new Error('No se puede desactivar la marca porque tiene productos activos asociados.')
   }
@@ -373,7 +373,7 @@ export const mockGetProducts = (filters?: { search?: string; category?: string; 
     list = list.filter(p => p.category === filters.category)
   }
   if (filters?.subcategory) {
-    list = list.filter(p => p.subcategory === filters.subcategory)
+    list = list.filter(p => p.brand === filters.subcategory || p.subcategory === filters.subcategory)
   }
   if (filters?.search) {
     const q = filters.search.trim().toLowerCase()
@@ -413,7 +413,7 @@ export const mockCreateProduct = (data: Partial<CatalogProduct> & { category_id?
   
   // Resolve category and subcategory from either direct or _id alias fields
   const resolvedCategory = data.category || data.category_id || ''
-  const resolvedSubcategory = data.subcategory !== undefined ? data.subcategory : (data.subcategory_id ?? null)
+  const resolvedSubcategory = data.brand ?? (data.subcategory !== undefined ? data.subcategory : (data.subcategory_id ?? null))
   
   const id = `prod-${Date.now()}`
   const cat = mockCatalogCategories.find(c => c.id === resolvedCategory)
@@ -475,8 +475,8 @@ export const mockUpdateProduct = (id: string, data: Partial<CatalogProduct> & { 
     mockCatalogProducts[idx].category_slug = cat?.slug || ''
   }
   
-  // Handle both subcategory and subcategory_id fields
-  const subcategoryId = data.subcategory !== undefined ? data.subcategory : data.subcategory_id
+  // Handle brand, subcategory, and subcategory_id fields
+  const subcategoryId = data.brand ?? (data.subcategory !== undefined ? data.subcategory : data.subcategory_id)
   if (subcategoryId !== undefined) {
     mockCatalogProducts[idx].subcategory = subcategoryId
     const brandObj = mockCatalogBrands.find(b => b.id === subcategoryId)

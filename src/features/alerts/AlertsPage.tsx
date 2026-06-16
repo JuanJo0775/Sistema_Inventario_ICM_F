@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertTriangle, Bell, CheckCircle2, Filter, RefreshCw, ShieldAlert } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { AlertTriangle, Bell, CheckCircle2, Filter, RefreshCw, ShieldAlert, ShoppingCart } from 'lucide-react'
 import AppShell from '../../components/layout/AppShell'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
 import { Card } from '../../components/ui/card'
 import { Select } from '../../components/ui/select'
 import type { AlertItem } from '../../interfaces/alerts'
-import { fetchActiveAlerts, resolveAlert } from '../../services/alerts'
+import { fetchActiveAlerts, fetchAlertHistory, resolveAlert } from '../../services/alerts'
 import useAuthStore from '../../store/useAuthStore'
 import { extractApiError } from '../../hooks/useApiError'
 
@@ -52,12 +53,15 @@ const formatShortDate = (value: string) =>
 
 function AlertsPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [alertTypeFilter, setAlertTypeFilter] = useState<string>('')
+  const [historyAlerts, setHistoryAlerts] = useState<AlertItem[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
 
   const canResolve = useMemo(() => {
     return user?.role === "almacenista";
@@ -78,9 +82,28 @@ function AlertsPage() {
     }
   }, [alertTypeFilter, t])
 
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true)
+    try {
+      const data = await fetchAlertHistory()
+      setHistoryAlerts(data)
+    } catch {
+      // silent
+    } finally {
+      setHistoryLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     loadAlerts()
-  }, [loadAlerts])
+    loadHistory()
+  }, [loadAlerts, loadHistory])
+
+  const handleGeneratePO = (alert: AlertItem) => {
+    navigate('/app/purchasing/purchase-orders', {
+      state: { prefillProduct: { id: alert.product, sku: alert.product_sku } },
+    })
+  }
 
   const handleResolve = async (alertId: number) => {
     if (!canResolve) {
@@ -201,10 +224,17 @@ function AlertsPage() {
           ) : (
             <div className="alert-card__actions">
               {canResolve ? null : <span className="alert-card__lock">{t('alerts.errors.unauthorizedShort')}</span>}
-              <Button variant="outline" size="sm" onClick={() => handleResolve(alert.id)} disabled={!canResolve}>
-                <CheckCircle2 />
-                {t('alerts.table.resolve')}
-              </Button>
+              {alert.alert_type === 'LOW_STOCK' ? (
+                <Button variant="outline" size="sm" onClick={() => handleGeneratePO(alert)} disabled={!canResolve}>
+                  <ShoppingCart />
+                  Generar OC
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" onClick={() => handleResolve(alert.id)} disabled={!canResolve}>
+                  <CheckCircle2 />
+                  {t('alerts.table.resolve')}
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -315,16 +345,83 @@ function AlertsPage() {
             ) : null,
           )}
 
-          {resolvedAlerts.length > 0 ? (
+          {historyAlerts.length > 0 ? (
             <section className="alerts-section" aria-label={t('alerts.sections.resolvedHistory')}>
               <div className="s-head s-head--compact">
                 <span className="s-head__label">{t('alerts.sections.resolvedHistory')}</span>
                 <div className="s-head__rule" />
-                <span className="alerts-section__count">{resolvedAlerts.length}</span>
+                <span className="alerts-section__count">{historyAlerts.length}</span>
               </div>
               <p className="alerts-section__intro">{t('alerts.sections.resolvedHistoryHint')}</p>
-              <div className="alerts-grid">{resolvedAlerts.map((alert) => renderAlertCard(alert))}</div>
+              <div className="table-surface" style={{ marginTop: '0.75rem' }}>
+                <div className="table-wrap">
+                  <table className="data-table" style={{ minWidth: 640 }}>
+                    <thead>
+                      <tr>
+                        <th style={{ width: '14%' }}>Tipo</th>
+                        <th style={{ width: '14%' }}>SKU</th>
+                        <th style={{ width: '38%' }}>Mensaje</th>
+                        <th style={{ width: '18%' }}>Resuelta por</th>
+                        <th style={{ width: '16%' }}>Fecha</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historyAlerts.map((alert) => {
+                        const typeColor =
+                          alert.alert_type === 'LOW_STOCK' ? '#dc2626' :
+                          alert.alert_type === 'STOCK_MISMATCH' ? '#ea580c' :
+                          alert.alert_type.startsWith('EXPIRATION') ? '#d97706' :
+                          '#0891b2'
+                        const typeBg =
+                          alert.alert_type === 'LOW_STOCK' ? '#fef2f2' :
+                          alert.alert_type === 'STOCK_MISMATCH' ? '#fff7ed' :
+                          alert.alert_type.startsWith('EXPIRATION') ? '#fffbeb' :
+                          '#ecfeff'
+                        return (
+                          <tr key={alert.id}>
+                            <td>
+                              <span style={{
+                                display: 'inline-block',
+                                padding: '0.2rem 0.5rem',
+                                borderRadius: '4px',
+                                fontSize: '0.7rem',
+                                fontWeight: 600,
+                                color: typeColor,
+                                backgroundColor: typeBg,
+                                whiteSpace: 'nowrap',
+                              }}>
+                                {alert.alert_type === 'LOW_STOCK' ? 'Stock Bajo' :
+                                 alert.alert_type === 'STOCK_MISMATCH' ? 'Desincronización' :
+                                 alert.alert_type === 'EXPIRATION_30' ? 'Vence en ≤30d' :
+                                 alert.alert_type === 'EXPIRATION_60' ? 'Vence en ≤60d' :
+                                 alert.alert_type === 'COLD_CHAIN_MISSING' ? 'Cadena Frío' :
+                                 alert.alert_type}
+                              </span>
+                            </td>
+                            <td style={{ fontFamily: 'var(--ff-mono)', fontSize: '0.8rem', fontWeight: 600 }}>
+                              {alert.product_sku}
+                            </td>
+                            <td style={{ fontSize: '0.825rem', color: 'var(--ink-70)', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {alert.message}
+                            </td>
+                            <td style={{ fontSize: '0.8rem', color: 'var(--ink-40)' }}>
+                              {alert.resolved_by ?? t('alerts.card.system')}
+                            </td>
+                            <td style={{ fontSize: '0.8rem', color: 'var(--ink-40)' }}>
+                              {alert.resolved_at ? formatShortDate(alert.resolved_at) : ''}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </section>
+          ) : historyLoading ? (
+            <div className="alerts-empty-state" style={{ padding: '1.5rem' }}>
+              {t('common.loading')}
+            </div>
           ) : null}
         </div>
       </div>

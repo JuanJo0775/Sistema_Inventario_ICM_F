@@ -45,7 +45,7 @@ export const CatalogBrandsPage: React.FC = () => {
   const brandProductCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     brands.forEach(brand => {
-      counts[brand.id] = products.filter(p => String(p.subcategory) === String(brand.id)).length;
+      counts[brand.id] = products.filter(p => String(p.brand ?? p.subcategory) === String(brand.id)).length;
     });
     return counts;
   }, [brands, products]);

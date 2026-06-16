@@ -76,7 +76,7 @@ const CatalogProductFormPage: React.FC = () => {
           sku: productSku,
           description: (productToEdit as any).notes || (productToEdit as any).description || '',
           category_id: (productToEdit as any).category || (productToEdit as any).category_id || '',
-          subcategory_id: (productToEdit as any).subcategory || (productToEdit as any).subcategory_id || '',
+          subcategory_id: (productToEdit as any).brand || (productToEdit as any).subcategory || (productToEdit as any).subcategory_id || '',
           notes: (productToEdit as any).notes || '',
           reorder_point: (productToEdit as any).reorder_point || 0,
           is_active: (productToEdit as any).is_active !== undefined ? (productToEdit as any).is_active : true,

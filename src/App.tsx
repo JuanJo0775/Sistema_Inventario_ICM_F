@@ -22,6 +22,7 @@ const CatalogProductFormPage = React.lazy(() => import('./features/catalog/Catal
 const CatalogCategoriesPage = React.lazy(() => import('./features/catalog/CatalogCategoriesPage'))
 const CatalogCategoryDetailPage = React.lazy(() => import('./features/catalog/CatalogCategoryDetailPage'))
 const CatalogBrandsPage = React.lazy(() => import('./features/catalog/CatalogBrandsPage'))
+const CatalogCombosPage = React.lazy(() => import('./features/catalog/CatalogCombosPage'))
 const LocationsPage = React.lazy(() => import('./features/locations/LocationsPage'))
 const TransfersPage = React.lazy(() => import('./features/locations/TransfersPage'))
 const SuppliersPage = React.lazy(() => import('./features/purchasing/SuppliersPage'))
@@ -170,6 +171,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['almacenista', 'administrador', 'auxiliar_despacho']}>
               <CatalogBrandsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/catalog/combos"
+          element={
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador', 'auxiliar_despacho']}>
+              <CatalogCombosPage />
             </ProtectedRoute>
           }
         />
