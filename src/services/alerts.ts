@@ -41,6 +41,30 @@ export const fetchActiveAlerts = async (filters?: {
   return normalizeList(response.data);
 };
 
+export const fetchAlertHistory = async (filters?: {
+  alert_type?: string;
+  product_id?: string;
+}): Promise<AlertItem[]> => {
+  if (useMocks) {
+    return mockAlerts.filter((alert) => {
+      if (filters?.alert_type && alert.alert_type !== filters.alert_type)
+        return false;
+      if (filters?.product_id && alert.product !== filters.product_id)
+        return false;
+      return true;
+    });
+  }
+
+  const response = await api.get<ListResponse<AlertItem>>("/alerts/history/", {
+    params: {
+      alert_type: filters?.alert_type || undefined,
+      product_id: filters?.product_id || undefined,
+    },
+  });
+
+  return normalizeList(response.data);
+};
+
 export const resolveAlert = async (alertId: number): Promise<AlertItem> => {
   if (useMocks) {
     const alert = mockAlerts.find((item) => item.id === alertId);
