@@ -1,7 +1,9 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertTriangle, X } from 'lucide-react'
+import { toast } from 'sonner'
 import AppShell from '../../components/layout/AppShell'
+import { ModalPortal } from '../../components/ui/ModalPortal'
 import useSupplierStore from '../../store/useSupplierStore'
 import type { Supplier } from '../../interfaces/suppliers'
 
@@ -38,6 +40,9 @@ export const SuppliersPage: React.FC = () => {
 
   const [validationError, setValidationError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
+
+  // ── confirm deactivation modal ──────────────────────────────────────────────
+  const [supplierToDeactivate, setSupplierToDeactivate] = useState<Supplier | null>(null)
 
   useEffect(() => {
     fetchSuppliers()
@@ -96,14 +101,28 @@ export const SuppliersPage: React.FC = () => {
   const handleToggleStatus = async (supplier: Supplier) => {
     clearError()
     setSuccessMsg(null)
-    try {
-      if (supplier.is_active) {
-        await deactivateSupplier(supplier.id)
-        setSuccessMsg(`Proveedor "${supplier.nombre_comercial}" desactivado correctamente.`)
-      } else {
+    if (supplier.is_active) {
+      // Abrir modal de confirmación
+      setSupplierToDeactivate(supplier)
+    } else {
+      try {
         await activateSupplier(supplier.id)
         setSuccessMsg(`Proveedor "${supplier.nombre_comercial}" activado correctamente.`)
+        toast.success(`Proveedor "${supplier.nombre_comercial}" activado correctamente`)
+      } catch (err: any) {
+        // handled by store
       }
+    }
+  }
+
+  const confirmDeactivate = async () => {
+    if (!supplierToDeactivate) return
+    const supplier = supplierToDeactivate
+    setSupplierToDeactivate(null)
+    try {
+      await deactivateSupplier(supplier.id)
+      setSuccessMsg(`Proveedor "${supplier.nombre_comercial}" desactivado correctamente.`)
+      toast.success(`Proveedor "${supplier.nombre_comercial}" desactivado correctamente`)
     } catch (err: any) {
       // handled by store
     }
@@ -171,9 +190,11 @@ export const SuppliersPage: React.FC = () => {
           }
         }
         setSuccessMsg('Proveedor actualizado correctamente.')
+        toast.success('Proveedor actualizado correctamente')
       } else {
         await createSupplier(payload)
         setSuccessMsg('Proveedor creado correctamente.')
+        toast.success('Proveedor creado correctamente')
       }
       setIsFormModalOpen(false)
     } catch (err: any) {
@@ -385,30 +406,68 @@ export const SuppliersPage: React.FC = () => {
           </div>
         )}
 
-        {/* Create / Edit Modal */}
-        {isFormModalOpen && (
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 50,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'rgba(15,30,32,.45)',
-              padding: 24,
-            }}
-            role="dialog"
-            aria-modal="true"
-          >
+        {/* ── Deactivate Confirm Modal ──────────────────────────────────── */}
+        {supplierToDeactivate && (
+          <ModalPortal onClose={() => setSupplierToDeactivate(null)}>
             <div
               style={{
                 background: 'var(--white)',
                 borderRadius: 18,
                 width: '100%',
-                maxWidth: 560,
+                maxWidth: 440,
+                boxShadow: '0 24px 64px rgba(15,30,32,.2)',
+                padding: 28,
+              }}
+            >
+              <h2
+                style={{
+                  fontFamily: 'var(--ff-display)',
+                  fontSize: 20,
+                  fontWeight: 400,
+                  marginBottom: 8,
+                }}
+              >
+                Desactivar proveedor
+              </h2>
+              <p style={{ fontSize: 14, color: 'var(--ink-60)', marginBottom: 24, lineHeight: 1.5 }}>
+                ¿Estás seguro de que deseas desactivar el proveedor{' '}
+                <strong>"{supplierToDeactivate.nombre_comercial}"</strong>?
+                {supplierToDeactivate.nit && (
+                  <> (NIT: {supplierToDeactivate.nit})</>
+                )}
+                <br /><br />
+                Un proveedor inactivo no podrá asociarse a nuevas órdenes de compra.
+              </p>
+              <div className="flex gap-8" style={{ justifyContent: 'flex-end' }}>
+                <button
+                  className="btn btn--outline"
+                  onClick={() => setSupplierToDeactivate(null)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="btn btn--danger"
+                  onClick={confirmDeactivate}
+                >
+                  Sí, desactivar
+                </button>
+              </div>
+            </div>
+          </ModalPortal>
+        )}
+
+        {/* Create / Edit Modal */}
+        {isFormModalOpen && (
+          <ModalPortal onClose={() => setIsFormModalOpen(false)}>
+            <div
+              style={{
+                position: 'relative',
                 maxHeight: '90vh',
-                overflow: 'auto',
+                overflowY: 'auto',
+                background: 'var(--white)',
+                borderRadius: 18,
+                width: '100%',
+                maxWidth: 560,
                 boxShadow: '0 24px 64px rgba(15,30,32,.2)',
               }}
             >
@@ -420,10 +479,7 @@ export const SuppliersPage: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  position: 'sticky',
-                  top: 0,
-                  background: 'var(--white)',
-                  zIndex: 1,
+                  flexShrink: 0,
                 }}
               >
                 <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 400, margin: 0 }}>
@@ -439,15 +495,15 @@ export const SuppliersPage: React.FC = () => {
               </div>
 
               {/* body */}
-              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div style={{ overflow: 'auto', flex: 1, padding: 24 }}>
                 {validationError && (
-                  <div className="alert-bar alert-bar--err" role="alert" style={{ margin: 0 }}>
+                  <div className="alert-bar alert-bar--err" role="alert" style={{ marginBottom: 20 }}>
                     <AlertTriangle style={{ width: 14, height: 14 }} />
                     {validationError}
                   </div>
                 )}
 
-                <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <form id="supplier-form" onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                   <fieldset>
                     <legend>Información básica</legend>
                     <div className="f-row f-row-2">
@@ -611,28 +667,40 @@ export const SuppliersPage: React.FC = () => {
                       </div>
                     </fieldset>
                   )}
-
-                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                    <button
-                      type="button"
-                      className="btn btn--outline"
-                      onClick={() => setIsFormModalOpen(false)}
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="submit"
-                      className="btn btn--primary"
-                      disabled={loading}
-                    >
-                      {loading && <span className="spinner-mini" />}
-                      Guardar
-                    </button>
-                  </div>
                 </form>
               </div>
+
+              {/* footer */}
+              <div
+                style={{
+                  padding: '16px 24px',
+                  borderTop: '1px solid var(--ink-06)',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '0.5rem',
+                  flexShrink: 0,
+                  background: 'var(--white)',
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn btn--outline"
+                  onClick={() => setIsFormModalOpen(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  form="supplier-form"
+                  className="btn btn--primary"
+                  disabled={loading}
+                >
+                  {loading && <span className="spinner-mini" />}
+                  Guardar
+                </button>
+              </div>
             </div>
-          </div>
+          </ModalPortal>
         )}
       </div>
     </AppShell>

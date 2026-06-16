@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ClipboardList,
   Download,
+  EyeOff,
   PackageCheck,
   RefreshCw,
   SlidersHorizontal,
@@ -24,6 +25,7 @@ import {
   CardHeader,
   CardTitle,
 } from '../../components/ui/card'
+import PageLoader from '../../components/ui/PageLoader'
 import useAuthStore from '../../store/useAuthStore'
 import type {
   DashboardKpiKey,
@@ -112,23 +114,31 @@ function DashboardPage() {
   const { i18n, t } = useTranslation()
   const navigate = useNavigate()
   const locale = i18n.language === 'en' ? 'en-US' : 'es-CO'
+  const isAdmin = user?.role === 'administrador'
   const [kpiPanelOpen, setKpiPanelOpen] = useState(false)
   const [kpis, setKpis] = useState(initialKpis)
   const [overview, setOverview] = useState<DashboardOverview | null>(null)
   const [overviewError, setOverviewError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let active = true
+    setLoading(true)
 
     const loadOverview = async () => {
       try {
         const data = await fetchDashboardOverview()
         if (active) {
           setOverview(data)
+          setOverviewError(null)
         }
       } catch {
         if (active) {
           setOverviewError(t('dashboard.errors.load'))
+        }
+      } finally {
+        if (active) {
+          setLoading(false)
         }
       }
     }
@@ -166,6 +176,8 @@ function DashboardPage() {
     setKpis((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
+  const isReadOnly = isAdmin
+
   return (
     <AppShell
       title={t('dashboard.topbar.title')}
@@ -181,6 +193,7 @@ function DashboardPage() {
             type="button"
             onClick={() => setKpiPanelOpen((prev) => !prev)}
             aria-controls="kpi-panel"
+            disabled={isReadOnly}
           >
             <SlidersHorizontal />
             {t('dashboard.topbar.customizeKpis')}
@@ -193,6 +206,17 @@ function DashboardPage() {
       }
     >
       <div className="page-body dashboard-visual">
+        {isReadOnly ? (
+          <div className="alert-bar alert-bar--info" role="alert">
+            <EyeOff />
+            <span>{t('dashboard.readOnlyMessage')}</span>
+          </div>
+        ) : null}
+
+        {loading ? (
+          <PageLoader />
+        ) : (
+          <>
         <div className="alert-bar alert-bar--warn" role="alert">
           <AlertTriangle />
           <span>
@@ -208,7 +232,7 @@ function DashboardPage() {
             {t('dashboard.alerts.returns', { count: alertSummary?.returns ?? 0 })}
           </span>
           <span className="alert-bar__spacer" />
-          <Button variant="ghost" size="sm" type="button">
+          <Button variant="ghost" size="sm" type="button" onClick={() => navigate('/app/alerts')}>
             {t('dashboard.alerts.viewAll')}
           </Button>
         </div>
@@ -344,6 +368,7 @@ function DashboardPage() {
                 variant="outline"
                 size="icon-sm"
                 type="button"
+                disabled={isReadOnly}
                 aria-label={t('dashboard.visualSummary.downloadReport')}
               >
                 <Download />
@@ -370,6 +395,8 @@ function DashboardPage() {
             </Card>
           ))}
         </section>
+      </>
+      )}
       </div>
     </AppShell>
   )

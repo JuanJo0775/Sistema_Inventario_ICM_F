@@ -9,6 +9,7 @@ import type {
   ReturnProduct,
   ReturnsOverview,
   ReturnSubmitPayload,
+  OutgoingMovement,
 } from '../interfaces/returns'
 import type { InventoryCategory, InventoryProduct } from '../interfaces/inventory'
 
@@ -151,6 +152,70 @@ export const fetchReturnsOverview = async (): Promise<ReturnsOverview> => {
   } catch (err) {
     console.error('Error al cargar el resumen de devoluciones del backend.', err)
     throw err
+  }
+}
+
+const MOVEMENT_TYPE_LABELS: Record<string, string> = {
+  SALIDA_VENTA_MAYOR: 'Venta al por mayor',
+  SALIDA_VENTA_MENOR: 'Venta al por menor',
+  SALIDA_DANO: 'Salida por daño',
+  SALIDA_VENCIMIENTO: 'Salida por vencimiento',
+}
+
+type BackendDispatchMovement = {
+  id: string
+  movement_type: string
+  product: string
+  product_sku: string
+  quantity: number
+  created_at: string
+  invoice_number: string | null
+  customer_snapshot: Record<string, unknown> | null
+}
+
+export const fetchOutgoingMovements = async (): Promise<OutgoingMovement[]> => {
+  if (useMocks) {
+    const { mockReturnsOverview } = await import('../mocks/returns')
+    return mockReturnsOverview.products
+      .filter((p) => p.canReturn)
+      .map((p, i) => ({
+        id: `mov-out-${i}-${p.productId}`,
+        movementType: 'SALIDA_VENTA_MAYOR',
+        movementTypeLabel: 'Venta al por mayor',
+        productId: p.productId,
+        productName: p.productName,
+        productSku: p.sku,
+        quantity: 2,
+        customerName: 'Cliente Ejemplo S.A.S.',
+        customerDoc: '900123456-7',
+        createdAt: new Date(Date.now() - i * 86400000).toISOString(),
+      }))
+  }
+
+  try {
+    const response = await api.get<{ results: BackendDispatchMovement[] }>(
+      '/movements/dispatches/',
+      { params: { page_size: 100, ordering: '-created_at' } },
+    )
+
+    return response.data.results.map((mov) => {
+      const customerSnapshot = mov.customer_snapshot ?? {}
+      return {
+        id: mov.id,
+        movementType: mov.movement_type,
+        movementTypeLabel: MOVEMENT_TYPE_LABELS[mov.movement_type] ?? mov.movement_type,
+        productId: mov.product,
+        productName: mov.product_sku,
+        productSku: mov.product_sku,
+        quantity: mov.quantity,
+        customerName: String(customerSnapshot.customer_name ?? ''),
+        customerDoc: String(customerSnapshot.customer_doc ?? ''),
+        createdAt: mov.created_at,
+      }
+    })
+  } catch (err) {
+    console.error('Error al cargar movimientos de salida.', err)
+    return []
   }
 }
 

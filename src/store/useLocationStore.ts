@@ -39,7 +39,7 @@ interface LocationState {
   }) => Promise<void>
   updateLocation: (
     id: string,
-    data: { name?: string; description?: string; capacity_score?: number; is_active?: boolean }
+    data: { name?: string; description?: string; capacity_score?: number; is_active?: boolean; storage_type_id?: string }
   ) => Promise<void>
   deactivateLocation: (id: string) => Promise<void>
 }

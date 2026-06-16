@@ -1,10 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import AppShell from "../../components/layout/AppShell";
 import { BarcodeDisplay } from "../../components/ui/BarcodeDisplay";
+import { ModalPortal } from "../../components/ui/ModalPortal";
 import { SkuInput } from "../../components/ui/SkuInput";
 import useCatalogStore from "../../store/useCatalogStore";
+import { useDebounce } from "../../hooks/useDebounce";
+import { extractApiError } from "../../hooks/useApiError";
+import { Switch } from "../../components/ui/switch";
+import { updateCatalogProductPrices } from "../../services/catalog";
+import { toast } from "sonner";
 import type { CatalogProduct } from "../../interfaces/catalog";
 
 const SKU_REGEX = /^[A-Za-z]{1,4}-\d{1,4}$/;
@@ -43,15 +49,33 @@ function ProductForm({
     subcategory: null,
     requires_cold_chain: false,
     requires_expiration: false,
-    reorder_point: 0,
+    reorder_point: undefined,
     notes: "",
     is_active: true,
     ...initial,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [skuError, setSkuError] = useState("");
 
-
+  function parseError(e: any) {
+    const data = e?.response?.data;
+    if (data?.sku) {
+      const msg = Array.isArray(data.sku) ? data.sku[0] : data.sku;
+      setSkuError(msg);
+      return;
+    }
+    if (data?.detail?.field === 'sku') {
+      setSkuError(data.message || '');
+      return;
+    }
+    if (data?.detail?.sku) {
+      const msg = Array.isArray(data.detail.sku) ? data.detail.sku[0] : data.detail.sku;
+      setSkuError(msg);
+      return;
+    }
+    setError(data?.message || e.message || "Error al guardar");
+  }
 
   async function handleSubmit() {
     if (!form.name?.trim()) return setError("El nombre es obligatorio");
@@ -60,40 +84,28 @@ function ProductForm({
     if (!form.category) return setError("Selecciona una categoría");
     setSaving(true);
     setError("");
+    setSkuError("");
     try {
       await onSave(form);
       onClose();
     } catch (e: any) {
-      setError(e.message || "Error al guardar");
+      parseError(e);
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 50,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(15,30,32,.45)",
-        padding: 24,
-      }}
-      role="dialog"
-      aria-modal="true"
-      aria-label={initial?.id ? "Editar producto" : "Nuevo producto"}
-    >
+    <ModalPortal onClose={onClose}>
       <div
         style={{
+          position: "relative",
+          maxHeight: "90vh",
+          overflowY: "auto",
           background: "var(--white)",
           borderRadius: 18,
           width: "100%",
           maxWidth: 640,
-          maxHeight: "90vh",
-          overflow: "auto",
           boxShadow: "0 24px 64px rgba(15,30,32,.2)",
         }}
       >
@@ -105,10 +117,7 @@ function ProductForm({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            position: "sticky",
-            top: 0,
-            background: "var(--white)",
-            zIndex: 1,
+            flexShrink: 0,
           }}
         >
           <div>
@@ -149,6 +158,8 @@ function ProductForm({
             display: "flex",
             flexDirection: "column",
             gap: 20,
+            overflow: "auto",
+            flex: 1,
           }}
         >
           {error && (
@@ -188,7 +199,11 @@ function ProductForm({
                   id="pf-sku"
                   label="SKU *"
                   value={form.sku || ""}
-                  onChange={(v) => setForm({ ...form, sku: v })}
+                  error={skuError}
+                  onChange={(v) => {
+                    setForm({ ...form, sku: v });
+                    if (skuError) setSkuError("");
+                  }}
                 />
               </div>
             </div>
@@ -256,12 +271,14 @@ function ProductForm({
                 <input
                   id="pf-reorder"
                   className="f-input text-mono"
-                  type="number"
-                  min={0}
-                  value={form.reorder_point ?? 0}
-                  onChange={(e) =>
-                    setForm({ ...form, reorder_point: Number(e.target.value) })
-                  }
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={form.reorder_point ?? ''}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setForm(prev => ({ ...prev, reorder_point: val === '' ? undefined : Number(val) }))
+                  }}
                 />
               </div>
               <div className="f-group">
@@ -279,10 +296,10 @@ function ProductForm({
             </div>
           </fieldset>
 
-          {/* condiciones especiales */}
+          {/* configuración */}
           <fieldset>
-            <legend>Condiciones especiales</legend>
-            <div className="flex gap-20" style={{ flexWrap: "wrap" }}>
+            <legend>Configuración</legend>
+            <div className="flex gap-6" style={{ flexWrap: "wrap" }}>
               <label
                 style={{
                   display: "flex",
@@ -292,11 +309,61 @@ function ProductForm({
                   cursor: "pointer",
                 }}
               >
-                <input
-                  type="checkbox"
+                <Switch
+                  checked={!!form.requires_lot}
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, requires_lot: checked })
+                  }
+                />
+                Maneja lotes
+              </label>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                <Switch
+                  checked={!!form.requires_serial_number}
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, requires_serial_number: checked })
+                  }
+                />
+                Requiere número de serie
+              </label>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                <Switch
+                  checked={!!form.requires_expiration}
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, requires_expiration: checked })
+                  }
+                />
+                Fecha de vencimiento
+              </label>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                <Switch
                   checked={!!form.requires_cold_chain}
-                  onChange={(e) =>
-                    setForm({ ...form, requires_cold_chain: e.target.checked })
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, requires_cold_chain: checked })
                   }
                 />
                 Cadena de frío
@@ -310,14 +377,13 @@ function ProductForm({
                   cursor: "pointer",
                 }}
               >
-                <input
-                  type="checkbox"
-                  checked={!!form.requires_expiration}
-                  onChange={(e) =>
-                    setForm({ ...form, requires_expiration: e.target.checked })
+                <Switch
+                  checked={!!form.special_conditions}
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, special_conditions: checked })
                   }
                 />
-                Maneja vencimiento / lotes
+                Condiciones especiales
               </label>
               <label
                 style={{
@@ -328,11 +394,10 @@ function ProductForm({
                   cursor: "pointer",
                 }}
               >
-                <input
-                  type="checkbox"
+                <Switch
                   checked={!!form.is_active}
-                  onChange={(e) =>
-                    setForm({ ...form, is_active: e.target.checked })
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, is_active: checked })
                   }
                 />
                 Producto activo
@@ -340,92 +405,90 @@ function ProductForm({
             </div>
           </fieldset>
 
-          {/* precios — solo en edición */}
-          {initial?.id && (
-            <fieldset>
-              <legend>Precios (opcional)</legend>
-              <div className="f-row f-row-2">
-                <div className="f-group">
-                  <label className="f-label" htmlFor="pf-unit-cost">Costo unitario</label>
-                  <input
-                    id="pf-unit-cost"
-                    className="f-input text-mono"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    placeholder="0"
-                    value={(form as any).unit_cost ?? ''}
-                    onChange={(e) =>
-                      setForm({ ...form, unit_cost: e.target.value ? Number(e.target.value) : null } as any)
-                    }
-                  />
-                </div>
-                <div className="f-group">
-                  <label className="f-label" htmlFor="pf-price-retail">Precio venta público</label>
-                  <input
-                    id="pf-price-retail"
-                    className="f-input text-mono"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    placeholder="0"
-                    value={(form as any).sale_price_retail ?? ''}
-                    onChange={(e) =>
-                      setForm({ ...form, sale_price_retail: e.target.value ? Number(e.target.value) : null } as any)
-                    }
-                  />
-                </div>
-              </div>
-              <div className="f-row f-row-2" style={{ marginTop: 12 }}>
-                <div className="f-group">
-                  <label className="f-label" htmlFor="pf-price-wholesale">Precio venta mayor</label>
-                  <input
-                    id="pf-price-wholesale"
-                    className="f-input text-mono"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    placeholder="0"
-                    value={(form as any).sale_price_wholesale ?? ''}
-                    onChange={(e) =>
-                      setForm({ ...form, sale_price_wholesale: e.target.value ? Number(e.target.value) : null } as any)
-                    }
-                  />
-                </div>
-                <div className="f-group">
-                  <label className="f-label" htmlFor="pf-tax-rate">IVA %</label>
-                  <input
-                    id="pf-tax-rate"
-                    className="f-input text-mono"
-                    type="number"
-                    min={0}
-                    max={100}
-                    step="0.01"
-                    placeholder="19"
-                    value={(form as any).tax_rate_pct ?? ''}
-                    onChange={(e) =>
-                      setForm({ ...form, tax_rate_pct: e.target.value ? Number(e.target.value) : null } as any)
-                    }
-                  />
-                </div>
-              </div>
-              <div className="f-group" style={{ marginTop: 12 }}>
-                <label className="f-label" htmlFor="pf-currency">Moneda</label>
-                <select
-                  id="pf-currency"
-                  className="f-input"
-                  value={(form as any).currency || 'COP'}
+          {/* precios */}
+          <fieldset>
+            <legend>Precios (opcional)</legend>
+            <div className="f-row f-row-2">
+              <div className="f-group">
+                <label className="f-label" htmlFor="pf-unit-cost">Costo unitario</label>
+                <input
+                  id="pf-unit-cost"
+                  className="f-input text-mono"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder="0"
+                  value={(form as any).unit_cost ?? ''}
                   onChange={(e) =>
-                    setForm({ ...form, currency: e.target.value } as any)
+                    setForm({ ...form, unit_cost: e.target.value ? Number(e.target.value) : null } as any)
                   }
-                >
-                  <option value="COP">COP ($)</option>
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                </select>
+                />
               </div>
-            </fieldset>
-          )}
+              <div className="f-group">
+                <label className="f-label" htmlFor="pf-price-retail">Precio venta público</label>
+                <input
+                  id="pf-price-retail"
+                  className="f-input text-mono"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder="0"
+                  value={(form as any).sale_price_retail ?? ''}
+                  onChange={(e) =>
+                    setForm({ ...form, sale_price_retail: e.target.value ? Number(e.target.value) : null } as any)
+                  }
+                />
+              </div>
+            </div>
+            <div className="f-row f-row-2" style={{ marginTop: 12 }}>
+              <div className="f-group">
+                <label className="f-label" htmlFor="pf-price-wholesale">Precio venta mayor</label>
+                <input
+                  id="pf-price-wholesale"
+                  className="f-input text-mono"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  placeholder="0"
+                  value={(form as any).sale_price_wholesale ?? ''}
+                  onChange={(e) =>
+                    setForm({ ...form, sale_price_wholesale: e.target.value ? Number(e.target.value) : null } as any)
+                  }
+                />
+              </div>
+              <div className="f-group">
+                <label className="f-label" htmlFor="pf-tax-rate">IVA %</label>
+                <input
+                  id="pf-tax-rate"
+                  className="f-input text-mono"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.01"
+                  placeholder="19"
+                  value={(form as any).tax_rate_pct ?? ''}
+                  onChange={(e) =>
+                    setForm({ ...form, tax_rate_pct: e.target.value ? Number(e.target.value) : null } as any)
+                  }
+                />
+              </div>
+            </div>
+            <div className="f-group" style={{ marginTop: 12 }}>
+              <label className="f-label" htmlFor="pf-currency">Moneda</label>
+              <select
+                id="pf-currency"
+                className="f-input"
+                value={(form as any).currency || 'COP'}
+                onChange={(e) =>
+                  setForm({ ...form, currency: e.target.value } as any)
+                }
+              >
+                <option value="COP">COP ($)</option>
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+              </select>
+            </div>
+          </fieldset>
 
           {/* Código de barras visual – solo si ya tiene uno guardado */}
           {initial?.id && form.barcode && (
@@ -446,8 +509,7 @@ function ProductForm({
           style={{
             padding: "16px 24px",
             borderTop: "1px solid var(--ink-06)",
-            position: "sticky",
-            bottom: 0,
+            flexShrink: 0,
             background: "var(--white)",
           }}
         >
@@ -471,7 +533,7 @@ function ProductForm({
           </button>
         </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }
 
@@ -492,43 +554,67 @@ export default function CatalogProductsPage() {
     updateProduct,
     updateProductPrices,
     deactivateProduct,
+    restoreProduct,
   } = useCatalogStore();
 
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
   const [filterCat, setFilterCat] = useState("");
+
+  // Reset to page 1 when search or category filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, filterCat]);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<CatalogProduct | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // ── confirm action modal ────────────────────────────────────────────────────
+  const [confirmAction, setConfirmAction] = useState<{
+    product: CatalogProduct;
+    action: 'deactivate' | 'reactivate';
+  } | null>(null);
+
+  async function handleConfirmAction() {
+    if (!confirmAction) return;
+    const { product, action } = confirmAction;
+    setConfirmAction(null);
+    try {
+      if (action === 'deactivate') {
+        await deactivateProduct(product.id);
+        toast.success(`Producto "${product.name}" desactivado.`);
+      } else {
+        await restoreProduct(product.id);
+        toast.success(`Producto "${product.name}" reactivado.`);
+      }
+      triggerRefresh();
+    } catch (err) {
+      toast.error(extractApiError(err));
+    }
+  }
+
+  const { productCount, productPageSize } = useCatalogStore();
+  const totalPages = Math.max(1, Math.ceil((productCount || 0) / (productPageSize || 25)));
 
   useEffect(() => {
-    fetchProducts();
+    fetchProducts({ search: debouncedSearch, category: filterCat, page: currentPage });
     fetchCategories();
     fetchBrands();
-  }, [fetchProducts, fetchCategories, fetchBrands]);
+  }, [fetchProducts, fetchCategories, fetchBrands, debouncedSearch, filterCat, currentPage, refreshKey]);
 
-  const filtered = useMemo(() => {
-    let list = products;
-    if (filterCat) list = list.filter((p) => p.category === filterCat);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          (p.sku || "").toLowerCase().includes(q) ||
-          (p.barcode || "").toLowerCase().includes(q),
-      );
-    }
-    return list;
-  }, [products, search, filterCat]);
+  const triggerRefresh = () => {
+    setCurrentPage(1);
+    setRefreshKey((k) => k + 1);
+  };
 
-  const activeCount = filtered.filter((p) => p.is_active).length;
-  const reorderCount = filtered.filter(
+  const reorderCount = products.filter(
     (p) => p.is_active && (p.stockTotal ?? 0) <= (p.reorder_point ?? 0),
   ).length;
 
   async function handleSave(data: Partial<CatalogProduct>) {
     if (editing) {
       await updateProduct(editing.id, data);
-      // Save prices separately via /prices/ endpoint
       if ((data as any).unit_cost || (data as any).sale_price_retail || (data as any).sale_price_wholesale) {
         await updateProductPrices(editing.id, {
           unit_cost: (data as any).unit_cost ?? null,
@@ -538,11 +624,23 @@ export default function CatalogProductsPage() {
           currency: (data as any).currency || 'COP',
         });
       }
+      toast.success('Producto actualizado correctamente');
     } else {
-      await createProduct(data as any);
+      const created = await createProduct(data as any);
+      if ((data as any).unit_cost || (data as any).sale_price_retail || (data as any).sale_price_wholesale) {
+        await updateCatalogProductPrices(created.id, {
+          unit_cost: (data as any).unit_cost ?? null,
+          sale_price_retail: (data as any).sale_price_retail ?? null,
+          sale_price_wholesale: (data as any).sale_price_wholesale ?? null,
+          tax_rate_pct: (data as any).tax_rate_pct ?? null,
+          currency: (data as any).currency || 'COP',
+        });
+      }
+      toast.success('Producto creado correctamente');
     }
     setShowForm(false);
     setEditing(null);
+    triggerRefresh();
   }
 
   function openCreate() {
@@ -569,7 +667,7 @@ export default function CatalogProductsPage() {
         <div className="metric-strip mb-28" style={{ maxWidth: 480 }}>
           <div className="metric-cell metric-cell--hero">
             <p className="metric-cell__eyebrow">Total productos</p>
-            <p className="metric-cell__val">{activeCount}</p>
+            <p className="metric-cell__val">{productCount}</p>
             <p className="metric-cell__sub">activos en catálogo</p>
           </div>
           <div className="metric-cell metric-cell--light">
@@ -630,6 +728,14 @@ export default function CatalogProductsPage() {
               </option>
             ))}
           </select>
+          {(search || filterCat) && (
+            <button
+              onClick={() => { setSearch(''); setFilterCat(''); }}
+              className="btn btn--ghost btn--sm"
+            >
+              Limpiar filtros
+            </button>
+          )}
         </div>
 
         {error && (
@@ -664,7 +770,6 @@ export default function CatalogProductsPage() {
                     <th>Producto</th>
                     <th>Categoría</th>
                     <th>Precio</th>
-                    <th>Stock total</th>
                     <th>Reorden</th>
                     <th>Estado</th>
                     <th>
@@ -673,10 +778,10 @@ export default function CatalogProductsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.length === 0 ? (
+                  {products.length === 0 && !loading ? (
                     <tr>
                       <td
-                        colSpan={8}
+                        colSpan={7}
                         style={{
                           textAlign: "center",
                           color: "var(--ink-40)",
@@ -688,7 +793,7 @@ export default function CatalogProductsPage() {
                       </td>
                     </tr>
                   ) : (
-                    filtered.map((p) => {
+                    products.map((p) => {
                       const cat = categories.find((c) => c.id === p.category);
                       return (
                         <tr
@@ -742,18 +847,6 @@ export default function CatalogProductsPage() {
                               ? `$${Number(p.sale_price_retail).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
                               : "—"}
                           </td>
-                          <td className="text-mono">
-                            <strong
-                              style={
-                                (p.stockTotal ?? 0) <= (p.reorder_point ?? 0) &&
-                                p.is_active
-                                  ? { color: "var(--err)" }
-                                  : undefined
-                              }
-                            >
-                              {p.stockTotal ?? "—"}
-                            </strong>
-                          </td>
                           <td className="text-mono">{p.reorder_point ?? 0}</td>
                           <td>
                             {p.is_active ? (
@@ -777,12 +870,19 @@ export default function CatalogProductsPage() {
                               >
                                 Editar
                               </button>
-                              {p.is_active && (
+                              {p.is_active ? (
                                 <button
                                   className="btn btn--danger btn--sm"
-                                  onClick={() => deactivateProduct(p.id)}
+                                  onClick={() => setConfirmAction({ product: p, action: 'deactivate' })}
                                 >
                                   Desactivar
+                                </button>
+                              ) : (
+                                <button
+                                  className="btn btn--outline btn--sm"
+                                  onClick={() => setConfirmAction({ product: p, action: 'reactivate' })}
+                                >
+                                  Reactivar
                                 </button>
                               )}
                             </div>
@@ -794,6 +894,36 @@ export default function CatalogProductsPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div
+            className="flex gap-8"
+            style={{
+              justifyContent: "center",
+              alignItems: "center",
+              marginTop: 20,
+              fontSize: 13,
+            }}
+          >
+            <button
+              className="btn btn--outline btn--sm"
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
+              ← Anterior
+            </button>
+            <span style={{ color: "var(--ink-40)" }}>
+              Página {currentPage} de {totalPages}
+            </span>
+            <button
+              className="btn btn--outline btn--sm"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+            >
+              Siguiente →
+            </button>
           </div>
         )}
       </div>
@@ -809,6 +939,53 @@ export default function CatalogProductsPage() {
             setEditing(null);
           }}
         />
+      )}
+
+      {confirmAction && (
+        <ModalPortal onClose={() => setConfirmAction(null)}>
+          <div
+            style={{
+              background: "var(--white)",
+              borderRadius: 18,
+              width: "100%",
+              maxWidth: 440,
+              boxShadow: "0 24px 64px rgba(15,30,32,.2)",
+              padding: 28,
+            }}
+          >
+            <h2
+              style={{
+                fontFamily: "var(--ff-display)",
+                fontSize: 20,
+                fontWeight: 400,
+                marginBottom: 8,
+              }}
+            >
+              {confirmAction.action === 'deactivate'
+                ? 'Desactivar producto'
+                : 'Reactivar producto'}
+            </h2>
+            <p style={{ fontSize: 14, color: "var(--ink-60)", marginBottom: 24, lineHeight: 1.5 }}>
+              {confirmAction.action === 'deactivate'
+                ? `El producto "${confirmAction.product.name}" (${confirmAction.product.sku}) quedará inactivo. No aparecerá en nuevas operaciones hasta que se reactive.`
+                : `El producto "${confirmAction.product.name}" (${confirmAction.product.sku}) volverá a estar disponible para nuevas operaciones.`}
+            </p>
+            <div className="flex gap-8" style={{ justifyContent: "flex-end" }}>
+              <button
+                className="btn btn--outline"
+                onClick={() => setConfirmAction(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                className={confirmAction.action === 'deactivate' ? 'btn btn--danger' : 'btn btn--primary'}
+                onClick={handleConfirmAction}
+              >
+                {confirmAction.action === 'deactivate' ? 'Sí, desactivar' : 'Sí, reactivar'}
+              </button>
+            </div>
+          </div>
+        </ModalPortal>
       )}
     </AppShell>
   );

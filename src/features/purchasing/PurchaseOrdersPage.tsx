@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { toast } from 'sonner'
+import { ModalPortal } from '../../components/ui/ModalPortal'
 import {
   X,
   CheckCircle,
@@ -13,6 +15,7 @@ import AppShell from '../../components/layout/AppShell'
 import usePurchaseOrderStore from '../../store/usePurchaseOrderStore'
 import useSupplierStore from '../../store/useSupplierStore'
 import useCatalogStore from '../../store/useCatalogStore'
+import { fetchCatalogProducts } from '../../services/catalog'
 import type { PurchaseOrder } from '../../interfaces/purchaseOrders'
 
 // ============================================================================
@@ -283,6 +286,13 @@ export const PurchaseOrdersPage: React.FC = () => {
   const [addCost, setAddCost] = useState(0)
 
   const [confirmEmitId, setConfirmEmitId] = useState<string | null>(null)
+
+  const refreshProducts = async () => {
+    try {
+      const fresh = await fetchCatalogProducts({ page_size: 9999, include_inactive: false })
+      useCatalogStore.setState({ products: fresh as any })
+    } catch { /* silently fail, store has stale data */ }
+  }
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null)
   const [cancelReason, setCancelReason] = useState('')
   const [validationError, setValidationError] = useState<string | null>(null)
@@ -291,7 +301,7 @@ export const PurchaseOrdersPage: React.FC = () => {
   useEffect(() => {
     fetchOrders()
     fetchSuppliers()
-    fetchProducts()
+    fetchProducts({ page_size: 9999 })
   }, [fetchOrders, fetchSuppliers, fetchProducts])
 
   const filteredOrders = orders.filter((o) => {
@@ -334,6 +344,7 @@ export const PurchaseOrdersPage: React.FC = () => {
     setAddQty('1')
     setAddCost(0)
     setValidationError(null)
+    refreshProducts()
     setIsFormOpen(true)
   }
 
@@ -353,6 +364,7 @@ export const PurchaseOrdersPage: React.FC = () => {
     setAddQty('1')
     setAddCost(0)
     setValidationError(null)
+    refreshProducts()
     setIsFormOpen(true)
   }
 
@@ -421,11 +433,12 @@ export const PurchaseOrdersPage: React.FC = () => {
           }))
         }
         await updateOrder(editingOrder.id, payload)
-        setSuccessMsg(
+        const msgA =
           editingOrder.status === 'borrador'
             ? 'Orden de compra borrador actualizada correctamente.'
             : 'Observaciones de la orden actualizadas correctamente.'
-        )
+        setSuccessMsg(msgA)
+        toast.success(msgA)
       } else {
         const payload = {
           supplier_id: formSupplierId,
@@ -439,6 +452,7 @@ export const PurchaseOrdersPage: React.FC = () => {
         }
         await createOrder(payload)
         setSuccessMsg('Orden de compra guardada en borrador.')
+        toast.success('Orden de compra guardada en borrador.')
       }
       setIsFormOpen(false)
     } catch (e) {}
@@ -472,6 +486,7 @@ export const PurchaseOrdersPage: React.FC = () => {
         await updateOrder(editingOrder.id, payload)
         await confirmOrder(editingOrder.id)
         setSuccessMsg(`Orden de compra ${editingOrder.number} emitida correctamente.`)
+        toast.success(`Orden de compra ${editingOrder.number} emitida correctamente`)
       } else {
         const payload = {
           supplier_id: formSupplierId,
@@ -486,6 +501,7 @@ export const PurchaseOrdersPage: React.FC = () => {
         const newOrder = await createOrder(payload)
         await confirmOrder(newOrder.id)
         setSuccessMsg(`Orden de compra ${newOrder.number} emitida correctamente.`)
+        toast.success(`Orden de compra ${newOrder.number} emitida correctamente`)
       }
       setIsFormOpen(false)
     } catch (e) {}
@@ -497,6 +513,7 @@ export const PurchaseOrdersPage: React.FC = () => {
       const order = orders.find((o) => o.id === confirmEmitId)
       await confirmOrder(confirmEmitId)
       setSuccessMsg(`Orden de compra ${order?.number || ''} emitida correctamente.`)
+      toast.success(`Orden de compra ${order?.number || ''} emitida correctamente`)
       setConfirmEmitId(null)
       if (selectedOrder && selectedOrder.id === confirmEmitId) {
         const refreshed = orders.find((o) => o.id === confirmEmitId)
@@ -517,6 +534,7 @@ export const PurchaseOrdersPage: React.FC = () => {
       const order = orders.find((o) => o.id === cancelOrderId)
       await cancelOrder(cancelOrderId, reasonTrimmed)
       setSuccessMsg(`Orden de compra ${order?.number || ''} cancelada.`)
+      toast.success(`Orden de compra ${order?.number || ''} cancelada`)
       setCancelOrderId(null)
       setCancelReason('')
       setValidationError(null)
@@ -872,31 +890,17 @@ export const PurchaseOrdersPage: React.FC = () => {
             FORM MODAL (CREATE/EDIT)
             ==================================================================== */}
         {isFormOpen && (
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 50,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'rgba(15,30,32,.45)',
-              padding: 24,
-            }}
-            role="dialog"
-            aria-modal="true"
-          >
+          <ModalPortal onClose={() => setIsFormOpen(false)}>
             <div
               style={{
+                position: 'relative',
+                maxHeight: '90vh',
+                overflowY: 'auto',
                 background: 'var(--white)',
                 borderRadius: 18,
                 maxWidth: 680,
                 width: '100%',
-                maxHeight: '90vh',
-                overflow: 'auto',
                 boxShadow: '0 24px 64px rgba(15,30,32,.2)',
-                display: 'flex',
-                flexDirection: 'column',
               }}
             >
               {/* header */}
@@ -907,10 +911,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  position: 'sticky',
-                  top: 0,
-                  background: 'var(--white)',
-                  zIndex: 1,
+                  flexShrink: 0,
                 }}
               >
                 <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 400, margin: 0 }}>
@@ -926,7 +927,7 @@ export const PurchaseOrdersPage: React.FC = () => {
               </div>
 
               {/* body */}
-              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div style={{ overflow: 'auto', flex: 1, padding: 24 }}>
                 {validationError && (
                   <div className="alert-bar alert-bar--err" role="alert" style={{ margin: 0 }}>
                     <AlertTriangle style={{ width: 14, height: 14 }} />
@@ -1100,6 +1101,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                   gap: '0.75rem',
                   padding: '1rem 1.5rem',
                   borderTop: '1px solid var(--ink-06)',
+                  flexShrink: 0,
                   background: 'var(--white)',
                 }}
               >
@@ -1126,35 +1128,23 @@ export const PurchaseOrdersPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </ModalPortal>
         )}
 
         {/* ====================================================================
             DETAIL MODAL (READ-ONLY)
             ==================================================================== */}
         {isDetailOpen && selectedOrder && (
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 50,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'rgba(15,30,32,.45)',
-              padding: 24,
-            }}
-            role="dialog"
-            aria-modal="true"
-          >
+          <ModalPortal onClose={() => setIsDetailOpen(false)}>
             <div
               style={{
+                position: 'relative',
+                maxHeight: '85vh',
+                overflowY: 'auto',
                 background: 'var(--white)',
                 borderRadius: 18,
                 maxWidth: 650,
                 width: '100%',
-                maxHeight: '85vh',
-                overflow: 'auto',
                 boxShadow: '0 24px 64px rgba(15,30,32,.2)',
                 display: 'flex',
                 flexDirection: 'column',
@@ -1380,29 +1370,19 @@ export const PurchaseOrdersPage: React.FC = () => {
                 )}
               </div>
             </div>
-          </div>
+          </ModalPortal>
         )}
 
         {/* ====================================================================
             CONFIRM EMIT MODAL
             ==================================================================== */}
         {confirmEmitId && (
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 60,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'rgba(15,30,32,.45)',
-              padding: 24,
-            }}
-            role="dialog"
-            aria-modal="true"
-          >
+          <ModalPortal onClose={() => setConfirmEmitId(null)}>
             <div
               style={{
+                position: 'relative',
+                maxHeight: '90vh',
+                overflowY: 'auto',
                 background: 'var(--white)',
                 borderRadius: 18,
                 maxWidth: 440,
@@ -1441,29 +1421,19 @@ export const PurchaseOrdersPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </ModalPortal>
         )}
 
         {/* ====================================================================
             CANCEL ORDER MODAL (WITH REASON)
             ==================================================================== */}
         {cancelOrderId && (
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 60,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'rgba(15,30,32,.45)',
-              padding: 24,
-            }}
-            role="dialog"
-            aria-modal="true"
-          >
+          <ModalPortal onClose={() => { setCancelOrderId(null); setValidationError(null) }}>
             <div
               style={{
+                position: 'relative',
+                maxHeight: '90vh',
+                overflowY: 'auto',
                 background: 'var(--white)',
                 borderRadius: 18,
                 maxWidth: 440,
@@ -1526,7 +1496,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </ModalPortal>
         )}
       </div>
     </AppShell>

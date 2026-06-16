@@ -1,4 +1,4 @@
-import type { DispatchItem, DispatchLocation, DispatchMovement } from '../interfaces/dispatch'
+import type { DispatchLocation, DispatchMovement } from '../interfaces/dispatch'
 
 export const mockDispatchLocations: DispatchLocation[] = [
   {
@@ -18,54 +18,6 @@ export const mockDispatchLocations: DispatchLocation[] = [
     code: 'FRIO-01',
     name: 'Cuarto frío',
     capacityLabel: '18 posiciones libres',
-  },
-]
-
-export const mockDispatchItems: DispatchItem[] = [
-  {
-    id: 'pick-001',
-    invoiceNumber: 'ICM-0051',
-    customerName: 'Fisioterapia Integral SAS',
-    productId: 'prod-002',
-    productName: 'TENS Bifásico Pro',
-    sku: 'CAN-TENS-003',
-    barcode: '770000000002',
-    category: 'Electroterapia',
-    expectedQuantity: 2,
-    dispatchedQuantity: 0,
-    status: 'pending',
-    requiresSerial: true,
-    requiresColdChain: false,
-  },
-  {
-    id: 'pick-002',
-    invoiceNumber: 'ICM-0052',
-    customerName: 'Clínica Rehabilitar Sur',
-    productId: 'prod-003',
-    productName: 'Agujas Punción Seca 0.25mm',
-    sku: 'CAN-APS-001',
-    barcode: '770000000003',
-    category: 'Consumibles',
-    expectedQuantity: 15,
-    dispatchedQuantity: 0,
-    status: 'pending',
-    requiresSerial: false,
-    requiresColdChain: false,
-  },
-  {
-    id: 'pick-003',
-    invoiceNumber: 'ICM-0053',
-    customerName: 'Hospiclínica Ltda',
-    productId: 'prod-004',
-    productName: 'Gel Conductor 250ml',
-    sku: 'CAN-GEL-005',
-    barcode: '770000000004',
-    category: 'Consumibles',
-    expectedQuantity: 12,
-    dispatchedQuantity: 0,
-    status: 'pending',
-    requiresSerial: false,
-    requiresColdChain: true,
   },
 ]
 

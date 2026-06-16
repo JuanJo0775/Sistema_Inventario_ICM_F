@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react'
+import { toast } from 'sonner'
+import { ModalPortal } from '../../components/ui/ModalPortal'
 import {
   AlertTriangle,
   X,
@@ -30,6 +32,13 @@ const extractErrorMsg = (err: any): string => {
   if (typeof data.error === 'string' && data.error) return data.error
   return err?.message || 'Error desconocido'
 }
+
+const TRANSFER_JUSTIFICATIONS = [
+  { value: 'reposicion_vitrina', label: 'Reposición de vitrina' },
+  { value: 'devolucion_bodega', label: 'Devolución a bodega' },
+  { value: 'transferencia_sucursal', label: 'Transferencia entre sucursales' },
+  { value: 'ajuste_inventario', label: 'Ajuste de inventario' },
+] as const
 
 const TransfersPage: React.FC = () => {
   const currentUser = useAuthStore((state) => state.user)
@@ -63,6 +72,7 @@ const TransfersPage: React.FC = () => {
   const [transferQuantity, setTransferQuantity] = useState<string>('1')
   const [coldChainAck, setColdChainAck] = useState(false)
   const [electricalSafetyAck, setElectricalSafetyAck] = useState(false)
+  const [transferJustification, setTransferJustification] = useState('')
 
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -92,7 +102,7 @@ const TransfersPage: React.FC = () => {
     try {
       const [locsRes, prodsRes, usersRes] = await Promise.allSettled([
         fetchLocations(true),
-        fetchCatalogProducts({ include_inactive: true }),
+        fetchCatalogProducts({ include_inactive: true, page_size: 9999 }),
         fetchUsers(),
       ])
 
@@ -164,6 +174,7 @@ const TransfersPage: React.FC = () => {
     setTransferQuantity('1')
     setColdChainAck(false)
     setElectricalSafetyAck(false)
+    setTransferJustification('')
     setFormError(null)
     setIsCreateOpen(true)
   }
@@ -303,6 +314,10 @@ const TransfersPage: React.FC = () => {
       setFormError('Este producto requiere control de vencimiento. Selecciona un lote.')
       return
     }
+    if (!transferJustification) {
+      setFormError('Selecciona un motivo para el traslado.')
+      return
+    }
 
     if (selectedProduct.requires_cold_chain && !coldChainAck) {
       setFormError('Debe confirmar el reconocimiento de la cadena de frío.')
@@ -319,6 +334,10 @@ const TransfersPage: React.FC = () => {
       return
     }
 
+    const justificationLabel = TRANSFER_JUSTIFICATIONS.find(
+      (j) => j.value === transferJustification,
+    )?.label ?? transferJustification
+
     setSaving(true)
     try {
       await submitTransfer({
@@ -327,11 +346,13 @@ const TransfersPage: React.FC = () => {
         destination_id: selectedDestinationId,
         quantity: parsedQty,
         lot_id: selectedProduct.requires_expiration ? selectedLotId : null,
+        justification: `Traslado interno de inventario (${justificationLabel})`,
         cold_chain_acknowledged: coldChainAck,
         electrical_safety_acknowledged: electricalSafetyAck,
       })
 
       setSuccessMsg(`Traslado de ${parsedQty} unidades de "${selectedProduct.name}" registrado correctamente.`)
+      toast.success(`Traslado de ${parsedQty} unidades de "${selectedProduct.name}" registrado correctamente`)
       setIsCreateOpen(false)
       setCurrentPage(1)
       loadTransfers()
@@ -599,28 +620,15 @@ const TransfersPage: React.FC = () => {
 
         {/* Detail Modal */}
         {isDetailOpen && selectedTransfer && (
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 50,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'rgba(15,30,32,.45)',
-              padding: 24,
-            }}
-            role="dialog"
-            aria-modal="true"
-          >
+          <ModalPortal onClose={() => setIsDetailOpen(false)}>
             <div
-              className="fade-slide-up"
               style={{
-                background: 'var(--white)',
-                borderRadius: 18,
-                maxWidth: 480,
-                width: '100%',
-                boxShadow: '0 24px 64px rgba(15,30,32,.2)',
+                position: 'relative',
+                backgroundColor: '#fff', borderRadius: '12px',
+                width: '100%', maxWidth: '480px',
+                maxHeight: '90vh', overflowY: 'auto',
+                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                padding: '1.75rem', border: '1px solid #e5e7eb',
               }}
             >
               {/* header */}
@@ -740,37 +748,20 @@ const TransfersPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </ModalPortal>
         )}
 
         {/* Create Modal */}
         {isCreateOpen && (
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 50,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'rgba(15,30,32,.45)',
-              padding: 24,
-            }}
-            role="dialog"
-            aria-modal="true"
-          >
+          <ModalPortal onClose={() => setIsCreateOpen(false)}>
             <div
-              className="fade-slide-up"
               style={{
-                background: 'var(--white)',
-                borderRadius: 18,
-                maxWidth: 540,
-                width: '100%',
-                maxHeight: '90vh',
-                overflow: 'auto',
-                boxShadow: '0 24px 64px rgba(15,30,32,.2)',
-                display: 'flex',
-                flexDirection: 'column',
+                position: 'relative',
+                backgroundColor: '#fff', borderRadius: '12px',
+                width: '100%', maxWidth: '540px',
+                maxHeight: '90vh', overflowY: 'auto',
+                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                padding: '1.75rem', border: '1px solid #e5e7eb',
               }}
             >
               {/* header */}
@@ -800,13 +791,243 @@ const TransfersPage: React.FC = () => {
                 </button>
               </div>
 
-              {/* body */}
-              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                {formError && (
-                  <div className="alert-bar alert-bar--err" role="alert" style={{ margin: 0 }}>
-                    <AlertTriangle style={{ width: 14, height: 14 }} />
-                    {formError}
-                  </div>
+              {/* Form validation alert */}
+              {formError && (
+                <div
+                  style={{
+                    background: '#fff5f5', border: '1px solid #fed7d7', borderRadius: '8px',
+                    padding: '0.75rem', marginBottom: '1rem', color: '#c53030',
+                    fontSize: '0.825rem', display: 'flex', gap: '0.5rem', alignItems: 'center',
+                  }}
+                >
+                  <AlertTriangle style={{ width: '16px', height: '16px', flexShrink: 0 }} />
+                  <span>{formError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSaveTransfer} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+                {/* 1. PRODUCT SELECTION */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                  <label style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+                    Producto <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+
+                  {!selectedProduct ? (
+                    <div>
+                      {/* Search box to filter products list */}
+                      <div style={{ position: 'relative', marginBottom: '0.5rem' }}>
+                        <Search style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: '#9ca3af' }} />
+                        <input
+                          type="text"
+                          placeholder="Escribe para buscar producto..."
+                          value={productSearchTerm}
+                          onChange={(e) => setProductSearchTerm(e.target.value)}
+                          style={{ width: '100%', paddingLeft: '2.25rem', paddingRight: '0.75rem', height: '36px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '0.85rem', outline: 'none' }}
+                        />
+                      </div>
+
+                      {/* Filtered options in a scrollable list */}
+                      <div
+                        style={{
+                          maxHeight: '150px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '8px',
+                          display: 'flex', flexDirection: 'column', background: '#fff'
+                        }}
+                      >
+                        {filteredProductOptions.length === 0 ? (
+                          <div style={{ padding: '0.75rem', color: '#9ca3af', fontSize: '0.85rem', textAlign: 'center' }}>
+                            No se encontraron productos.
+                          </div>
+                        ) : (
+                          filteredProductOptions.map((prod) => (
+                            <button
+                              key={prod.id}
+                              type="button"
+                              onClick={() => handleSelectProduct(prod)}
+                              style={{
+                                width: '100%', padding: '0.5rem 0.75rem', textAlign: 'left', background: 'none', border: 'none',
+                                borderBottom: '1px solid #f1f5f9', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between',
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                            >
+                              <span style={{ fontWeight: 500, color: '#334155' }}>{prod.name}</span>
+                              <span style={{ color: '#94a3b8', fontSize: '0.75rem', fontFamily: 'monospace' }}>{prod.sku}</span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.5rem 0.75rem' }}>
+                      <div>
+                        <span style={{ display: 'block', fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>{selectedProduct.name}</span>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>SKU: {selectedProduct.sku}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedProduct(null); setOriginStockLocations([]); setSelectedOriginId(''); setAvailableLots([]); setSelectedLotId(''); }}
+                        style={{ background: '#f1f5f9', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '9999px' }}
+                      >
+                        <X style={{ width: '14px', height: '14px' }} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {selectedProduct && (
+                  <>
+                    {/* 2. ORIGIN LOCATION SELECT */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                      <label htmlFor="origin-select" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+                        Ubicación de Origen <span style={{ color: '#ef4444' }}>*</span>
+                      </label>
+                      <select
+                        id="origin-select"
+                        value={selectedOriginId}
+                        onChange={(e) => handleOriginChange(e.target.value)}
+                        style={{ width: '100%', padding: '0.625rem 0.75rem', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.875rem', outline: 'none', background: '#fff' }}
+                        required
+                      >
+                        <option value="">— Selecciona bodega de origen —</option>
+                        {originStockLocations.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name} ({item.code}) — Disponible: {item.quantity} uds
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 3. LOT SELECT (Conditional on requires_expiration) */}
+                    {selectedProduct.requires_expiration && selectedOriginId && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                        <label htmlFor="lot-select" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+                          Lote de Producto <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <select
+                          id="lot-select"
+                          value={selectedLotId}
+                          onChange={(e) => setSelectedLotId(e.target.value)}
+                          style={{ width: '100%', padding: '0.625rem 0.75rem', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.875rem', outline: 'none', background: '#fff' }}
+                          required
+                        >
+                          <option value="">— Selecciona el lote con vencimiento —</option>
+                          {availableLots.map((lot) => (
+                            <option key={lot.id} value={lot.id}>
+                              Lote: {lot.code} (Vence: {lot.expiration_date}) — Disponible: {lot.available} uds
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* 4. DESTINATION LOCATION SELECT */}
+                    {selectedOriginId && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                        <label htmlFor="dest-select" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+                          Ubicación de Destino <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <select
+                          id="dest-select"
+                          value={selectedDestinationId}
+                          onChange={(e) => setSelectedDestinationId(e.target.value)}
+                          style={{ width: '100%', padding: '0.625rem 0.75rem', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.875rem', outline: 'none', background: '#fff' }}
+                          required
+                        >
+                          <option value="">— Selecciona bodega de destino —</option>
+                          {locations
+                            .filter((loc) => loc.id !== selectedOriginId && loc.is_active && loc.operational_status === 'active')
+                            .map((loc) => (
+                              <option key={loc.id} value={loc.id}>
+                                {loc.name} ({loc.code})
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* 5. TRANSFER QUANTITY */}
+                    {selectedOriginId && selectedDestinationId && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                        <label htmlFor="qty-input" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+                          Cantidad a Transferir <span style={{ color: '#ef4444' }}>*</span>
+                          <span style={{ marginLeft: '0.5rem', color: '#64748b', fontWeight: 'normal', fontSize: '0.75rem' }}>(Máximo disponible: {maxAllowedQuantity} uds)</span>
+                        </label>
+                        <input
+                          id="qty-input"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={transferQuantity}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/[^0-9]/g, '')
+                            setTransferQuantity(raw)
+                          }}
+                          style={{ width: '100%', padding: '0.625rem 0.75rem', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.875rem', outline: 'none' }}
+                          placeholder="Ej. 5"
+                        />
+                      </div>
+                    )}
+
+                    {/* 6. MOTIVO / JUSTIFICATION */}
+                    {selectedOriginId && selectedDestinationId && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                        <label htmlFor="justification-select" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+                          Motivo del traslado <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <select
+                          id="justification-select"
+                          value={transferJustification}
+                          onChange={(e) => setTransferJustification(e.target.value)}
+                          style={{ width: '100%', padding: '0.625rem 0.75rem', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.875rem', outline: 'none', background: '#fff' }}
+                          required
+                        >
+                          <option value="">— Selecciona el motivo —</option>
+                          {TRANSFER_JUSTIFICATIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              Traslado interno de inventario ({opt.label})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* 7. CRITICAL FLAGS ACKNOWLEDGEMENTS */}
+                    {selectedOriginId && selectedDestinationId && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
+                        {selectedProduct.requires_cold_chain && (
+                          <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', cursor: 'pointer', fontSize: '0.825rem', color: '#1e293b' }}>
+                            <input
+                              type="checkbox"
+                              checked={coldChainAck}
+                              onChange={(e) => setColdChainAck(e.target.checked)}
+                              style={{ marginTop: '3px' }}
+                              required
+                            />
+                            <span>
+                              ⚠️ <strong>Alerta de Cadena de Frío:</strong> Confirmo que conozco los requerimientos de refrigeración de este producto y aseguro las condiciones de temperatura durante su traslado.
+                            </span>
+                          </label>
+                        )}
+
+                        {/* If product requires serial number check */}
+                        {typeof selectedProduct.category === 'object' && selectedProduct.category !== null && (selectedProduct.category as any).requires_serial_number && (
+                          <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', cursor: 'pointer', fontSize: '0.825rem', color: '#1e293b' }}>
+                            <input
+                              type="checkbox"
+                              checked={electricalSafetyAck}
+                              onChange={(e) => setElectricalSafetyAck(e.target.checked)}
+                              style={{ marginTop: '3px' }}
+                              required
+                            />
+                            <span>
+                              ⚡ <strong>Seguridad Eléctrica:</strong> Confirmo la revisión técnica de seguridad eléctrica en equipos y la firma de actas de calibración operacional correspondientes.
+                            </span>
+                          </label>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <form onSubmit={handleSaveTransfer} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -1064,7 +1285,7 @@ const TransfersPage: React.FC = () => {
                 </form>
               </div>
             </div>
-          </div>
+          </ModalPortal>
         )}
 
       </div>

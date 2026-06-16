@@ -1,8 +1,13 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, X, Hash, Folder } from 'lucide-react';
+import { ModalPortal } from '../../components/ui/ModalPortal';
 import AppShell from '../../components/layout/AppShell';
 import useCatalogStore from '../../store/useCatalogStore';
+import { useDebounce } from '../../hooks/useDebounce';
+import { Switch } from '../../components/ui/switch';
+import { extractApiError } from '../../hooks/useApiError';
+import { toast } from 'sonner';
 
 export const CatalogCategoriesPage: React.FC = () => {
   const { 
@@ -19,7 +24,7 @@ export const CatalogCategoriesPage: React.FC = () => {
   } = useCatalogStore();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeSearch, setActiveSearch] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 150);
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -53,14 +58,13 @@ export const CatalogCategoriesPage: React.FC = () => {
     return counts;
   }, [categories, products]);
 
-  // Filter categories by search term
   const filteredCategories = useMemo(() => {
     return categories.filter(category => {
-      const matchName = category.name.toLowerCase().includes(activeSearch.toLowerCase());
-      const matchDesc = (category.description || '').toLowerCase().includes(activeSearch.toLowerCase());
+      const matchName = category.name.toLowerCase().includes(debouncedSearch.toLowerCase());
+      const matchDesc = (category.description || '').toLowerCase().includes(debouncedSearch.toLowerCase());
       return matchName || matchDesc;
     });
-  }, [categories, activeSearch]);
+  }, [categories, debouncedSearch]);
 
   const handleOpenCreateModal = () => {
     setEditingCategory(null);
@@ -115,6 +119,7 @@ export const CatalogCategoriesPage: React.FC = () => {
           requires_serial_number: formRequiresSerial
         });
         setSuccessMsg('Categoría actualizada correctamente.');
+        toast.success('Categoría actualizada correctamente');
       } else {
         // Create category
         await createCategory({
@@ -124,10 +129,11 @@ export const CatalogCategoriesPage: React.FC = () => {
           is_returnable: false
         });
         setSuccessMsg('Categoría creada correctamente.');
+        toast.success('Categoría creada correctamente');
       }
       setIsModalOpen(false);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Ocurrió un error al guardar la categoría.');
+      setErrorMsg(extractApiError(err));
     }
   };
 
@@ -144,8 +150,9 @@ export const CatalogCategoriesPage: React.FC = () => {
       try {
         await restoreCategory(category.id);
         setSuccessMsg(`Categoría "${category.name}" activada correctamente.`);
+        toast.success(`Categoría "${category.name}" activada correctamente`);
       } catch (err: any) {
-        setErrorMsg(err.message || 'Error al activar la categoría.');
+        setErrorMsg(extractApiError(err));
       }
     }
   };
@@ -158,9 +165,9 @@ export const CatalogCategoriesPage: React.FC = () => {
     try {
       await deactivateCategory(cat.id);
       setSuccessMsg(`Categoría "${cat.name}" desactivada correctamente.`);
+      toast.success(`Categoría "${cat.name}" desactivada correctamente`);
     } catch (err: any) {
-      // Show backend message
-      setErrorMsg(err.message || 'No se pudo desactivar la categoría porque tiene productos asociados.');
+      setErrorMsg(extractApiError(err));
     }
   };
 
@@ -222,44 +229,36 @@ export const CatalogCategoriesPage: React.FC = () => {
           className="flex gap-10 mb-4"
           style={{ alignItems: "center", flexWrap: "wrap" }}
         >
-          <form
-            onSubmit={(e) => { e.preventDefault(); setActiveSearch(searchTerm); }}
-            style={{ display: 'flex', flex: 1, gap: 8, alignItems: 'center' }}
-          >
-            <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
-              <svg
-                style={{
-                  position: "absolute",
-                  left: 11,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: 14,
-                  height: 14,
-                  stroke: "var(--teal-600)",
-                  strokeWidth: 1.8,
-                }}
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="M21 21l-4.35-4.35" />
-              </svg>
-              <input
-                className="f-input"
-                style={{ paddingLeft: 34 }}
-                placeholder="Buscar categorías..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                aria-label="Buscar categoría"
-              />
-            </div>
-            <button type="submit" className="btn btn--primary">
-              Buscar
-            </button>
-          </form>
-          {activeSearch && (
+          <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
+            <svg
+              style={{
+                position: "absolute",
+                left: 11,
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: 14,
+                height: 14,
+                stroke: "var(--teal-600)",
+                strokeWidth: 1.8,
+              }}
+              viewBox="0 0 24 24"
+              fill="none"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+            <input
+              className="f-input"
+              style={{ paddingLeft: 34 }}
+              placeholder="Buscar categorías..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Buscar categoría"
+            />
+          </div>
+          {searchTerm && (
             <button
-              onClick={() => { setSearchTerm(''); setActiveSearch(''); }}
+              onClick={() => setSearchTerm('')}
               className="btn btn--ghost btn--sm"
             >
               Limpiar filtro
@@ -350,22 +349,12 @@ export const CatalogCategoriesPage: React.FC = () => {
 
         {/* Confirmation Deactivate Modal */}
         {categoryToDeactivate && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 50,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "rgba(15,30,32,.45)",
-              padding: 24,
-            }}
-            role="dialog"
-            aria-modal="true"
-          >
+          <ModalPortal onClose={() => setCategoryToDeactivate(null)}>
             <div
               style={{
+                position: "relative",
+                maxHeight: "90vh",
+                overflowY: "auto",
                 background: "var(--white)",
                 borderRadius: 18,
                 width: "100%",
@@ -402,8 +391,9 @@ export const CatalogCategoriesPage: React.FC = () => {
                 >
                   <AlertTriangle style={{ width: 18, height: 18, flexShrink: 0, marginTop: '1px' }} />
                   <div>
-                    <strong>Regla de negocio:</strong> Esta categoría tiene <strong>{categoryProductCounts[categoryToDeactivate.id]} producto(s)</strong> asociado(s). 
-                    No es posible desactivarla en este momento a menos que desactives o cambies de categoría los productos asociados primero.
+                    Esta categoría tiene <strong>{categoryProductCounts[categoryToDeactivate.id]} producto(s)</strong> asociado(s).
+                    Al desactivarla, solo se ocultará del formulario de creación de nuevos productos.
+                    Los productos existentes conservarán su categoría.
                   </div>
                 </div>
               )}
@@ -417,40 +407,27 @@ export const CatalogCategoriesPage: React.FC = () => {
                 </button>
                 <button
                   className="btn btn--danger btn--sm"
-                  disabled={categoryProductCounts[categoryToDeactivate.id] > 0}
                   onClick={confirmDeactivate}
                 >
                   Confirmar Desactivación
                 </button>
               </div>
             </div>
-          </div>
+          </ModalPortal>
         )}
 
         {/* Create / Edit Dialog Modal */}
         {isModalOpen && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 50,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "rgba(15,30,32,.45)",
-              padding: 24,
-            }}
-            role="dialog"
-            aria-modal="true"
-          >
+          <ModalPortal onClose={() => setIsModalOpen(false)}>
             <div
               style={{
+                position: "relative",
+                maxHeight: "90vh",
+                overflowY: "auto",
                 background: "var(--white)",
                 borderRadius: 18,
                 width: "100%",
                 maxWidth: 480,
-                maxHeight: "90vh",
-                overflow: "auto",
                 boxShadow: "0 24px 64px rgba(15,30,32,.2)",
               }}
             >
@@ -462,10 +439,7 @@ export const CatalogCategoriesPage: React.FC = () => {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  position: "sticky",
-                  top: 0,
-                  background: "var(--white)",
-                  zIndex: 1,
+                  flexShrink: 0,
                 }}
               >
                 <h2 style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 400, margin: 0 }}>
@@ -481,15 +455,15 @@ export const CatalogCategoriesPage: React.FC = () => {
               </div>
 
               {/* body */}
-              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div style={{ overflow: "auto", flex: 1, padding: 24 }}>
                 {validationError && (
-                  <div className="alert-bar alert-bar--err" role="alert" style={{ margin: 0 }}>
+                  <div className="alert-bar alert-bar--err" role="alert" style={{ marginBottom: 20 }}>
                     <AlertTriangle style={{ width: 14, height: 14 }} />
                     {validationError}
                   </div>
                 )}
 
-                <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <form id="cat-form" onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                   <fieldset>
                     <legend>Información de la categoría</legend>
                     <div className="f-row f-row-2">
@@ -532,12 +506,10 @@ export const CatalogCategoriesPage: React.FC = () => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                           <span className="f-label" style={{ margin: 0 }}>Código serial</span>
                           <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer' }}>
-                            <input
+                            <Switch
                               id="cat-requires-serial"
-                              type="checkbox"
                               checked={formRequiresSerial}
-                              onChange={(e) => setFormRequiresSerial(e.target.checked)}
-                              style={{ width: 16, height: 16, marginTop: 2, cursor: 'pointer', flexShrink: 0 }}
+                              onCheckedChange={setFormRequiresSerial}
                             />
                             <div>
                               <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--ink)' }}>
@@ -558,26 +530,38 @@ export const CatalogCategoriesPage: React.FC = () => {
                       </div>
                     </div>
                   </fieldset>
-
-                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                    <button
-                      type="button"
-                      className="btn btn--outline"
-                      onClick={() => setIsModalOpen(false)}
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="submit"
-                      className="btn btn--primary"
-                    >
-                      Guardar
-                    </button>
-                  </div>
                 </form>
               </div>
+
+              {/* footer */}
+              <div
+                style={{
+                  padding: "16px 24px",
+                  borderTop: "1px solid var(--ink-06)",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: "0.5rem",
+                  flexShrink: 0,
+                  background: "var(--white)",
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn btn--outline"
+                  onClick={() => setIsModalOpen(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  form="cat-form"
+                  className="btn btn--primary"
+                >
+                  Guardar
+                </button>
+              </div>
             </div>
-          </div>
+          </ModalPortal>
         )}
       </div>
     </AppShell>

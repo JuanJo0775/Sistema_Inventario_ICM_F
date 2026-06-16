@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { api } from '../services/api'
 import { 
-  fetchCatalogProducts, 
   fetchCategories as fetchCategoriesService, 
   fetchBrands as fetchBrandsService, 
   createCatalogProduct, 
@@ -33,12 +32,15 @@ interface CatalogState {
   brands: Brand[]
   loading: boolean
   error: string | null
+  productCount: number
+  productPage: number
+  productPageSize: number
   
-  fetchProducts: () => Promise<void>
+  fetchProducts: (params?: { page?: number; search?: string; category?: string; page_size?: number }) => Promise<void>
   fetchCategories: (includeInactive?: boolean) => Promise<void>
   fetchBrands: (includeInactive?: boolean) => Promise<void>
   
-  createProduct: (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => Promise<void>
+  createProduct: (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => Promise<Product>
   updateProduct: (id: string | number, product: Partial<Product>) => Promise<void>
   updateProductPrices: (id: string, prices: CatalogProductPricesInput) => Promise<void>
   deactivateProduct: (id: number | string) => Promise<void>
@@ -72,6 +74,9 @@ const mapProductPayload = (productData: ProductFormPayload): CatalogProductCreat
     brand: brand || undefined,
     requires_cold_chain: productData.requires_cold_chain,
     requires_expiration: productData.requires_expiration,
+    requires_lot: productData.requires_lot,
+    requires_serial_number: productData.requires_serial_number,
+    special_conditions: productData.special_conditions,
     expiration_date: productData.expiration_date,
     weight_grams: productData.weight_grams,
     notes: productData.notes,
@@ -85,13 +90,38 @@ const mapProductPayload = (productData: ProductFormPayload): CatalogProductCreat
 }
 
 // Helper reutilizable: carga productos del catálogo y mezcla stockTotal desde /inventory/
-async function fetchProductsWithStock() {
-  const [products, inventoryResp] = await Promise.allSettled([
-    fetchCatalogProducts({ include_inactive: true }),
+async function fetchProductsWithStock(
+  page = 1,
+  search?: string,
+  category?: string,
+  pageSize = 25,
+): Promise<{ products: Product[]; count: number }> {
+
+  const [productsResp, inventoryResp] = await Promise.allSettled([
+    api.get<any>('/catalog/products/', {
+      params: {
+        include_inactive: 'true',
+        page,
+        page_size: pageSize,
+        search: search || undefined,
+        category: category || undefined,
+      },
+    }),
     api.get<Array<{ product_id: string; total: number }>>('/inventory/'),
   ])
 
-  const catalogProducts = products.status === 'fulfilled' ? products.value : []
+  let catalogProducts: Product[] = []
+  let count = 0
+  if (productsResp.status === 'fulfilled') {
+    const data = productsResp.value.data
+    if (Array.isArray(data)) {
+      catalogProducts = data
+      count = data.length
+    } else {
+      catalogProducts = data.results ?? []
+      count = data.count ?? catalogProducts.length
+    }
+  }
 
   let stockMap: Record<string, number> = {}
   if (inventoryResp.status === 'fulfilled') {
@@ -104,10 +134,13 @@ async function fetchProductsWithStock() {
     })
   }
 
-  return catalogProducts.map((p: any) => ({
-    ...p,
-    stockTotal: stockMap[p.id] ?? p.stockTotal ?? 0,
-  }))
+  return {
+    products: catalogProducts.map((p: any) => ({
+      ...p,
+      stockTotal: stockMap[p.id] ?? p.stockTotal ?? 0,
+    })),
+    count,
+  }
 }
 
 const useCatalogStore = create<CatalogState>((set) => ({
@@ -116,14 +149,19 @@ const useCatalogStore = create<CatalogState>((set) => ({
   brands: [],
   loading: false,
   error: null,
+  productCount: 0,
+  productPage: 1,
+  productPageSize: 25,
 
-  fetchProducts: async () => {
+  fetchProducts: async (params) => {
     set({ loading: true, error: null })
     try {
-      const merged = await fetchProductsWithStock()
-      set({ products: merged as any, loading: false })
+      const page = params?.page ?? 1
+      const ps = params?.page_size ?? 25
+      const { products, count } = await fetchProductsWithStock(page, params?.search, params?.category, ps)
+      set({ products: products as any, productCount: count, productPage: page, loading: false })
     } catch (err: any) {
-      set({ error: err.message, loading: false })
+      set({ error: err.humanMessage || err.message, loading: false })
     }
   },
 
@@ -133,7 +171,7 @@ const useCatalogStore = create<CatalogState>((set) => ({
       const categories = await fetchCategoriesService(includeInactive)
       set({ categories: categories as any, loading: false })
     } catch (err: any) {
-      set({ error: err.message, loading: false })
+      set({ error: err.humanMessage || err.message, loading: false })
     }
   },
 
@@ -143,66 +181,62 @@ const useCatalogStore = create<CatalogState>((set) => ({
       const brands = await fetchBrandsService(includeInactive)
       set({ brands: brands as any, loading: false })
     } catch (err: any) {
-      set({ error: err.message, loading: false })
+      set({ error: err.humanMessage || err.message, loading: false })
     }
   },
 
   createProduct: async (productData) => {
-    set({ loading: true, error: null })
+    set({ error: null })
     try {
-      await createCatalogProduct(mapProductPayload(productData) as CatalogProductCreateInput)
-      const products = await fetchProductsWithStock()
-      set({ products: products as any, loading: false })
+      const created = await createCatalogProduct(mapProductPayload(productData) as CatalogProductCreateInput)
+      return created as Product
     } catch (err: any) {
-      set({ error: err.message, loading: false })
+      set({ error: err.humanMessage || err.message })
       throw err
     }
   },
 
   updateProduct: async (id, productData) => {
-    set({ loading: true, error: null })
+    set({ error: null })
     try {
-      await updateCatalogProduct(id.toString(), mapProductPayload(productData) as CatalogProductUpdateInput)
-      const products = await fetchProductsWithStock()
-      set({ products: products as any, loading: false })
+      const payload = mapProductPayload(productData) as CatalogProductUpdateInput
+      // SKU es inmutable (BR-12); el backend rechaza cualquier cambio.
+      // Omitirlo evita el falso positivo de validate_sku cuando se reedita
+      // con el mismo SKU (el serializer no recibe la instancia actual).
+      delete (payload as any).sku
+      await updateCatalogProduct(id.toString(), payload)
     } catch (err: any) {
-      set({ error: err.message, loading: false })
+      set({ error: err.humanMessage || err.message })
       throw err
     }
   },
 
   updateProductPrices: async (id, prices) => {
-    set({ loading: true, error: null })
+    set({ error: null })
     try {
       await updateCatalogProductPrices(id, prices)
-      const products = await fetchProductsWithStock()
-      set({ products: products as any, loading: false })
     } catch (err: any) {
-      set({ error: err.message, loading: false })
+      set({ error: err.humanMessage || err.message })
       throw err
     }
   },
 
   deactivateProduct: async (id) => {
-    set({ loading: true, error: null })
+    set({ error: null })
     try {
       await deactivateCatalogProduct(id.toString())
-      const products = await fetchProductsWithStock()
-      set({ products: products as any, loading: false })
     } catch (err: any) {
-      set({ error: err.message, loading: false })
+      set({ error: err.humanMessage || err.message })
       throw err
     }
   },
 
   restoreProduct: async (id) => {
-    set({ loading: true, error: null })
+    set({ error: null })
     try {
       await restoreCatalogProduct(id.toString())
-      const products = await fetchProductsWithStock()
-      set({ products: products as any, loading: false })
     } catch (err: any) {
-      set({ error: err.message, loading: false })
+      set({ error: err.humanMessage || err.message })
       throw err
     }
   },
@@ -214,7 +248,7 @@ const useCatalogStore = create<CatalogState>((set) => ({
       const categories = await fetchCategoriesService(true)
       set({ categories: categories as any, loading: false })
     } catch (err: any) {
-      set({ error: err.message, loading: false })
+      set({ error: err.humanMessage || err.message, loading: false })
       throw err
     }
   },
@@ -226,7 +260,7 @@ const useCatalogStore = create<CatalogState>((set) => ({
       const categories = await fetchCategoriesService(true)
       set({ categories: categories as any, loading: false })
     } catch (err: any) {
-      set({ error: err.message, loading: false })
+      set({ error: err.humanMessage || err.message, loading: false })
       throw err
     }
   },
@@ -238,7 +272,7 @@ const useCatalogStore = create<CatalogState>((set) => ({
       const categories = await fetchCategoriesService(true)
       set({ categories: categories as any, loading: false })
     } catch (err: any) {
-      set({ error: err.message, loading: false })
+      set({ error: err.humanMessage || err.message, loading: false })
       throw err
     }
   },
@@ -250,7 +284,7 @@ const useCatalogStore = create<CatalogState>((set) => ({
       const categories = await fetchCategoriesService(true)
       set({ categories: categories as any, loading: false })
     } catch (err: any) {
-      set({ error: err.message, loading: false })
+      set({ error: err.humanMessage || err.message, loading: false })
       throw err
     }
   },
@@ -262,7 +296,7 @@ const useCatalogStore = create<CatalogState>((set) => ({
       const brands = await fetchBrandsService(true)
       set({ brands: brands as any, loading: false })
     } catch (err: any) {
-      set({ error: err.message, loading: false })
+      set({ error: err.humanMessage || err.message, loading: false })
       throw err
     }
   },
@@ -274,7 +308,7 @@ const useCatalogStore = create<CatalogState>((set) => ({
       const brands = await fetchBrandsService(true)
       set({ brands: brands as any, loading: false })
     } catch (err: any) {
-      set({ error: err.message, loading: false })
+      set({ error: err.humanMessage || err.message, loading: false })
       throw err
     }
   },
@@ -286,7 +320,7 @@ const useCatalogStore = create<CatalogState>((set) => ({
       const brands = await fetchBrandsService(true)
       set({ brands: brands as any, loading: false })
     } catch (err: any) {
-      set({ error: err.message, loading: false })
+      set({ error: err.humanMessage || err.message, loading: false })
       throw err
     }
   },
@@ -298,7 +332,7 @@ const useCatalogStore = create<CatalogState>((set) => ({
       const brands = await fetchBrandsService(true)
       set({ brands: brands as any, loading: false })
     } catch (err: any) {
-      set({ error: err.message, loading: false })
+      set({ error: err.humanMessage || err.message, loading: false })
       throw err
     }
   }

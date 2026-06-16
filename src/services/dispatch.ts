@@ -2,20 +2,34 @@ import { api } from "./api";
 import { useMocks } from "../mocks/config";
 import {
   mockDispatchLocations,
-  mockDispatchItems,
   mockDispatchMovements,
 } from "../mocks/dispatch";
 import type {
-  DispatchItem,
   DispatchLocation,
   DispatchMovement,
   DispatchMovementResponse,
   DispatchSubmitPayload,
 } from "../interfaces/dispatch";
 
+export interface CartSubmitItem {
+  productId: string
+  locationId: string
+  quantity: number
+  unitPrice: number | null
+  movementType: string
+  scannedCode?: string | null
+  orderSku?: string | null
+  serialNumber?: string | null
+  note?: string
+}
+
+export interface CartSubmissionResult {
+  movements: DispatchMovement[]
+  invoiceNumber: string | null
+}
+
 export interface DispatchOverview {
   locations: DispatchLocation[];
-  expectedOrders: DispatchItem[];
   recentMovements: DispatchMovement[];
 }
 
@@ -41,21 +55,24 @@ export const fetchDispatchOverview = async (): Promise<DispatchOverview> => {
   if (useMocks) {
     return {
       locations: mockDispatchLocations,
-      expectedOrders: mockDispatchItems,
       recentMovements: mockDispatchMovements,
     };
   }
 
   try {
-    const [locationsRes, movementsRes] = await Promise.all([
-      api.get<Array<{ id: string; code: string; name: string }> | { results: Array<{ id: string; code: string; name: string }> }>(
-        "/inventory/locations/",
-      ),
-      api.get<{ results: DispatchMovementResponse[] }>(
-        "/movements/dispatches/",
-        { params: { page_size: 10, ordering: "-created_at" } },
-      ),
-    ]);
+    const [locationsRes, movementsRes] =
+      await Promise.all([
+        api.get<
+          | Array<{ id: string; code: string; name: string }>
+          | {
+              results: Array<{ id: string; code: string; name: string }>;
+            }
+        >("/inventory/locations/"),
+        api.get<{ results: DispatchMovementResponse[] }>(
+          "/movements/dispatches/",
+          { params: { page_size: 10, ordering: "-created_at" } },
+        ),
+      ]);
 
     const locData = Array.isArray(locationsRes.data)
       ? locationsRes.data
@@ -82,8 +99,6 @@ export const fetchDispatchOverview = async (): Promise<DispatchOverview> => {
 
     return {
       locations,
-      // Las órdenes de picking no tienen endpoint en el backend todavía
-      expectedOrders: mockDispatchItems,
       recentMovements,
     };
   } catch (err) {
@@ -99,14 +114,11 @@ export const submitDispatch = async (
     const location = mockDispatchLocations.find(
       (l) => l.id === payload.locationId,
     );
-    const order = mockDispatchItems.find(
-      (o) => o.productId === payload.productId,
-    );
 
     return {
       id: `mov-out-${Date.now()}`,
-      productName: order?.productName ?? "Producto",
-      sku: order?.sku ?? "SKU",
+      productName: "Producto",
+      sku: "SKU",
       quantity: payload.quantity,
       locationCode: location?.code ?? "-",
       operator: "Auxiliar Despacho",
@@ -114,7 +126,7 @@ export const submitDispatch = async (
         hour: "2-digit",
         minute: "2-digit",
       }).format(new Date()),
-      invoiceNumber: order?.invoiceNumber ?? "ICM-MOCK",
+      invoiceNumber: "ICM-MOCK",
       customerName: payload.customerData?.customer_name,
       note: payload.note,
     };
@@ -126,12 +138,13 @@ export const submitDispatch = async (
     location_id: payload.locationId,
     quantity: payload.quantity,
     movement_type: payload.movementType,
+    unit_price: payload.unitPrice ?? null,
     // BR-08: ambos o ninguno, nunca solo uno
     scanned_code: payload.scannedCode || null,
     order_sku: payload.orderSku || null,
     serial_number: payload.serialNumber || null,
     customer_data: payload.customerData ?? null,
-    note: payload.note || null,
+    note: payload.note || '',
     cold_chain_acknowledged: payload.coldChainAcknowledged ?? false,
     electrical_safety_acknowledged:
       payload.electricalSafetyAcknowledged ?? false,
@@ -147,6 +160,70 @@ export const submitDispatch = async (
   const locationCode = mov.origin_location ?? "-";
 
   return mapMovementResponse(mov, locationCode);
+};
+
+export const submitCart = async (
+  items: CartSubmitItem[],
+  customerData: DispatchSubmitPayload["customerData"],
+): Promise<CartSubmissionResult> => {
+  if (useMocks) {
+    const location = mockDispatchLocations.find(
+      (l) => items.length > 0 && l.id === items[0].locationId,
+    );
+    const invoiceNum = `ICM-${String(Math.floor(Math.random() * 9000 + 1000))}`;
+    const movements: DispatchMovement[] = items.map((item, i) => ({
+      id: `mov-out-${Date.now()}-${i}`,
+      productName: item.orderSku ?? "Producto",
+      sku: item.orderSku ?? "SKU",
+      quantity: item.quantity,
+      locationCode: location?.code ?? "-",
+      operator: "Auxiliar Despacho",
+      confirmedAt: new Intl.DateTimeFormat("es-CO", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date()),
+      invoiceNumber: invoiceNum,
+      customerName: customerData?.customer_name,
+      note: item.note ?? undefined,
+    }));
+    return { movements, invoiceNumber: invoiceNum };
+  }
+
+  let invoiceNumber: string | null = null;
+  const movements: DispatchMovement[] = [];
+
+  for (const item of items) {
+    const requestBody = {
+      product_id: item.productId,
+      location_id: item.locationId,
+      quantity: item.quantity,
+      movement_type: item.movementType,
+      unit_price: item.unitPrice ?? null,
+      scanned_code: item.scannedCode || null,
+      order_sku: item.orderSku || null,
+      serial_number: item.serialNumber || null,
+      customer_data: customerData ?? null,
+      note: item.note || '',
+      cold_chain_acknowledged: false,
+      electrical_safety_acknowledged: false,
+      privacy_notice_acknowledged: false,
+    };
+
+    const response = await api.post<DispatchMovementResponse>(
+      "/movements/dispatches/",
+      requestBody,
+    );
+
+    const mov = response.data;
+    const locationCode = mov.origin_location ?? "-";
+
+    movements.push(mapMovementResponse(mov, locationCode));
+    if (!invoiceNumber) {
+      invoiceNumber = mov.invoice_number;
+    }
+  }
+
+  return { movements, invoiceNumber };
 };
 
 export const downloadInvoicePdf = async (

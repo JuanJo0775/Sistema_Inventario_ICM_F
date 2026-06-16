@@ -8,10 +8,10 @@ import {
 
 import AppShell from '../../components/layout/AppShell'
 import { BarcodeScannerButton } from '../../components/ui/BarcodeScannerButton'
-import type { ReturnEntry, ReturnProduct, ReturnsOverview, ReturnStatus } from '../../interfaces/returns'
+import type { ReturnEntry, ReturnProduct, ReturnsOverview, ReturnStatus, OutgoingMovement } from '../../interfaces/returns'
 import type { BarcodeProductResult } from '../../services/barcodeScanner'
 import { useMocks } from '../../mocks/config'
-import { fetchReturnsOverview, getSubmitReturnErrorMessage, submitReturn } from '../../services/returns'
+import { fetchReturnsOverview, fetchOutgoingMovements, getSubmitReturnErrorMessage, submitReturn } from '../../services/returns'
 
 type ReturnFormState = {
   productId: string
@@ -171,6 +171,9 @@ function ReturnsPage() {
   const [pendingReturns, setPendingReturns] = useState<ReturnEntry[]>([])
   const [historyEntries, setHistoryEntries] = useState<ReturnEntry[]>([])
   const [productSearch, setProductSearch] = useState("")
+  const [outgoingMovements, setOutgoingMovements] = useState<OutgoingMovement[]>([])
+  const [movementSearch, setMovementSearch] = useState("")
+  const [loadingOutgoing, setLoadingOutgoing] = useState(false)
 
   function handleProductScanned(product: BarcodeProductResult) {
     const match = products.find(
@@ -193,15 +196,26 @@ function ReturnsPage() {
       setOverview(data)
       setPendingReturns(data.pendingReturns)
       setHistoryEntries(data.history)
-      const defaultProduct = data.products.find((item) => item.canReturn)
       const defaultLocation = data.locations[0]?.id ?? ''
-      setForm(toFormState(defaultProduct, defaultLocation))
+      setForm(toFormState(undefined, defaultLocation))
     } catch {
       setError(t('returns.errors.load'))
     } finally {
       setLoading(false)
     }
   }, [t])
+
+  const loadOutgoing = useCallback(async () => {
+    setLoadingOutgoing(true)
+    try {
+      const data = await fetchOutgoingMovements()
+      setOutgoingMovements(data)
+    } catch {
+      // silencioso — el selector simplemente no mostrará opciones
+    } finally {
+      setLoadingOutgoing(false)
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -216,9 +230,8 @@ function ReturnsPage() {
         setOverview(data)
         setPendingReturns(data.pendingReturns)
         setHistoryEntries(data.history)
-        const defaultProduct = data.products.find((item) => item.canReturn)
         const defaultLocation = data.locations[0]?.id ?? ''
-        setForm(toFormState(defaultProduct, defaultLocation))
+        setForm(toFormState(undefined, defaultLocation))
       } catch {
         if (!cancelled) {
           setError(t('returns.errors.load'))
@@ -231,11 +244,12 @@ function ReturnsPage() {
     }
 
     void bootstrap()
+    void loadOutgoing()
 
     return () => {
       cancelled = true
     }
-  }, [t])
+  }, [t, loadOutgoing])
 
   const products = useMemo(() => overview?.products ?? [], [overview])
   const locations = useMemo(() => overview?.locations ?? [], [overview])
@@ -252,6 +266,18 @@ function ReturnsPage() {
         p.barcode.toLowerCase().includes(q),
     )
   }, [returnableProducts, productSearch])
+
+  const filteredMovements = useMemo(() => {
+    const q = movementSearch.trim().toLowerCase()
+    if (!q) return outgoingMovements
+    return outgoingMovements.filter(
+      (m) =>
+        m.productSku.toLowerCase().includes(q) ||
+        m.productName.toLowerCase().includes(q) ||
+        m.customerName.toLowerCase().includes(q) ||
+        m.movementTypeLabel.toLowerCase().includes(q),
+    )
+  }, [outgoingMovements, movementSearch])
 
   const selectedProduct = useMemo(
     () => products.find((item) => item.productId === form.productId),
@@ -567,34 +593,108 @@ function ReturnsPage() {
                       <label className="f-label" htmlFor="return-related">
                         {t('returns.form.relatedMovement')}
                       </label>
-                      <input
-                        id="return-related"
-                        className="f-input"
-                        placeholder={t('returns.form.relatedMovementPlaceholder')}
-                        value={form.relatedMovementId}
-                        onChange={(event) =>
-                          setForm((current) => ({
-                            ...current,
-                            relatedMovementId: event.target.value,
-                          }))
-                        }
-                      />
+                      {form.relatedMovementId && !movementSearch ? (
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <div style={{ flex: 1, padding: '9px 12px', border: '1px solid var(--ink-20)', borderRadius: 8, fontSize: 13, background: 'var(--white)' }}>
+                            {(() => {
+                              const sel = outgoingMovements.find((m) => m.id === form.relatedMovementId)
+                              if (!sel) return <span style={{ color: 'var(--ink-40)' }}>{form.relatedMovementId}</span>
+                              return (
+                                <>
+                                  <strong>{sel.productSku}</strong>
+                                  <span style={{ marginLeft: 8, color: 'var(--ink-40)' }}>
+                                    {sel.movementTypeLabel} · {sel.quantity} uds · {new Date(sel.createdAt).toLocaleDateString('es-CO')}
+                                  </span>
+                                  {sel.customerName ? <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--teal-600)' }}>{sel.customerName}</span> : null}
+                                </>
+                              )
+                            })()}
+                          </div>
+                          <button
+                            type="button"
+                            className="btn btn--ghost btn--sm"
+                            onClick={() => { setForm((c) => ({ ...c, relatedMovementId: '' })); setMovementSearch('') }}
+                          >
+                            Cambiar
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ position: 'relative' }}>
+                            <svg
+                              style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, stroke: 'var(--teal-600)', strokeWidth: 1.8 }}
+                              viewBox="0 0 24 24" fill="none"
+                            >
+                              <circle cx="11" cy="11" r="8" />
+                              <path d="M21 21l-4.35-4.35" />
+                            </svg>
+                            <input
+                              className="f-input"
+                              style={{ paddingLeft: 34 }}
+                              placeholder="Buscar movimiento por SKU, cliente o factura..."
+                              value={movementSearch}
+                              onChange={(e) => setMovementSearch(e.target.value)}
+                            />
+                          </div>
+                          <div
+                            style={{
+                              marginTop: 6,
+                              maxHeight: 180,
+                              overflowY: 'auto',
+                              border: '1px solid var(--ink-12)',
+                              borderRadius: 8,
+                              background: 'var(--white)',
+                            }}
+                          >
+                            {loadingOutgoing ? (
+                              <p style={{ padding: '12px', fontSize: 12, color: 'var(--ink-40)', textAlign: 'center' }}>
+                                Cargando movimientos…
+                              </p>
+                            ) : filteredMovements.length === 0 ? (
+                              <p style={{ padding: '12px', fontSize: 12, color: 'var(--ink-40)', textAlign: 'center' }}>
+                                No hay movimientos de salida disponibles.
+                              </p>
+                            ) : (
+                              filteredMovements.map((mov) => (
+                                <button
+                                  key={mov.id}
+                                  type="button"
+                                  style={{
+                                    display: 'block',
+                                    width: '100%',
+                                    textAlign: 'left',
+                                    padding: '10px 12px',
+                                    border: 'none',
+                                    borderBottom: '1px solid var(--ink-06)',
+                                    background: mov.id === form.relatedMovementId ? 'var(--teal-50)' : 'transparent',
+                                    cursor: 'pointer',
+                                    fontSize: 13,
+                                    fontFamily: 'var(--ff-body)',
+                                    color: 'var(--ink)',
+                                  }}
+                                  onClick={() => {
+                                    setForm((c) => ({ ...c, relatedMovementId: mov.id }))
+                                    setMovementSearch('')
+                                  }}
+                                  onMouseEnter={(e) => { if (mov.id !== form.relatedMovementId) e.currentTarget.style.background = 'var(--ink-06)' }}
+                                  onMouseLeave={(e) => { if (mov.id !== form.relatedMovementId) e.currentTarget.style.background = 'transparent' }}
+                                >
+                                  <strong>{mov.productSku}</strong>
+                                  <span style={{ marginLeft: 8, color: 'var(--ink-40)', fontSize: 12 }}>
+                                    {mov.movementTypeLabel} · {mov.quantity} uds · {new Date(mov.createdAt).toLocaleDateString('es-CO')}
+                                  </span>
+                                  {mov.customerName ? (
+                                    <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--teal-600)' }}>{mov.customerName}</span>
+                                  ) : null}
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </fieldset>
-
-                <div style={{ padding: '11px', background: 'rgba(179,58,42,.04)', border: '1px dashed rgba(179,58,42,.2)', borderRadius: '8px', margin: '14px 0' }}>
-                  <p style={{ fontFamily: 'var(--ff-mono)', fontSize: '9px', letterSpacing: '1.5px', color: 'var(--err)', marginBottom: '6px' }}>
-                    {t('returns.blockExample.eyebrow')}
-                  </p>
-                  <div className="val-strip val-strip--fail">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                    <span>{t('returns.blockExample.message')}</span>
-                  </div>
-                </div>
 
                 <div className="form-footer">
                   <button

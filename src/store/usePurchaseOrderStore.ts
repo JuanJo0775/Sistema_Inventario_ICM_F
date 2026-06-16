@@ -40,7 +40,7 @@ const usePurchaseOrderStore = create<PurchaseOrderState>((set) => ({
       const orders = await fetchPurchaseOrders(status, supplierId)
       set({ orders, loading: false })
     } catch (err: any) {
-      set({ error: err.message || 'No se pudieron cargar las órdenes de compra', loading: false })
+      set({ error: err.humanMessage || err.message || 'No se pudieron cargar las órdenes de compra', loading: false })
     }
   },
 
@@ -50,7 +50,7 @@ const usePurchaseOrderStore = create<PurchaseOrderState>((set) => ({
       const order = await fetchPurchaseOrderDetail(id)
       set({ currentOrder: order, loading: false })
     } catch (err: any) {
-      set({ error: err.message || 'No se pudo cargar el detalle de la orden', loading: false })
+      set({ error: err.humanMessage || err.message || 'No se pudo cargar el detalle de la orden', loading: false })
     }
   },
 
@@ -63,7 +63,7 @@ const usePurchaseOrderStore = create<PurchaseOrderState>((set) => ({
       set({ orders, loading: false })
       return newOrder
     } catch (err: any) {
-      set({ error: err.message || 'No se pudo crear la orden de compra', loading: false })
+      set({ error: err.humanMessage || err.message || 'No se pudo crear la orden de compra', loading: false })
       throw err
     }
   },
@@ -77,7 +77,7 @@ const usePurchaseOrderStore = create<PurchaseOrderState>((set) => ({
       set({ orders, loading: false })
       return updated
     } catch (err: any) {
-      set({ error: err.message || 'No se pudo actualizar la orden de compra', loading: false })
+      set({ error: err.humanMessage || err.message || 'No se pudo actualizar la orden de compra', loading: false })
       throw err
     }
   },
@@ -91,7 +91,7 @@ const usePurchaseOrderStore = create<PurchaseOrderState>((set) => ({
       set({ orders, currentOrder: updated, loading: false })
       return updated
     } catch (err: any) {
-      set({ error: err.message || 'No se pudo emitir la orden de compra', loading: false })
+      set({ error: err.humanMessage || err.message || 'No se pudo emitir la orden de compra', loading: false })
       throw err
     }
   },
@@ -105,7 +105,7 @@ const usePurchaseOrderStore = create<PurchaseOrderState>((set) => ({
       set({ orders, currentOrder: updated, loading: false })
       return updated
     } catch (err: any) {
-      set({ error: err.message || 'No se pudo cancelar la orden de compra', loading: false })
+      set({ error: err.humanMessage || err.message || 'No se pudo cancelar la orden de compra', loading: false })
       throw err
     }
   },

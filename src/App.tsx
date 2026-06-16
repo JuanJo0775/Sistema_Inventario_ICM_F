@@ -2,6 +2,7 @@ import React, { Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import ProtectedRoute from './router/ProtectedRoute'
 import PageLoader from './components/ui/PageLoader'
+import { Toaster } from 'sonner'
 
 const LoginPage = React.lazy(() => import('./features/auth/LoginPage'))
 const RegisterPage = React.lazy(() => import('./features/auth/RegisterPage'))
@@ -51,7 +52,7 @@ function App() {
         <Route
           path="/app/inventory"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador', 'auxiliar_despacho']}>
               <InventoryPage />
             </ProtectedRoute>
           }
@@ -59,7 +60,7 @@ function App() {
         <Route
           path="/app/reception"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador']}>
               <ReceptionPage />
             </ProtectedRoute>
           }
@@ -67,7 +68,7 @@ function App() {
         <Route
           path="/app/reception/:orderId"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador']}>
               <ReceptionOrderDetailPage />
             </ProtectedRoute>
           }
@@ -75,7 +76,7 @@ function App() {
         <Route
           path="/app/dispatch"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador', 'auxiliar_despacho']}>
               <DispatchPage />
             </ProtectedRoute>
           }
@@ -83,7 +84,7 @@ function App() {
         <Route
           path="/app/returns"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador', 'auxiliar_despacho']}>
               <ReturnsPage />
             </ProtectedRoute>
           }
@@ -91,7 +92,7 @@ function App() {
         <Route
           path="/app/adjustments"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador']}>
               <AdjustmentsPage />
             </ProtectedRoute>
           }
@@ -99,7 +100,7 @@ function App() {
         <Route
           path="/app/alerts"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador', 'auxiliar_despacho']}>
               <AlertsPage />
             </ProtectedRoute>
           }
@@ -109,7 +110,7 @@ function App() {
         <Route
           path="/app/catalog/products"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador', 'auxiliar_despacho']}>
               <CatalogProductsPage />
             </ProtectedRoute>
           }
@@ -117,7 +118,7 @@ function App() {
         <Route
           path="/app/catalog/products/new"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador']}>
               <CatalogProductFormPage />
             </ProtectedRoute>
           }
@@ -125,7 +126,7 @@ function App() {
         <Route
           path="/app/catalog/products/:id"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador', 'auxiliar_despacho']}>
               <CatalogProductDetailPage />
             </ProtectedRoute>
           }
@@ -133,7 +134,7 @@ function App() {
         <Route
           path="/app/catalog/products/:id/edit"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador']}>
               <CatalogProductFormPage />
             </ProtectedRoute>
           }
@@ -141,7 +142,7 @@ function App() {
         <Route
           path="/app/catalog/categories"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador', 'auxiliar_despacho']}>
               <CatalogCategoriesPage />
             </ProtectedRoute>
           }
@@ -149,7 +150,7 @@ function App() {
         <Route
           path="/app/catalog/categories/:id"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador', 'auxiliar_despacho']}>
               <CatalogCategoryDetailPage />
             </ProtectedRoute>
           }
@@ -157,7 +158,7 @@ function App() {
         <Route
           path="/app/catalog/brands"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador', 'auxiliar_despacho']}>
               <CatalogBrandsPage />
             </ProtectedRoute>
           }
@@ -166,7 +167,7 @@ function App() {
         <Route
           path="/app/locations"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador']}>
               <LocationsPage />
             </ProtectedRoute>
           }
@@ -174,7 +175,7 @@ function App() {
         <Route
           path="/app/locations/transfers"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador']}>
               <TransfersPage />
             </ProtectedRoute>
           }
@@ -183,7 +184,7 @@ function App() {
         <Route
           path="/app/purchasing/suppliers"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador', 'auxiliar_despacho']}>
               <SuppliersPage />
             </ProtectedRoute>
           }
@@ -191,7 +192,7 @@ function App() {
         <Route
           path="/app/purchasing/suppliers/:id"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador', 'auxiliar_despacho']}>
               <SupplierDetailPage />
             </ProtectedRoute>
           }
@@ -199,7 +200,7 @@ function App() {
         <Route
           path="/app/purchasing/purchase-orders"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador']}>
               <PurchaseOrdersPage />
             </ProtectedRoute>
           }
@@ -208,7 +209,7 @@ function App() {
         <Route
           path="/app/admin/audit"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador']}>
               <AuditPage />
             </ProtectedRoute>
           }
@@ -216,7 +217,7 @@ function App() {
         <Route
           path="/app/admin/users"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['almacenista', 'administrador']}>
               <UsersPage />
             </ProtectedRoute>
           }
@@ -231,6 +232,7 @@ function App() {
         />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+      <Toaster position="top-right" duration={3000} />
       </Suspense>
     </BrowserRouter>
   )

@@ -25,6 +25,7 @@ export interface CreateTransferPayload {
   destination_id: string
   quantity: number
   lot_id?: string | null
+  justification?: string
   cold_chain_acknowledged?: boolean
   electrical_safety_acknowledged?: boolean
 }

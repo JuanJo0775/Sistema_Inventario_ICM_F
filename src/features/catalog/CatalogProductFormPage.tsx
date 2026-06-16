@@ -39,6 +39,7 @@ const CatalogProductFormPage: React.FC = () => {
     requires_expiration: false,
     requires_serial: false,
     requires_lots: false,
+    special_conditions: false,
   });
 
   const [pricing, setPricing] = useState({
@@ -53,6 +54,8 @@ const CatalogProductFormPage: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState('');
+  const [skuError, setSkuError] = useState('');
+  const [originalSku, setOriginalSku] = useState('');
 
   useEffect(() => {
     fetchCategories();
@@ -66,9 +69,11 @@ const CatalogProductFormPage: React.FC = () => {
     if (isEditMode && id && products.length > 0) {
       const productToEdit = products.find((p: any) => String(p.id) === String(id));
       if (productToEdit) {
+        const productSku = (productToEdit as any).sku || '';
+        setOriginalSku(productSku);
         setFormData({
           name: (productToEdit as any).name || '',
-          sku: (productToEdit as any).sku || '',
+          sku: productSku,
           description: (productToEdit as any).notes || (productToEdit as any).description || '',
           category_id: (productToEdit as any).category || (productToEdit as any).category_id || '',
           subcategory_id: (productToEdit as any).subcategory || (productToEdit as any).subcategory_id || '',
@@ -79,6 +84,7 @@ const CatalogProductFormPage: React.FC = () => {
           requires_expiration: (productToEdit as any).requires_expiration || false,
           requires_serial: (productToEdit as any).requires_serial || false,
           requires_lots: (productToEdit as any).requires_lots || false,
+          special_conditions: (productToEdit as any).special_conditions || false,
         });
         const p = productToEdit as any;
         setPricing({
@@ -108,7 +114,8 @@ const CatalogProductFormPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!SKU_REGEX.test(formData.sku)) {
+    const skuChanged = isEditMode ? formData.sku !== originalSku : true;
+    if (skuChanged && !SKU_REGEX.test(formData.sku)) {
       setFormError('El SKU debe tener formato: 1–4 letras + guion + 1–4 dígitos (BR-12)');
       setIsLoading(false);
       return;
@@ -118,7 +125,7 @@ const CatalogProductFormPage: React.FC = () => {
     try {
       const payload: any = {
         name: formData.name,
-        sku: formData.sku,
+        ...(skuChanged ? { sku: formData.sku } : {}),
         category_id: formData.category_id,
         subcategory_id: formData.subcategory_id || null,
         notes: formData.description || formData.notes,
@@ -128,6 +135,7 @@ const CatalogProductFormPage: React.FC = () => {
         requires_expiration: formData.requires_expiration,
         requires_serial: formData.requires_serial,
         requires_lots: formData.requires_lots,
+        special_conditions: formData.special_conditions,
         // Map for mock compatibility
         category: formData.category_id,
         subcategory: formData.subcategory_id || null,
@@ -150,7 +158,18 @@ const CatalogProductFormPage: React.FC = () => {
       navigate('/app/catalog/products');
     } catch (error: any) {
       console.error('Error saving product:', error);
-      setFormError(error?.message || t('catalog.products.messages.error', 'Error al guardar el producto'));
+      const data = error?.response?.data;
+      if (data?.sku) {
+        const msg = Array.isArray(data.sku) ? data.sku[0] : data.sku;
+        setSkuError(msg);
+      } else if (data?.detail?.field === 'sku') {
+        setSkuError(data.message || '');
+      } else if (data?.detail?.sku) {
+        const msg = Array.isArray(data.detail.sku) ? data.detail.sku[0] : data.detail.sku;
+        setSkuError(msg);
+      } else {
+        setFormError(data?.message || error?.message || t('catalog.products.messages.error', 'Error al guardar el producto'));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -199,7 +218,11 @@ const CatalogProductFormPage: React.FC = () => {
                   id="sku"
                   label={t('catalog.products.form.sku')}
                   value={formData.sku}
-                  onChange={(v) => setFormData(prev => ({ ...prev, sku: v }))}
+                  error={skuError}
+                  onChange={(v) => {
+                    setFormData(prev => ({ ...prev, sku: v }));
+                    if (skuError) setSkuError('');
+                  }}
                 />
               </div>
 
@@ -264,13 +287,17 @@ const CatalogProductFormPage: React.FC = () => {
               <div className="form-field">
                 <label className="form-label" htmlFor="reorder_point">{t('catalog.products.form.reorderPoint')}</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   id="reorder_point"
                   name="reorder_point"
                   className="form-input"
                   value={formData.reorder_point}
-                  onChange={handleChange}
-                  min="0"
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setFormData(prev => ({ ...prev, reorder_point: val === '' ? 0 : Number(val) }))
+                  }}
                 />
               </div>
 
@@ -346,6 +373,20 @@ const CatalogProductFormPage: React.FC = () => {
                 />
                 <div>
                   <label className="form-label" htmlFor="requires_serial" style={{ margin: 0, cursor: 'pointer', display: 'block' }}>{t('catalog.products.form.requiresSerial', 'Control Serial')}</label>
+                </div>
+              </div>
+
+              <div className="form-field" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <input
+                  type="checkbox"
+                  id="special_conditions"
+                  name="special_conditions"
+                  checked={formData.special_conditions}
+                  onChange={handleChange}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
+                />
+                <div>
+                  <label className="form-label" htmlFor="special_conditions" style={{ margin: 0, cursor: 'pointer', display: 'block' }}>Condiciones especiales</label>
                 </div>
               </div>
 

@@ -10,11 +10,16 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import AppShell from '../../components/layout/AppShell'
+import { ModalPortal } from '../../components/ui/ModalPortal'
 import useReceptionStore from '../../store/useReceptionStore'
 import useLocationStore from '../../store/useLocationStore'
 import useCatalogStore from '../../store/useCatalogStore'
 import type { PurchaseOrderItem } from '../../interfaces/purchaseOrders'
+import type { CatalogProduct } from '../../interfaces/catalog'
+import { extractApiError } from '../../hooks/useApiError'
+import { fetchCatalogProductDetail } from '../../services/catalog'
 
 interface LocationSplit {
   id: string
@@ -67,13 +72,14 @@ export default function ReceptionOrderDetailPage() {
   const [actionError, setActionError] = useState<string | null>(null)
   const [actionSuccess, setActionSuccess] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [productDetail, setProductDetail] = useState<CatalogProduct | null>(null)
 
   useEffect(() => {
     if (orderId) {
       fetchOrderDetail(orderId)
     }
     fetchLocations(true)
-    fetchProducts()
+    fetchProducts({ page_size: 9999 })
     fetchCategories(true)
   }, [orderId, fetchOrderDetail, fetchLocations, fetchProducts, fetchCategories])
 
@@ -85,8 +91,12 @@ export default function ReceptionOrderDetailPage() {
 
   const productConfig = useMemo(() => {
     if (!selectedItem) return null
-    return catalogProducts.find((p) => p.id === selectedItem.product)
-  }, [selectedItem, catalogProducts])
+    let found: CatalogProduct | undefined = productDetail ?? catalogProducts.find((p) => p.id === selectedItem.product)
+    if (!found && selectedItem.product_sku) {
+      found = catalogProducts.find((p) => p.sku === selectedItem.product_sku)
+    }
+    return found ?? null
+  }, [selectedItem, catalogProducts, productDetail])
 
   const requiresExpiration = productConfig?.requires_expiration ?? false
   const lotRequired = requiresExpiration
@@ -124,7 +134,10 @@ export default function ReceptionOrderDetailPage() {
     setSplitEnabled(false)
     setSplits([])
     setActionError(null)
+    setActionSuccess(null)
     setIsModalOpen(true)
+    setProductDetail(null)
+    fetchCatalogProductDetail(item.product).then(setProductDetail).catch(() => setProductDetail(null))
   }
 
   const handleCloseModal = () => {
@@ -276,13 +289,12 @@ export default function ReceptionOrderDetailPage() {
         })
       }
 
-      setActionSuccess(
-        `Se ha registrado la recepción de ${enteredQty} unidades de ${selectedItem.product_name}.`,
-      )
+      const successMsg = `Se ha registrado la recepción de ${enteredQty} unidades de ${selectedItem.product_name}.`
+      setActionSuccess(successMsg)
+      toast.success(successMsg)
       setIsModalOpen(false)
     } catch (err: any) {
-      const data = err?.response?.data
-      setActionError(data?.message || data?.detail || err.message || 'Error al procesar la recepción.')
+      setActionError(extractApiError(err))
     } finally {
       setSaving(false)
     }
@@ -596,21 +608,11 @@ export default function ReceptionOrderDetailPage() {
 
       {/* Modal: Recibir Producto */}
       {isModalOpen && selectedItem && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(15, 30, 32, 0.45)',
-            backdropFilter: 'blur(4px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-          }}
-        >
+        <ModalPortal onClose={handleCloseModal}>
           <div
             className="form-surface"
             style={{
+              position: 'relative',
               width: '100%',
               maxWidth: splitEnabled ? 580 : 480,
               maxHeight: '90vh',
@@ -709,6 +711,40 @@ export default function ReceptionOrderDetailPage() {
                   required
                 />
               </div>
+
+              {/* Discrepancy — inmediatamente debajo de Cantidad a recibir */}
+              {hasDiscrepancy && (
+                <div
+                  className="notice notice--warn"
+                  style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr' }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontWeight: 700,
+                      fontSize: 12,
+                      color: 'var(--warn)',
+                    }}
+                  >
+                    <AlertCircle size={14} />
+                    Diferencia detectada
+                  </div>
+                  <p style={{ fontSize: 11.5, color: 'var(--ink-70)', margin: 0 }}>
+                    La cantidad a registrar ({quantityReceived || 0}) difiere de la
+                    cantidad esperada en esta entrega. Escribe el motivo:
+                  </p>
+                  <textarea
+                    className="f-input"
+                    placeholder="Escribe el motivo del faltante o retraso..."
+                    value={discrepancyNote}
+                    onChange={(e) => setDiscrepancyNote(e.target.value)}
+                    style={{ minHeight: 60, resize: 'none', width: '100%' }}
+                    required
+                  />
+                </div>
+              )}
 
               {/* Lot + Expiration (always global) */}
               {requiresExpiration && (
@@ -967,40 +1003,6 @@ export default function ReceptionOrderDetailPage() {
                 </div>
               )}
 
-              {/* Discrepancy */}
-              {hasDiscrepancy && (
-                <div
-                  className="notice notice--warn"
-                  style={{ display: 'grid', gap: 8 }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      fontWeight: 700,
-                      fontSize: 12,
-                      color: 'var(--warn)',
-                    }}
-                  >
-                    <AlertCircle size={14} />
-                    Diferencia detectada
-                  </div>
-                  <p style={{ fontSize: 11.5, color: 'var(--ink-70)', margin: 0 }}>
-                    La cantidad a registrar ({quantityReceived || 0}) difiere de la
-                    cantidad esperada en esta entrega. Escribe el motivo:
-                  </p>
-                  <textarea
-                    className="f-input"
-                    placeholder="Escribe el motivo del faltante o retraso..."
-                    value={discrepancyNote}
-                    onChange={(e) => setDiscrepancyNote(e.target.value)}
-                    style={{ minHeight: 60, resize: 'none' }}
-                    required
-                  />
-                </div>
-              )}
-
               {/* Buttons */}
               <div className="form-footer" style={{ marginTop: 4 }}>
                 <button
@@ -1021,7 +1023,7 @@ export default function ReceptionOrderDetailPage() {
               </div>
             </form>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </AppShell>
   )

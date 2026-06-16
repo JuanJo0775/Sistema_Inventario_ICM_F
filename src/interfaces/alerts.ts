@@ -6,7 +6,7 @@ export type AlertType =
   | "STOCK_MISMATCH";
 
 export interface AlertItem {
-  id: string;
+  id: number;
   product: string; // UUID del producto
   product_sku: string; // sku resuelto por el backend
   location: string | null; // UUID de ubicación o null si es alerta global

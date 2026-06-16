@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { toast } from 'sonner'
+import { ModalPortal } from '../../components/ui/ModalPortal';
 import {
   Search,
   Plus,
@@ -151,9 +153,11 @@ const LocationsPage: React.FC = () => {
         await updateLocation(editingLoc.id, {
           name: nameTrimmed,
           description: formDescription.trim(),
+          storage_type_id: formStorageTypeId || undefined,
           capacity_score: formCapacityScore,
         });
         setSuccessMsg(`Ubicación "${nameTrimmed}" actualizada correctamente.`);
+        toast.success(`Ubicación "${nameTrimmed}" actualizada correctamente`);
       } else {
         await createLocation({
           name: nameTrimmed,
@@ -162,6 +166,7 @@ const LocationsPage: React.FC = () => {
           capacity_score: formCapacityScore,
         });
         setSuccessMsg(`Ubicación "${nameTrimmed}" creada correctamente.`);
+        toast.success(`Ubicación "${nameTrimmed}" creada correctamente`);
       }
       setIsModalOpen(false);
     } catch (err: any) {
@@ -187,6 +192,7 @@ const LocationsPage: React.FC = () => {
     try {
       await updateLocation(loc.id, { is_active: true });
       setSuccessMsg(`Ubicación "${loc.name}" activada correctamente.`);
+      toast.success(`Ubicación "${loc.name}" activada correctamente`);
     } catch (err: any) {
       const msg = extractErrorMsg(err)
       setErrorMsg(msg)
@@ -200,6 +206,7 @@ const LocationsPage: React.FC = () => {
     try {
       await deactivateLocation(loc.id);
       setSuccessMsg(`Ubicación "${loc.name}" desactivada correctamente.`);
+      toast.success(`Ubicación "${loc.name}" desactivada correctamente`);
     } catch (err: any) {
       const msg = extractErrorMsg(err)
       setErrorMsg(msg)
@@ -485,18 +492,13 @@ const LocationsPage: React.FC = () => {
 
         {/* ── Deactivate Confirm Modal ──────────────────────────────────── */}
         {locToDeactivate && (
-          <div
-            style={{
-              position: 'fixed', inset: 0, zIndex: 9999,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)',
-            }}
-          >
+          <ModalPortal onClose={() => setLocToDeactivate(null)}>
             <div
-              className="fade-slide-up"
               style={{
+                position: 'relative',
                 backgroundColor: '#fff', borderRadius: '12px',
                 width: '100%', maxWidth: '460px',
+                maxHeight: '90vh', overflowY: 'auto',
                 boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
                 padding: '1.5rem', border: '1px solid #e5e7eb',
               }}
@@ -550,23 +552,18 @@ const LocationsPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </ModalPortal>
         )}
 
         {/* ── Create / Edit Modal ───────────────────────────────────────── */}
         {isModalOpen && (
-          <div
-            style={{
-              position: 'fixed', inset: 0, zIndex: 9999,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)',
-            }}
-          >
+          <ModalPortal onClose={() => setIsModalOpen(false)}>
             <div
-              className="fade-slide-up"
               style={{
+                position: 'relative',
                 backgroundColor: '#fff', borderRadius: '12px',
                 width: '100%', maxWidth: '500px',
+                maxHeight: '90vh', overflowY: 'auto',
                 boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
                 padding: '1.5rem', border: '1px solid #e5e7eb',
               }}
@@ -616,26 +613,24 @@ const LocationsPage: React.FC = () => {
                   />
                 </div>
 
-                {/* Tipo de almacenamiento – solo en creación */}
-                {!editingLoc && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                    <label htmlFor="loc-type" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
-                      Tipo <span style={{ color: '#ef4444' }}>*</span>
-                    </label>
-                    <select
-                      id="loc-type"
-                      value={formStorageTypeId}
-                      onChange={(e) => setFormStorageTypeId(e.target.value)}
-                      style={{ width: '100%', padding: '0.625rem 0.75rem', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.875rem', outline: 'none', background: '#fff' }}
-                      required
-                    >
-                      <option value="">— Selecciona un tipo —</option>
-                      {storageTypes.map((st: StorageType) => (
-                        <option key={st.id} value={st.id}>{st.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                {/* Tipo de almacenamiento */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                  <label htmlFor="loc-type" style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+                    Tipo <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <select
+                    id="loc-type"
+                    value={formStorageTypeId}
+                    onChange={(e) => setFormStorageTypeId(e.target.value)}
+                    style={{ width: '100%', padding: '0.625rem 0.75rem', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.875rem', outline: 'none', background: '#fff' }}
+                    required
+                  >
+                    <option value="">— Selecciona un tipo —</option>
+                    {storageTypes.map((st: StorageType) => (
+                      <option key={st.id} value={st.id}>{st.name}</option>
+                    ))}
+                  </select>
+                </div>
 
                 {/* Capacidad relativa */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
@@ -691,7 +686,7 @@ const LocationsPage: React.FC = () => {
                 </div>
               </form>
             </div>
-          </div>
+          </ModalPortal>
         )}
 
       </div>

@@ -54,3 +54,17 @@ export interface ReturnSubmitPayload {
   productState: string
   note?: string
 }
+
+/** Movimiento de salida (despacho) que puede ser el origen de una devolución */
+export interface OutgoingMovement {
+  id: string
+  movementType: string
+  movementTypeLabel: string
+  productId: string
+  productName: string
+  productSku: string
+  quantity: number
+  customerName: string
+  customerDoc: string
+  createdAt: string
+}

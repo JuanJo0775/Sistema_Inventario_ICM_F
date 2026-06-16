@@ -77,14 +77,14 @@ export const deactivateCategory = async (id: string): Promise<void> => {
   if (useMocks) {
     return mockDeactivateCategory(id)
   }
-  await api.delete(`/catalog/categories/${id}/`)
+  await api.post(`/catalog/categories/${id}/disable/`)
 }
 
 export const restoreCategory = async (id: string): Promise<CatalogCategory> => {
   if (useMocks) {
     return mockRestoreCategory(id)
   }
-  const response = await api.post<CatalogCategory>(`/catalog/categories/${id}/restore/`)
+  const response = await api.post<CatalogCategory>(`/catalog/categories/${id}/enable/`)
   return response.data
 }
 
@@ -136,14 +136,14 @@ export const deactivateBrand = async (id: string): Promise<void> => {
   if (useMocks) {
     return mockDeactivateBrand(id)
   }
-  await api.delete(`/catalog/brands/${id}/`)
+  await api.post(`/catalog/brands/${id}/disable/`)
 }
 
 export const restoreBrand = async (id: string): Promise<CatalogBrand> => {
   if (useMocks) {
     return mockRestoreBrand(id)
   }
-  const response = await api.post<CatalogBrand>(`/catalog/brands/${id}/restore/`)
+  const response = await api.post<CatalogBrand>(`/catalog/brands/${id}/enable/`)
   return response.data
 }
 
@@ -157,6 +157,7 @@ export type FetchCatalogProductsParams = {
   subcategory?: string
   include_inactive?: boolean
   page?: number
+  page_size?: number
 }
 
 export const fetchCatalogProducts = async (
@@ -171,6 +172,7 @@ export const fetchCatalogProducts = async (
       category: params?.category || undefined,
       include_inactive: params?.include_inactive ? 'true' : undefined,
       page: params?.page || undefined,
+      page_size: params?.page_size || undefined,
     },
   })
   return normalizeList(response.data)
@@ -205,11 +207,12 @@ export const updateCatalogProduct = async (
   return response.data
 }
 
-export const deactivateCatalogProduct = async (id: string): Promise<void> => {
+export const deactivateCatalogProduct = async (id: string): Promise<CatalogProduct> => {
   if (useMocks) {
     return mockDeactivateProduct(id)
   }
-  await api.delete(`/catalog/products/${id}/`)
+  const response = await api.patch<CatalogProduct>(`/catalog/products/${id}/`, { is_active: false })
+  return response.data
 }
 
 export const restoreCatalogProduct = async (id: string): Promise<CatalogProduct> => {

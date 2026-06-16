@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { Building2 } from 'lucide-react'
 import AppShell from '../../components/layout/AppShell'
 import { fetchSupplierDetail } from '../../services/suppliers'
+import { extractApiError } from '../../hooks/useApiError'
 import type { Supplier } from '../../interfaces/suppliers'
 
 const SupplierDetailPage = () => {
@@ -22,7 +23,7 @@ const SupplierDetailPage = () => {
         setLoading(false)
       })
       .catch((err) => {
-        setError(err?.message || 'No se pudo cargar el detalle del proveedor.')
+        setError(extractApiError(err))
         setLoading(false)
       })
   }, [id])

@@ -1,4 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
+import { toast } from 'sonner'
+import { ModalPortal } from '../../components/ui/ModalPortal'
+import { extractApiError } from '../../hooks/useApiError'
 import {
   Search,
   Plus,
@@ -69,7 +72,7 @@ export const UsersPage: React.FC = () => {
       setUsers(usersData)
       setRoles(rolesData)
     } catch (err: any) {
-      setErrorMsg(err.message || t('users.errors.load'))
+      setErrorMsg(extractApiError(err))
     } finally {
       setLoading(false)
     }
@@ -197,6 +200,7 @@ export const UsersPage: React.FC = () => {
           role: formRole,
         })
         setSuccessMsg(t('users.success.updated'))
+        toast.success(t('users.success.updated'))
       } else {
         // Create User
         await createUser({
@@ -209,6 +213,7 @@ export const UsersPage: React.FC = () => {
           role: formRole,
         })
         setSuccessMsg(t('users.success.created'))
+        toast.success(t('users.success.created'))
       }
       setIsModalOpen(false)
       loadData() // Refresh list
@@ -224,7 +229,7 @@ export const UsersPage: React.FC = () => {
           detailedError = `${firstKey}: ${Array.isArray(msg) ? msg.join(', ') : msg}`
         }
       }
-      setErrorMsg(detailedError || err.message || t('users.errors.save'))
+      setErrorMsg(detailedError || extractApiError(err))
     } finally {
       setSubmitting(false)
     }
@@ -238,11 +243,12 @@ export const UsersPage: React.FC = () => {
     try {
       await disableUser(userToDeactivate.id)
       setSuccessMsg(t('users.success.deactivated', { username: userToDeactivate.username }))
+      toast.success(t('users.success.deactivated', { username: userToDeactivate.username }))
       setUserToDeactivate(null)
       setIsModalOpen(false)
       loadData()
     } catch (err: any) {
-      setErrorMsg(err.message || t('users.errors.deactivate'))
+      setErrorMsg(extractApiError(err))
       setUserToDeactivate(null)
     }
   }
@@ -254,9 +260,10 @@ export const UsersPage: React.FC = () => {
     try {
       await enableUser(user.id)
       setSuccessMsg(t('users.success.reactivated', { username: user.username }))
+      toast.success(t('users.success.reactivated', { username: user.username }))
       loadData()
     } catch (err: any) {
-      setErrorMsg(err.message || t('users.errors.reactivate'))
+      setErrorMsg(extractApiError(err))
     }
   }
 
@@ -612,28 +619,17 @@ export const UsersPage: React.FC = () => {
 
         {/* ── CREATE / EDIT USER MODAL ───────────────────────────────────── */}
         {isModalOpen && (
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              backgroundColor: 'rgba(0,0,0,0.45)',
-              backdropFilter: 'blur(4px)',
-              zIndex: 9999,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '1rem',
-            }}
-          >
+          <ModalPortal onClose={() => setIsModalOpen(false)}>
             <div
               style={{
+                position: 'relative',
+                maxHeight: '90vh',
+                overflowY: 'auto',
                 backgroundColor: '#fff',
                 borderRadius: '12px',
                 boxShadow: '0 10px 25px -5px rgba(0,0,0,0.15)',
                 width: '100%',
                 maxWidth: '480px',
-                overflow: 'hidden',
-                animation: 'scaleUp 0.2s ease-out',
               }}
             >
               {/* Modal Header */}
@@ -643,7 +639,8 @@ export const UsersPage: React.FC = () => {
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   padding: '1.25rem 1.5rem',
-                  borderBottom: '1px solid var(--ink-12)',
+                  borderBottom: '1px solid #e5e7eb',
+                  flexShrink: 0,
                 }}
               >
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
@@ -660,305 +657,402 @@ export const UsersPage: React.FC = () => {
               </div>
 
               {/* Modal Body */}
-              <form onSubmit={handleSave} style={{ padding: '1.5rem' }}>
-                {validationError && (
-                  <div className="alert-bar alert-bar--warn" role="alert" style={{ marginBottom: '1.25rem', padding: '0.5rem 0.75rem' }}>
-                    <AlertTriangle style={{ marginRight: '0.35rem', width: '15px', height: '15px' }} />
-                    <span style={{ fontSize: '0.825rem' }}>{validationError}</span>
+              <div style={{ overflow: 'auto', flex: 1, padding: '1.5rem' }}>
+                <form id="user-form" onSubmit={handleSave}>
+                  {validationError && (
+                    <div
+                      className="alert-bar alert-bar--warn"
+                      role="alert"
+                      style={{ marginBottom: '1.25rem', padding: '0.5rem 0.75rem' }}
+                    >
+                      <AlertTriangle style={{ marginRight: '0.35rem', width: '15px', height: '15px' }} />
+                      <span style={{ fontSize: '0.825rem' }}>{validationError}</span>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {/* Nombre Completo */}
+                    <div>
+                      <label
+                        style={{
+                          display: 'block',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          color: '#374151',
+                          marginBottom: '0.35rem',
+                        }}
+                      >
+                        {t('users.modal.fullName')} <span style={{ color: '#ef4444' }}>*</span>
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <User
+                          style={{
+                            position: 'absolute',
+                            left: '0.75rem',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            width: '14px',
+                            height: '14px',
+                            color: '#9ca3af',
+                          }}
+                        />
+                        <input
+                          type="text"
+                          placeholder={t('users.modal.fullNamePlaceholder')}
+                          value={formFullName}
+                          onChange={(e) => setFormFullName(e.target.value)}
+                          required
+                          style={{
+                            width: '100%',
+                            paddingLeft: '2.25rem',
+                            height: '38px',
+                            borderRadius: '8px',
+                            border: '1px solid #d1d5db',
+                            fontSize: '0.875rem',
+                            outline: 'none',
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Username & Correo en dos columnas */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                      {/* Username */}
+                      <div>
+                        <label
+                          style={{
+                            display: 'block',
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                            color: '#374151',
+                            marginBottom: '0.35rem',
+                          }}
+                        >
+                          {t('users.modal.username')} <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <span
+                            style={{
+                              position: 'absolute',
+                              left: '0.75rem',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              fontSize: '0.875rem',
+                              color: '#9ca3af',
+                              fontWeight: 600,
+                            }}
+                          >
+                            @
+                          </span>
+                          <input
+                            type="text"
+                            placeholder="carlos.a"
+                            value={formUsername}
+                            onChange={(e) => setFormUsername(e.target.value)}
+                            required
+                            disabled={!!editingUser}
+                            style={{
+                              width: '100%',
+                              paddingLeft: '1.75rem',
+                              height: '38px',
+                              borderRadius: '8px',
+                              border: '1px solid #d1d5db',
+                              fontSize: '0.875rem',
+                              outline: 'none',
+                              backgroundColor: editingUser ? '#f3f4f6' : '#fff',
+                              color: editingUser ? '#6b7280' : '#111827',
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Email */}
+                      <div>
+                        <label
+                          style={{
+                            display: 'block',
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                            color: '#374151',
+                            marginBottom: '0.35rem',
+                          }}
+                        >
+                          {t('users.modal.email')} <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <Mail
+                            style={{
+                              position: 'absolute',
+                              left: '0.75rem',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              width: '14px',
+                              height: '14px',
+                              color: '#9ca3af',
+                            }}
+                          />
+                          <input
+                            type="email"
+                            placeholder="ejemplo@icm.com"
+                            value={formEmail}
+                            onChange={(e) => setFormEmail(e.target.value)}
+                            required
+                            style={{
+                              width: '100%',
+                              paddingLeft: '2.25rem',
+                              height: '38px',
+                              borderRadius: '8px',
+                              border: '1px solid #d1d5db',
+                              fontSize: '0.875rem',
+                              outline: 'none',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Teléfono & Rol en dos columnas */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                      {/* Teléfono */}
+                      <div>
+                        <label
+                          style={{
+                            display: 'block',
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                            color: '#374151',
+                            marginBottom: '0.35rem',
+                          }}
+                        >
+                          {t('users.modal.phone')}
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <Phone
+                            style={{
+                              position: 'absolute',
+                              left: '0.75rem',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              width: '14px',
+                              height: '14px',
+                              color: '#9ca3af',
+                            }}
+                          />
+                          <input
+                            type="text"
+                            placeholder="3001234567"
+                            value={formPhone}
+                            onChange={(e) => setFormPhone(e.target.value)}
+                            style={{
+                              width: '100%',
+                              paddingLeft: '2.25rem',
+                              height: '38px',
+                              borderRadius: '8px',
+                              border: '1px solid #d1d5db',
+                              fontSize: '0.875rem',
+                              outline: 'none',
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Rol select */}
+                      <div>
+                        <label
+                          style={{
+                            display: 'block',
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                            color: '#374151',
+                            marginBottom: '0.35rem',
+                          }}
+                        >
+                          {t('users.modal.role')} <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <Shield
+                            style={{
+                              position: 'absolute',
+                              left: '0.75rem',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              width: '14px',
+                              height: '14px',
+                              color: '#9ca3af',
+                            }}
+                          />
+                          <select
+                            value={formRole}
+                            onChange={(e) => setFormRole(e.target.value)}
+                            required
+                            style={{
+                              width: '100%',
+                              paddingLeft: '2.25rem',
+                              height: '38px',
+                              borderRadius: '8px',
+                              border: '1px solid #d1d5db',
+                              fontSize: '0.875rem',
+                              outline: 'none',
+                              backgroundColor: '#fff',
+                            }}
+                          >
+                            <option value="">{t('users.modal.roleSelectPlaceholder')}</option>
+                            {roles.map((r) => (
+                              <option key={r.value} value={r.value}>
+                                {r.display_name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Contraseña temporal (solo visible en creación) */}
+                    {!editingUser && (
+                      <div>
+                        <label
+                          style={{
+                            display: 'block',
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                            color: '#374151',
+                            marginBottom: '0.35rem',
+                          }}
+                        >
+                          {t('users.modal.password')} <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <Lock
+                            style={{
+                              position: 'absolute',
+                              left: '0.75rem',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              width: '14px',
+                              height: '14px',
+                              color: '#9ca3af',
+                            }}
+                          />
+                          <input
+                            type="password"
+                            placeholder={t('users.modal.passwordPlaceholder')}
+                            value={formPassword}
+                            onChange={(e) => setFormPassword(e.target.value)}
+                            required={!editingUser}
+                            style={{
+                              width: '100%',
+                              paddingLeft: '2.25rem',
+                              height: '38px',
+                              borderRadius: '8px',
+                              border: '1px solid #d1d5db',
+                              fontSize: '0.875rem',
+                              outline: 'none',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Dynamic role restriction banner */}
+                    {formRole && getRoleRestrictionText(formRole) && (
+                      <div
+                        style={{
+                          padding: '0.75rem 1rem',
+                          borderRadius: '8px',
+                          backgroundColor: formRole === 'auxiliar_despacho' ? '#fff4e6' : '#e6fcf5',
+                          borderLeft: `4px solid ${formRole === 'auxiliar_despacho' ? '#d9480f' : '#0ca678'}`,
+                          fontSize: '0.8rem',
+                          color: formRole === 'auxiliar_despacho' ? '#d9480f' : '#099268',
+                          fontWeight: 500,
+                          lineHeight: '1.4',
+                        }}
+                      >
+                        {getRoleRestrictionText(formRole)}
+                      </div>
+                    )}
                   </div>
+                </form>
+              </div>
+
+              {/* Modal Footer */}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '1rem 1.5rem',
+                  borderTop: '1px solid #e5e7eb',
+                  flexShrink: 0,
+                  background: '#fff',
+                }}
+              >
+                {/* Left: Deactivate button (Only when editing an active user) */}
+                {editingUser && editingUser.is_active ? (
+                  <button
+                    type="button"
+                    onClick={() => setUserToDeactivate(editingUser)}
+                    style={{
+                      height: '36px',
+                      padding: '0 0.85rem',
+                      borderRadius: '6px',
+                      fontSize: '0.825rem',
+                      fontWeight: 600,
+                      backgroundColor: '#fff5f5',
+                      color: '#e03131',
+                      border: '1px solid #ffc9c9',
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#ffe3e3'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#fff5f5'
+                    }}
+                  >
+                    {t('users.deactivateBtn')}
+                  </button>
+                ) : (
+                  <div />
                 )}
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {/* Nombre Completo */}
-                  <div>
-                    <label className="f-label" htmlFor="user-fullname">
-                      {t('users.modal.fullName')} <span style={{ color: '#ef4444' }}>*</span>
-                    </label>
-                    <div style={{ position: 'relative' }}>
-                      <User
-                        style={{
-                          position: 'absolute',
-                          left: '0.75rem',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          width: '14px',
-                          height: '14px',
-                          color: 'var(--ink-40)',
-                        }}
-                      />
-                      <input
-                        id="user-fullname"
-                        type="text"
-                        placeholder={t('users.modal.fullNamePlaceholder')}
-                        value={formFullName}
-                        onChange={(e) => setFormFullName(e.target.value)}
-                        required
-                        className="f-input"
-                        style={{ paddingLeft: '2.25rem', width: '100%' }}
-                      />
-                    </div>
-                  </div>
 
-                  {/* Username & Correo en dos columnas */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                    {/* Username */}
-                    <div>
-                      <label className="f-label" htmlFor="user-username">
-                        {t('users.modal.username')} <span style={{ color: '#ef4444' }}>*</span>
-                      </label>
-                      <div style={{ position: 'relative' }}>
-                        <span
-                          style={{
-                            position: 'absolute',
-                            left: '0.75rem',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            fontSize: '0.875rem',
-                            color: 'var(--ink-40)',
-                            fontWeight: 600,
-                          }}
-                        >
-                          @
-                        </span>
-                        <input
-                          id="user-username"
-                          type="text"
-                          placeholder="carlos.a"
-                          value={formUsername}
-                          onChange={(e) => setFormUsername(e.target.value)}
-                          required
-                          disabled={!!editingUser}
-                          className="f-input"
-                          style={{
-                            paddingLeft: '1.75rem',
-                            width: '100%',
-                            backgroundColor: editingUser ? 'var(--ink-06)' : '#fff',
-                            color: editingUser ? 'var(--ink-40)' : 'var(--ink)',
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Email */}
-                    <div>
-                      <label className="f-label" htmlFor="user-email">
-                        {t('users.modal.email')} <span style={{ color: '#ef4444' }}>*</span>
-                      </label>
-                      <div style={{ position: 'relative' }}>
-                        <Mail
-                          style={{
-                            position: 'absolute',
-                            left: '0.75rem',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            width: '14px',
-                            height: '14px',
-                            color: 'var(--ink-40)',
-                          }}
-                        />
-                        <input
-                          id="user-email"
-                          type="email"
-                          placeholder="ejemplo@icm.com"
-                          value={formEmail}
-                          onChange={(e) => setFormEmail(e.target.value)}
-                          required
-                          className="f-input"
-                          style={{ paddingLeft: '2.25rem', width: '100%' }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Teléfono & Rol en dos columnas */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                    {/* Teléfono */}
-                    <div>
-                      <label className="f-label" htmlFor="user-phone">
-                        {t('users.modal.phone')}
-                      </label>
-                      <div style={{ position: 'relative' }}>
-                        <Phone
-                          style={{
-                            position: 'absolute',
-                            left: '0.75rem',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            width: '14px',
-                            height: '14px',
-                            color: 'var(--ink-40)',
-                          }}
-                        />
-                        <input
-                          id="user-phone"
-                          type="text"
-                          placeholder="3001234567"
-                          value={formPhone}
-                          onChange={(e) => setFormPhone(e.target.value)}
-                          className="f-input"
-                          style={{ paddingLeft: '2.25rem', width: '100%' }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Rol select */}
-                    <div>
-                      <label className="f-label" htmlFor="user-role">
-                        {t('users.modal.role')} <span style={{ color: '#ef4444' }}>*</span>
-                      </label>
-                      <div style={{ position: 'relative' }}>
-                        <Shield
-                          style={{
-                            position: 'absolute',
-                            left: '0.75rem',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            width: '14px',
-                            height: '14px',
-                            color: 'var(--ink-40)',
-                          }}
-                        />
-                        <select
-                          id="user-role"
-                          value={formRole}
-                          onChange={(e) => setFormRole(e.target.value)}
-                          required
-                          className="f-input"
-                          style={{ paddingLeft: '2.25rem', width: '100%' }}
-                        >
-                          <option value="">{t('users.modal.roleSelectPlaceholder')}</option>
-                          {roles.map((r) => (
-                            <option key={r.value} value={r.value}>
-                              {r.display_name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Contraseña temporal (solo visible en creación) */}
-                  {!editingUser && (
-                    <div>
-                      <label className="f-label" htmlFor="user-password">
-                        {t('users.modal.password')} <span style={{ color: '#ef4444' }}>*</span>
-                      </label>
-                      <div style={{ position: 'relative' }}>
-                        <Lock
-                          style={{
-                            position: 'absolute',
-                            left: '0.75rem',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            width: '14px',
-                            height: '14px',
-                            color: 'var(--ink-40)',
-                          }}
-                        />
-                        <input
-                          id="user-password"
-                          type="password"
-                          placeholder={t('users.modal.passwordPlaceholder')}
-                          value={formPassword}
-                          onChange={(e) => setFormPassword(e.target.value)}
-                          required={!editingUser}
-                          className="f-input"
-                          style={{ paddingLeft: '2.25rem', width: '100%' }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Dynamic role restriction banner */}
-                  {formRole && getRoleRestrictionText(formRole) && (
-                    <div
-                      style={{
-                        padding: '0.75rem 1rem',
-                        borderRadius: '8px',
-                        backgroundColor: formRole === 'auxiliar_despacho' ? '#fff4e6' : '#e6fcf5',
-                        borderLeft: `4px solid ${formRole === 'auxiliar_despacho' ? '#d9480f' : '#0ca678'}`,
-                        fontSize: '0.8rem',
-                        color: formRole === 'auxiliar_despacho' ? '#d9480f' : '#099268',
-                        fontWeight: 500,
-                        lineHeight: '1.4',
-                      }}
-                    >
-                      {getRoleRestrictionText(formRole)}
-                    </div>
-                  )}
+                {/* Right: Actions */}
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="btn btn--secondary"
+                    style={{ height: '36px', padding: '0 1rem', borderRadius: '6px', fontSize: '0.825rem' }}
+                  >
+                    {t('users.modal.cancelBtn')}
+                  </button>
+                  <button
+                    type="submit"
+                    form="user-form"
+                    disabled={submitting}
+                    className="btn btn--primary"
+                    style={{ height: '36px', padding: '0 1.25rem', borderRadius: '6px', fontSize: '0.825rem' }}
+                  >
+                    {submitting
+                      ? t('users.modal.savingBtn')
+                      : editingUser
+                      ? t('users.modal.saveBtn')
+                      : t('users.modal.createSubmitBtn')}
+                  </button>
                 </div>
-
-                {/* Modal Footer */}
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginTop: '1.75rem',
-                    paddingTop: '1rem',
-                    borderTop: '1px solid var(--ink-12)',
-                  }}
-                >
-                  {/* Left: Deactivate button (Only when editing an active user) */}
-                  {editingUser && editingUser.is_active ? (
-                    <button
-                      type="button"
-                      onClick={() => setUserToDeactivate(editingUser)}
-                      className="btn btn--danger btn--sm"
-                      style={{ height: '36px', padding: '0 0.85rem', fontSize: '0.825rem' }}
-                    >
-                      {t('users.deactivateBtn')}
-                    </button>
-                  ) : (
-                    <div />
-                  )}
-
-                  {/* Right: Actions */}
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button
-                      type="button"
-                      onClick={() => setIsModalOpen(false)}
-                      className="btn btn--outline btn--sm"
-                      style={{ height: '36px', padding: '0 1rem', fontSize: '0.825rem' }}
-                    >
-                      {t('users.modal.cancelBtn')}
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="btn btn--primary btn--sm"
-                      style={{ height: '36px', padding: '0 1.25rem', fontSize: '0.825rem' }}
-                    >
-                      {submitting
-                        ? t('users.modal.savingBtn')
-                        : editingUser
-                        ? t('users.modal.saveBtn')
-                        : t('users.modal.createSubmitBtn')}
-                    </button>
-                  </div>
-                </div>
-              </form>
+              </div>
             </div>
-          </div>
+          </ModalPortal>
         )}
 
         {/* ── DEACTIVATE CONFIRMATION MODAL ──────────────────────────────── */}
         {userToDeactivate && (
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              backgroundColor: 'rgba(0,0,0,0.45)',
-              backdropFilter: 'blur(4px)',
-              zIndex: 10000,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '1rem',
-            }}
-          >
+          <ModalPortal onClose={() => setUserToDeactivate(null)}>
             <div
               style={{
+                position: 'relative',
+                maxHeight: '90vh',
+                overflowY: 'auto',
                 backgroundColor: '#fff',
                 borderRadius: '12px',
                 boxShadow: '0 10px 25px -5px rgba(0,0,0,0.15)',
@@ -1025,7 +1119,7 @@ export const UsersPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </ModalPortal>
         )}
       </div>
     </AppShell>

@@ -4,6 +4,7 @@ import type {
   DashboardKpiKey,
   DashboardMovementItem,
   DashboardOverview,
+  DashboardVisualKpi,
 } from '../interfaces/dashboard'
 import { api } from './api'
 import { useMocks } from '../mocks/config'
@@ -14,7 +15,120 @@ type DashboardOverviewParams = {
   movementsLimit?: number
 }
 
-const VISUAL_KPI_CONFIG = mockDashboardOverview.visualKpis;
+const VISUAL_KPI_DEFAULTS: DashboardVisualKpi[] = [
+  {
+    key: 'rotacion',
+    title: 'Rotación de inventario',
+    shortTitle: 'Rotación',
+    value: 0,
+    unit: 'veces/año',
+    precision: 1,
+    target: 'Meta 4 - 8',
+    status: 'acceptable',
+    statusLabel: 'Nivel aceptable',
+    insight: 'Balance saludable entre disponibilidad y movimiento de mercancía.',
+    formula: 'CMV / Inventario promedio',
+    chartType: 'area',
+    history: [],
+    breakdown: [],
+  },
+  {
+    key: 'utilizacion',
+    title: 'Utilización de almacén',
+    shortTitle: 'Almacén',
+    value: 0,
+    unit: '%',
+    precision: 0,
+    target: '60% - 85%',
+    status: 'acceptable',
+    statusLabel: 'Aceptable',
+    insight: 'Hay margen operativo para maniobrar con seguridad.',
+    formula: '(Posiciones ocupadas / Capacidad total) x 100',
+    chartType: 'radial',
+    history: [],
+    breakdown: [],
+  },
+  {
+    key: 'danados',
+    title: 'Índice de productos dañados',
+    shortTitle: 'Dañados',
+    value: 0,
+    unit: '%',
+    precision: 1,
+    target: '< 1%',
+    status: 'acceptable',
+    statusLabel: 'Aceptable',
+    insight: 'Conviene revisar manipulación y condiciones de almacén.',
+    formula: '(Unidades dañadas / Total unidades) x 100',
+    chartType: 'bar',
+    history: [],
+    breakdown: [],
+  },
+  {
+    key: 'otif',
+    title: 'Cumplimiento en despacho OTIF',
+    shortTitle: 'OTIF',
+    value: 0,
+    unit: '%',
+    precision: 0,
+    target: '>= 95%',
+    status: 'acceptable',
+    statusLabel: 'Aceptable',
+    insight: 'El cuello de botella actual está en entregas completas.',
+    formula: '(Pedidos a tiempo y completos / Total pedidos) x 100',
+    chartType: 'stacked',
+    history: [],
+    breakdown: [],
+  },
+  {
+    key: 'descarte',
+    title: 'Tasa de descarte defectuoso',
+    shortTitle: 'Descarte',
+    value: 0,
+    unit: '%',
+    precision: 1,
+    target: '< 0.5%',
+    status: 'acceptable',
+    statusLabel: 'Aceptable',
+    insight: 'Nivel normal para importación, con foco en proveedor extranjero.',
+    formula: '(Unidades descartadas / Total inventario) x 100',
+    chartType: 'bar',
+    history: [],
+    breakdown: [],
+  },
+  {
+    key: 'devoluciones',
+    title: 'Tasa de devoluciones de clientes',
+    shortTitle: 'Devoluciones',
+    value: 0,
+    unit: '%',
+    precision: 1,
+    target: '< 2%',
+    status: 'acceptable',
+    statusLabel: 'Aceptable',
+    insight: 'Calidad de producto y despacho confiables.',
+    formula: '(Unidades devueltas / Unidades despachadas) x 100',
+    chartType: 'area',
+    history: [],
+    breakdown: [],
+  },
+  {
+    key: 'cadena_frio',
+    title: 'Cumplimiento de cadena de frío',
+    shortTitle: 'Cadena frío',
+    value: 0,
+    unit: '%',
+    precision: 1,
+    target: '>= 99.5%',
+    status: 'acceptable',
+    statusLabel: 'Aceptable',
+    insight: 'Dos excursiones térmicas cortas requieren revisión técnica.',
+    formula: '(Tiempo dentro de rango / Tiempo monitoreado) x 100',
+    chartType: 'temperature',
+    history: [],
+    breakdown: [],
+  },
+]
 
 const toMovementType = (value: string): DashboardMovementItem['type'] => {
   switch (value) {
@@ -67,16 +181,16 @@ const mapOverview = (data: DashboardApiOverview): DashboardOverview => {
       returns: data.alerts.returns,
     },
     kpiBars,
-    visualKpis: VISUAL_KPI_CONFIG.map((kpi) => {
-      const apiMetric = kpiBars.find((bar) => bar.key === kpi.key);
+    visualKpis: VISUAL_KPI_DEFAULTS.map((defaultKpi) => {
+      const apiMetric = kpiBars.find((bar) => bar.key === defaultKpi.key);
       return apiMetric && apiMetric.value !== null
         ? {
-            ...kpi,
+            ...defaultKpi,
             value: apiMetric.value,
-            unit: apiMetric.unit ?? kpi.unit,
-            precision: apiMetric.precision ?? kpi.precision,
+            unit: apiMetric.unit ?? defaultKpi.unit,
+            precision: apiMetric.precision ?? defaultKpi.precision,
           }
-        : kpi;
+        : defaultKpi;
     }),
     movements: data.movements.map((movement) => ({
       id: movement.id,
