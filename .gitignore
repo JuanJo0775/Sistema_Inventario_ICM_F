@@ -24,3 +24,10 @@ dist-ssr
 *.sw?
 
 .env
+
+# Test coverage
+coverage/
+
+# Playwright / E2E
+test-results/
+playwright-report/
