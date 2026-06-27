@@ -30,6 +30,7 @@ const SuppliersPage = React.lazy(() => import('./features/purchasing/SuppliersPa
 const SupplierDetailPage = React.lazy(() => import('./features/purchasing/SupplierDetailPage'))
 const PurchaseOrdersPage = React.lazy(() => import('./features/purchasing/PurchaseOrdersPage'))
 const ProfilePage = React.lazy(() => import('./features/profile/ProfilePage'))
+const SettingsPage = React.lazy(() => import('./features/settings/SettingsPage'))
 const AuditPage = React.lazy(() => import('./features/admin/AuditPage'))
 const UsersPage = React.lazy(() => import('./features/admin/UsersPage'))
 const HorariosPage = React.lazy(() => import('./features/admin/HorariosPage'))
@@ -60,6 +61,14 @@ function App() {
           element={
             <ProtectedRoute>
               <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
             </ProtectedRoute>
           }
         />

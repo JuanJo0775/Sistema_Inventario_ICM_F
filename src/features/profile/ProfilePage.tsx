@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import {
   Building2, Calendar, Eye, EyeOff, Info, Lock, LogOut, Save,
-  ScrollText, Shield, ShieldCheck, User, UserCheck,
+  ScrollText, Shield, ShieldCheck, Sliders, User,
 } from 'lucide-react'
 import AppShell from '../../components/layout/AppShell'
 import PageLoader from '../../components/ui/PageLoader'
@@ -508,13 +508,13 @@ function SidebarCard({ profile }: { profile: UserItem }) {
         </div>
 
         <div className="quick-actions">
-          <button className="quick-action" type="button" onClick={() => window.location.href = '/audit'}>
+          <button className="quick-action quick-action--primary" type="button" onClick={() => window.location.href = '/app/settings'}>
+            <Sliders size={14} />
+            Configuración del sistema
+          </button>
+          <button className="quick-action" type="button" onClick={() => window.location.href = '/app/admin/audit'}>
             <ScrollText size={14} />
             Ver historial de actividad
-          </button>
-          <button className="quick-action" type="button" onClick={() => window.location.href = '/users'}>
-            <UserCheck size={14} />
-            Gestionar usuarios
           </button>
           <button className="quick-action" type="button" onClick={() => {
             useAuthStore.getState().logout()
