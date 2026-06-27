@@ -4595,11 +4595,14 @@ input.f-input[type="date"] {
   font-family: 'Courier New', Courier, monospace;
   font-size: 11px;
   width: 72mm;
+  max-width: 100%;
   color: #000;
   background: #fff;
   line-height: 1.5;
   padding: 3mm 4mm;
   margin: 0 auto;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .thermal-receipt * {
@@ -4628,19 +4631,21 @@ input.f-input[type="date"] {
 
 .thermal-receipt .tr-divider {
   text-align: center;
-  letter-spacing: 4px;
   margin: 3px 0;
   font-size: 10px;
   color: #000;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .thermal-receipt .tr-divider-double {
   text-align: center;
-  letter-spacing: 4px;
   margin: 4px 0;
   font-weight: 700;
   font-size: 10px;
   color: #000;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .thermal-receipt .tr-doc-title {
@@ -4671,8 +4676,17 @@ input.f-input[type="date"] {
   display: flex;
   justify-content: space-between;
   font-size: 11px;
-  white-space: pre-wrap;
   word-break: break-word;
+  overflow-wrap: break-word;
+}
+.thermal-receipt .tr-line > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-right: 4px;
+}
+.thermal-receipt .tr-line > span:last-child {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .thermal-receipt .tr-row-space {
@@ -4692,17 +4706,31 @@ input.f-input[type="date"] {
 .thermal-receipt .tr-item-name {
   font-weight: 600;
   font-size: 11px;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .thermal-receipt .tr-item-sku {
   font-size: 9px;
   color: #555;
+  overflow-wrap: break-word;
 }
 
 .thermal-receipt .tr-item-line {
   display: flex;
   justify-content: space-between;
   font-size: 11px;
+}
+.thermal-receipt .tr-item-line > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  padding-right: 4px;
+}
+.thermal-receipt .tr-item-line > span.tr-amount {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .thermal-receipt .tr-item-spacer {
@@ -4720,6 +4748,15 @@ input.f-input[type="date"] {
   font-size: 11px;
   margin-bottom: 2px;
 }
+.thermal-receipt .tr-total-line > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-right: 4px;
+}
+.thermal-receipt .tr-total-line > span:last-child {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 
 .thermal-receipt .tr-grand-total {
   display: flex;
@@ -4727,6 +4764,15 @@ input.f-input[type="date"] {
   font-size: 13px;
   font-weight: 700;
   margin: 4px 0;
+}
+.thermal-receipt .tr-grand-total > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-right: 4px;
+}
+.thermal-receipt .tr-grand-total > span:last-child {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .thermal-receipt .tr-footer-text {
