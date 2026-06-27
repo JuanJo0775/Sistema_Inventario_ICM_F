@@ -183,6 +183,11 @@ body {
   height: 100vh;
   overflow: hidden;
   background: var(--canvas);
+  transition: grid-template-columns 0.22s ease;
+}
+
+.shell-a--sidebar-hidden {
+  grid-template-columns: 54px 0px minmax(0, 1fr);
 }
 
 .rail {
@@ -268,6 +273,8 @@ body {
   flex-direction: column;
   height: 100vh;
   overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
   padding: 18px 0;
 }
 
@@ -321,6 +328,13 @@ body {
   background: rgba(42, 157, 166, 0.07);
   border-radius: 8px;
   border: 1px solid rgba(42, 157, 166, 0.14);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.sidebar__user:hover {
+  background: rgba(42, 157, 166, 0.14);
+  border-color: rgba(42, 157, 166, 0.28);
 }
 
 .avatar {

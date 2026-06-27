@@ -51,6 +51,18 @@ const initialKpis: Record<KpiKey, boolean> = {
   cadena_frio: true,
 }
 
+const KPI_STORAGE_KEY = 'icm_dashboard_kpis'
+
+const loadSavedKpis = (): Record<KpiKey, boolean> => {
+  try {
+    const saved = localStorage.getItem(KPI_STORAGE_KEY)
+    if (saved) return { ...initialKpis, ...JSON.parse(saved) }
+  } catch {
+    // corrupted data — fall back to defaults
+  }
+  return initialKpis
+}
+
 const statusVariant: Record<DashboardKpiStatus, 'success' | 'warning' | 'destructive' | 'secondary'> = {
   excellent: 'success',
   good: 'success',
@@ -116,10 +128,14 @@ function DashboardPage() {
   const locale = i18n.language === 'en' ? 'en-US' : 'es-CO'
   const isAdmin = user?.role === 'administrador'
   const [kpiPanelOpen, setKpiPanelOpen] = useState(false)
-  const [kpis, setKpis] = useState(initialKpis)
+  const [kpis, setKpis] = useState<Record<KpiKey, boolean>>(loadSavedKpis)
   const [overview, setOverview] = useState<DashboardOverview | null>(null)
   const [overviewError, setOverviewError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    localStorage.setItem(KPI_STORAGE_KEY, JSON.stringify(kpis))
+  }, [kpis])
 
   useEffect(() => {
     let active = true

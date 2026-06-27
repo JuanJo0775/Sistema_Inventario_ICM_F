@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import useAuthStore from '../../store/useAuthStore'
 
 type AppShellProps = {
@@ -55,6 +56,8 @@ type ShellRailProps = Readonly<{
   isPurchasing: boolean
   isAdmin: boolean
   isProfile: boolean
+  sidebarOpen: boolean
+  onToggleSidebar: () => void
   handleLogout: () => void
 }>
 
@@ -513,10 +516,21 @@ function ShellRail({
   isPurchasing,
   isAdmin,
   isProfile,
+  sidebarOpen,
+  onToggleSidebar,
   handleLogout,
 }: ShellRailProps) {
   return (
     <nav className="rail" aria-label={t('dashboard.nav.quickAccess')}>
+      <button
+        className="rail__btn"
+        title={sidebarOpen ? 'Ocultar menú' : 'Mostrar menú'}
+        type="button"
+        onClick={onToggleSidebar}
+      >
+        {sidebarOpen ? <PanelLeftClose size={15} /> : <PanelLeftOpen size={15} />}
+      </button>
+      <div className="rail__sep" />
       <Link className={`rail__btn${isDashboard ? ' active' : ''}`} title={t('dashboard.nav.dashboard')} to="/app">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <rect x="3" y="3" width="7" height="7" />
@@ -667,13 +681,13 @@ function ShellSidebar({
             <p className="sidebar__brand-sub">{t('dashboard.sidebar.version')}</p>
           </div>
         </div>
-        <div className="sidebar__user">
+        <Link className="sidebar__user" to="/app/profile">
           <div className="avatar avatar--teal">{avatarInitials}</div>
           <div>
             <p className="sidebar__user-name">{displayName}</p>
             <p className="sidebar__user-role">{roleLabel}</p>
           </div>
-        </div>
+        </Link>
       </header>
       <nav aria-label={t('dashboard.nav.mainMenu')}>
         {canManageInventory ? (
@@ -858,8 +872,25 @@ function AppShellChrome({
   handleLanguageChange,
   handleLogout,
 }: AppShellChromeProps) {
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('icm_sidebar_open')
+      return saved !== null ? (JSON.parse(saved) as boolean) : true
+    } catch {
+      return true
+    }
+  })
+
+  const handleToggleSidebar = () => {
+    setSidebarOpen((prev) => {
+      const next = !prev
+      localStorage.setItem('icm_sidebar_open', JSON.stringify(next))
+      return next
+    })
+  }
+
   return (
-    <div className="shell-a">
+    <div className={`shell-a${sidebarOpen ? '' : ' shell-a--sidebar-hidden'}`}>
       <ShellRail
         t={t}
         canManageInventory={canManageInventory}
@@ -876,6 +907,8 @@ function AppShellChrome({
         isPurchasing={isPurchasing}
         isAdmin={isAdmin}
         isProfile={isProfile}
+        sidebarOpen={sidebarOpen}
+        onToggleSidebar={handleToggleSidebar}
         handleLogout={handleLogout}
       />
 
