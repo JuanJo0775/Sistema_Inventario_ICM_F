@@ -34,6 +34,7 @@ type AppShellChromeProps = Readonly<{
   isLocations: boolean
   isPurchasing: boolean
   isAdmin: boolean
+  isProfile: boolean
   handleLanguageChange: (next: 'es' | 'en') => void
   handleLogout: () => void
 }>
@@ -53,6 +54,8 @@ type ShellRailProps = Readonly<{
   isLocations: boolean
   isPurchasing: boolean
   isAdmin: boolean
+  isProfile: boolean
+  handleLogout: () => void
 }>
 
 type ShellSidebarProps = Readonly<{
@@ -509,6 +512,8 @@ function ShellRail({
   isLocations,
   isPurchasing,
   isAdmin,
+  isProfile,
+  handleLogout,
 }: ShellRailProps) {
   return (
     <nav className="rail" aria-label={t('dashboard.nav.quickAccess')}>
@@ -592,14 +597,25 @@ function ShellRail({
         <span className="rail__badge" />
       </Link>
       {canManageAdmin ? (
-        <button className="rail__btn" title={t('dashboard.nav.users')} type="button">
+        <Link className={`rail__btn${isAdmin ? ' active' : ''}`} title="Configuración" to="/app/admin/company">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
           </svg>
-        </button>
+        </Link>
       ) : null}
+      <Link className={`rail__btn${isProfile ? ' active' : ''}`} title="Mi perfil" to="/app/profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      </Link>
+      <button className="rail__btn" title="Cerrar sesión" type="button" onClick={handleLogout}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+          <path d="M16 17l5-5-5-5M21 12H9" />
+        </svg>
+      </button>
     </nav>
   )
 }
@@ -838,6 +854,7 @@ function AppShellChrome({
   isLocations,
   isPurchasing,
   isAdmin,
+  isProfile,
   handleLanguageChange,
   handleLogout,
 }: AppShellChromeProps) {
@@ -858,6 +875,8 @@ function AppShellChrome({
         isLocations={isLocations}
         isPurchasing={isPurchasing}
         isAdmin={isAdmin}
+        isProfile={isProfile}
+        handleLogout={handleLogout}
       />
 
       <ShellSidebar
@@ -942,6 +961,8 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
 
   const isAdmin = location.pathname.startsWith('/app/admin')
 
+  const isProfile = location.pathname.startsWith('/app/profile')
+
   const handleLanguageChange = (next: 'es' | 'en') => {
     if (next !== language) {
       i18n.changeLanguage(next)
@@ -976,6 +997,7 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
       isLocations={isLocations}
       isPurchasing={isPurchasing}
       isAdmin={isAdmin}
+      isProfile={isProfile}
       handleLanguageChange={handleLanguageChange}
       handleLogout={handleLogout}
     >
