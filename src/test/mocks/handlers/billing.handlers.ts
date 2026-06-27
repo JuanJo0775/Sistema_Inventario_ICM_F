@@ -127,9 +127,6 @@ export const billingHandlers = [
     const url = new URL(request.url)
     const invType = url.searchParams.get('invoice_type')
     const search = url.searchParams.get('search')?.toLowerCase() || ''
-    const page = Number(url.searchParams.get('page')) || 1
-    const pageSize = Number(url.searchParams.get('page_size')) || 20
-
     let result = [...invoices]
     if (invType) {
       result = result.filter((inv) => inv.invoice_type === invType)
@@ -156,7 +153,7 @@ export const billingHandlers = [
     HttpResponse.json(invoiceDetail),
   ),
 
-  http.post(`${API_BASE}/billing/invoices/:id/void/`, async ({ request, params }) => {
+  http.post(`${API_BASE}/billing/invoices/:id/void/`, async ({ request }) => {
     const body = (await request.json()) as { reason: string }
     const result = {
       ...invoiceDetail,

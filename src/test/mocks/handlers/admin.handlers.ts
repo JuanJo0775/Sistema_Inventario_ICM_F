@@ -411,7 +411,7 @@ export const adminHandlers = [
   }),
 
   http.post(`${API_BASE}/auth/temporary-permits/:permitId/revoke/`, ({ params }) => {
-    for (const [userId, permits] of permitsMap.entries()) {
+    for (const [, permits] of permitsMap.entries()) {
       const idx = permits.findIndex((p: any) => p.id === params.permitId)
       if (idx !== -1) {
         permits[idx].is_active = false

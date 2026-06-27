@@ -112,7 +112,7 @@ export const alertsHandlers = [
       resolved_at: new Date().toISOString(),
       resolved_by: 'user-1',
     }
-    alerts[idx] = resolved
+    alerts[idx] = resolved as any
     return HttpResponse.json(resolved)
   }),
 ]

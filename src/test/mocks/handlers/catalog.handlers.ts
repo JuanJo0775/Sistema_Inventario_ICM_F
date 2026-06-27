@@ -203,7 +203,7 @@ export const catalogHandlers = [
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
-    products.push(newProduct)
+    products.push(newProduct as any)
     return HttpResponse.json(newProduct, { status: 201 })
   }),
 
@@ -319,7 +319,7 @@ export const catalogHandlers = [
   http.delete(`${API_BASE}/catalog/combos/:id/`, ({ params }) => {
     const idx = combos.findIndex(c => c.id === params.id)
     if (idx === -1) return HttpResponse.json({ error: 'Not found' }, { status: 404 })
-    combos[idx] = { ...combos[idx], deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+    combos[idx] = { ...combos[idx], deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() } as any
     return HttpResponse.json(null, { status: 204 })
   }),
 

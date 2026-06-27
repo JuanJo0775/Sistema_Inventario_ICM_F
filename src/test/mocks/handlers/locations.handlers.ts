@@ -233,7 +233,7 @@ export const locationsHandlers = [
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
-    locations.push(newLoc)
+    locations.push(newLoc as any)
     return HttpResponse.json(newLoc, { status: 201 })
   }),
 

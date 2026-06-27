@@ -113,7 +113,7 @@ export const returnsHandlers = [
       related_movement: (body.related_movement_id as string) || null,
       destination_location: (body.location_id as string) || null,
     }
-    returnMovements = [newMovement, ...returnMovements]
+    returnMovements = [newMovement as any, ...returnMovements]
     return HttpResponse.json(newMovement, { status: 201 })
   }),
 
