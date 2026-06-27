@@ -36,6 +36,7 @@ type AppShellChromeProps = Readonly<{
   isPurchasing: boolean
   isAdmin: boolean
   isProfile: boolean
+  isSettings: boolean
   handleLanguageChange: (next: 'es' | 'en') => void
   handleLogout: () => void
 }>
@@ -56,6 +57,7 @@ type ShellRailProps = Readonly<{
   isPurchasing: boolean
   isAdmin: boolean
   isProfile: boolean
+  isSettings: boolean
   sidebarOpen: boolean
   onToggleSidebar: () => void
   handleLogout: () => void
@@ -516,6 +518,7 @@ function ShellRail({
   isPurchasing,
   isAdmin,
   isProfile,
+  isSettings,
   sidebarOpen,
   onToggleSidebar,
   handleLogout,
@@ -610,14 +613,12 @@ function ShellRail({
         </svg>
         <span className="rail__badge" />
       </Link>
-      {canManageAdmin ? (
-        <Link className={`rail__btn${isAdmin ? ' active' : ''}`} title="Configuración" to="/app/admin/company">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
-          </svg>
-        </Link>
-      ) : null}
+      <Link className={`rail__btn${isSettings ? ' active' : ''}`} title="Configuración" to="/app/settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+        </svg>
+      </Link>
       <Link className={`rail__btn${isProfile ? ' active' : ''}`} title="Mi perfil" to="/app/profile">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
@@ -869,6 +870,7 @@ function AppShellChrome({
   isPurchasing,
   isAdmin,
   isProfile,
+  isSettings,
   handleLanguageChange,
   handleLogout,
 }: AppShellChromeProps) {
@@ -907,6 +909,7 @@ function AppShellChrome({
         isPurchasing={isPurchasing}
         isAdmin={isAdmin}
         isProfile={isProfile}
+        isSettings={isSettings}
         sidebarOpen={sidebarOpen}
         onToggleSidebar={handleToggleSidebar}
         handleLogout={handleLogout}
@@ -996,6 +999,8 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
 
   const isProfile = location.pathname.startsWith('/app/profile')
 
+  const isSettings = location.pathname.startsWith('/app/settings')
+
   const handleLanguageChange = (next: 'es' | 'en') => {
     if (next !== language) {
       i18n.changeLanguage(next)
@@ -1031,6 +1036,7 @@ function AppShell({ title, subtitle, actions, children }: Readonly<AppShellProps
       isPurchasing={isPurchasing}
       isAdmin={isAdmin}
       isProfile={isProfile}
+      isSettings={isSettings}
       handleLanguageChange={handleLanguageChange}
       handleLogout={handleLogout}
     >
